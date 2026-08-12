@@ -1,0 +1,136 @@
+import React, { useMemo, useState } from "react";
+import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
+
+interface ProductComboBoxProps {
+  value: string;
+  isCustomProduct: boolean;
+  onChange: (value: string, isCustomProduct: boolean) => void;
+  placeholder?: string;
+  error?: string;
+}
+
+const ProductComboBox: React.FC<ProductComboBoxProps> = ({
+  value,
+  isCustomProduct,
+  onChange,
+  placeholder = "Search products or type your own...",
+  error,
+}) => {
+  const { colors } = useTheme();
+  const products = useCatalogStore((state) => state.products);
+  const [focused, setFocused] = useState(false);
+
+  const suggestions = useMemo(() => {
+    const q = value.trim().toLowerCase();
+    if (!q) return [];
+    return products.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 6);
+  }, [products, value]);
+
+  const showDropdown = focused && value.trim().length > 0 && suggestions.length > 0;
+
+  const handleChangeText = (text: string) => {
+    onChange(text, true);
+  };
+
+  const handleSelectSuggestion = (name: string) => {
+    onChange(name, false);
+    setFocused(false);
+  };
+
+  return (
+    <View>
+      <View
+        style={[
+          styles.inputWrap,
+          { backgroundColor: colors.backgroundElement, borderColor: error ? colors.error : colors.border },
+        ]}
+      >
+        <MaterialCommunityIcons name="magnify" size={16} color={colors.textSecondary} />
+        <TextInput
+          value={value}
+          onChangeText={handleChangeText}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setTimeout(() => setFocused(false), 150)}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textSecondary}
+          style={[styles.input, { color: colors.text }]}
+        />
+        {value.trim().length > 0 && (
+          <Pressable onPress={() => onChange("", true)} hitSlop={8}>
+            <MaterialCommunityIcons name="close-circle" size={16} color={colors.textSecondary} />
+          </Pressable>
+        )}
+      </View>
+
+      {value.trim().length > 0 && (
+        <View style={styles.statusRow}>
+          <MaterialCommunityIcons
+            name={isCustomProduct ? "pencil-outline" : "check-decagram-outline"}
+            size={12}
+            color={isCustomProduct ? colors.warning : colors.success}
+          />
+          <Text style={[styles.statusText, { color: isCustomProduct ? colors.warning : colors.success }]}>
+            {isCustomProduct ? "Custom entry — not in the catalog yet" : "Matched to a catalog product"}
+          </Text>
+        </View>
+      )}
+
+      {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
+
+      {showDropdown && (
+        <View
+          style={[styles.dropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+        >
+          {suggestions.map((item) => (
+            <Pressable
+              key={item.id}
+              onPressIn={() => handleSelectSuggestion(item.name)}
+              style={[styles.suggestionRow, { borderBottomColor: colors.border }]}
+            >
+              <MaterialCommunityIcons name="pill" size={14} color={colors.textSecondary} />
+              <Text style={[styles.suggestionText, { color: colors.text }]} numberOfLines={1}>
+                {item.name}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
+
+export default ProductComboBox;
+
+const styles = StyleSheet.create({
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+  },
+  input: { flex: 1, fontSize: 14, padding: 0 },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 6 },
+  statusText: { fontSize: 11, fontWeight: "600" },
+  errorText: { fontSize: 11, marginTop: 4 },
+  dropdown: {
+    borderWidth: 1,
+    borderRadius: 10,
+    marginTop: 6,
+    overflow: "hidden",
+  },
+  suggestionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  suggestionText: { fontSize: 13, flex: 1 },
+});
