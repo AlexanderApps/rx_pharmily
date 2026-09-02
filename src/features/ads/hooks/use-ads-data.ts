@@ -6,12 +6,15 @@ import {
   AdAuthor,
   AdComment,
   AdFormData,
+  AdPayment,
   AdPlan,
+  AdReport,
   FDA_ID_REQUIRED_CATEGORIES,
   ReactionType,
 } from "@/features/ads/types/ads.types";
 import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { usePaymentsStore } from "@/features/payments/hooks/use-payments-data";
 
 // Pricing plans are real reference data (what a purchased ad's plan_*
 // columns snapshot at purchase time), not user-generated content — no
@@ -45,10 +48,6 @@ export const AD_PLANS: AdPlan[] = [
   },
 ];
 
-function mockPaymentReference() {
-  return `PAY-${Date.now()}`;
-}
-
 function isFdaRequired(category: AdFormData["category"]) {
   return FDA_ID_REQUIRED_CATEGORIES.includes(category);
 }
@@ -74,6 +73,44 @@ function mapMediaRow(row: any) {
   };
 }
 
+// The joined payments row (via ads.payment_id) — mirrors
+// features/payments/hooks/use-payments-data.ts's own mapPaymentRow, kept
+// separate rather than imported since ads.types.ts (and, by extension,
+// this store) is deliberately self-contained from other features.
+// row is null when RLS blocks this nested read — see
+// 20260823000000_payments_visibility_fix.sql for the actual fix (a
+// payments row is now readable by anyone who can see its linked ad, once
+// approved, matching ads' own visibility). This fallback stays as a
+// defensive backstop regardless — "pending" is the conservative
+// assumption here since approveAd()'s own gate treats anything short of
+// a confirmed "paid" as not yet payable, and this shouldn't silently
+// read as paid when the real status is actually unknown.
+function mapAdPaymentRow(row: any): AdPayment {
+  if (!row) {
+    return {
+      id: "",
+      reference: "—",
+      status: "pending",
+      amountDue: 0,
+      currency: "GHS",
+      initiatedBy: "",
+      createdAt: new Date(),
+    };
+  }
+  return {
+    id: row.id,
+    reference: row.reference,
+    status: row.status,
+    amountDue: Number(row.amount_due),
+    amountPaid: row.amount_paid != null ? Number(row.amount_paid) : undefined,
+    currency: row.currency,
+    initiatedBy: row.initiated_by,
+    reviewedBy: row.reviewed_by ?? undefined,
+    paidAt: row.paid_at ? new Date(row.paid_at) : undefined,
+    createdAt: new Date(row.created_at),
+  };
+}
+
 // userReaction is resolved from a separately-fetched map of the CURRENT
 // user's own reactions (see fetchMyReactions) rather than stored on the
 // ad itself — the real per-user ad_reactions table replaces the mock's
@@ -91,6 +128,7 @@ function mapAdRow(row: any, myReaction: ReactionType | null): Ad {
     status: row.status,
     statusReason: row.status_reason ?? undefined,
     reviewedBy: row.reviewed_by ?? undefined,
+    reviewedByName: row.reviewer?.full_name ?? undefined,
     reviewedAt: row.reviewed_at ? new Date(row.reviewed_at) : undefined,
     plan: {
       id: row.plan_id,
@@ -100,14 +138,7 @@ function mapAdRow(row: any, myReaction: ReactionType | null): Ad {
       currency: row.plan_currency,
       description: "",
     },
-    payment: {
-      planId: row.plan_id,
-      amount: Number(row.payment_amount),
-      currency: row.payment_currency,
-      status: row.payment_status,
-      paidAt: row.payment_paid_at ? new Date(row.payment_paid_at) : undefined,
-      reference: row.payment_reference,
-    },
+    payment: mapAdPaymentRow(row.payments),
     createdAt: new Date(row.created_at),
     startsAt: row.starts_at ? new Date(row.starts_at) : undefined,
     expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
@@ -115,6 +146,20 @@ function mapAdRow(row: any, myReaction: ReactionType | null): Ad {
     dislikeCount: row.dislike_count,
     userReaction: myReaction,
     commentCount: row.comment_count,
+  };
+}
+
+function mapAdReportRow(row: any): AdReport {
+  return {
+    id: row.id,
+    adId: row.ad_id,
+    reporterId: row.reporter_id,
+    reporterName: row.reporter?.full_name ?? "Unknown",
+    reason: row.reason,
+    status: row.status,
+    createdAt: new Date(row.created_at),
+    resolvedBy: row.resolved_by ?? undefined,
+    resolvedAt: row.resolved_at ? new Date(row.resolved_at) : undefined,
   };
 }
 
@@ -128,7 +173,8 @@ function mapCommentRow(row: any): AdComment {
   };
 }
 
-const AD_SELECT = "*, profiles:advertiser_id(id, full_name, avatar_color), ad_media(*)";
+const AD_SELECT =
+  "*, profiles:advertiser_id(id, full_name, avatar_color), reviewer:reviewed_by(id, full_name), ad_media(*), payments:payment_id(*)";
 
 type AdsStore = {
   ads: Ad[];
@@ -136,17 +182,21 @@ type AdsStore = {
   myReactions: Record<string, ReactionType>;
   plans: AdPlan[];
   isLoading: boolean;
+  adReports: AdReport[];
+  isLoadingReports: boolean;
 
   fetchAds: () => Promise<void>;
   fetchAd: (id: string) => Promise<void>;
   fetchComments: (adId: string) => Promise<void>;
   fetchMyReactions: () => Promise<void>;
+  fetchAdReports: () => Promise<void>;
 
   getAd: (id: string) => Ad | undefined;
   getComments: (adId: string) => AdComment[];
+  getReportsForAd: (adId: string) => AdReport[];
 
   submitAd: (data: AdFormData) => Promise<string | undefined>;
-  updateAd: (id: string, data: AdFormData) => Promise<void>;
+  updateAd: (id: string, data: AdFormData) => Promise<boolean>;
   deleteAd: (id: string) => Promise<boolean>;
 
   approveAd: (id: string) => Promise<boolean>;
@@ -154,6 +204,21 @@ type AdsStore = {
   suspendAd: (id: string, reason: string) => Promise<void>;
   reinstateAd: (id: string) => Promise<boolean>;
   banAd: (id: string, reason: string) => Promise<void>;
+  dismissReport: (reportId: string) => Promise<boolean>;
+  // Internal helper, not meant to be called directly from UI — bulk-
+  // resolves any still-open reports against an ad once an admin has
+  // actually acted on it (suspend/ban), so the reports queue doesn't
+  // keep showing reports for an ad that's already been dealt with.
+  resolveOpenReportsForAd: (adId: string, resolverId: string) => Promise<void>;
+
+  // Owner self-serve lifecycle — distinct from the admin moderation
+  // actions above. All three go through the set_own_ad_lifecycle RPC
+  // (see 20260901000001_ad_moderation_and_reports.sql), which validates
+  // the specific old-status -> new-status transition server-side.
+  pauseAd: (id: string) => Promise<boolean>;
+  resumeAd: (id: string) => Promise<boolean>;
+  closeAd: (id: string) => Promise<boolean>;
+  reportAd: (adId: string, reason: string) => Promise<boolean>;
 
   toggleReaction: (adId: string, reaction: ReactionType) => Promise<void>;
   addComment: (adId: string, text: string) => Promise<void>;
@@ -165,6 +230,8 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
   myReactions: {},
   plans: AD_PLANS,
   isLoading: false,
+  adReports: [],
+  isLoadingReports: false,
 
   fetchAds: async () => {
     set({ isLoading: true });
@@ -225,13 +292,42 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
     }));
   },
 
+  // Admin-only in practice — RLS only returns rows for reports the
+  // caller made themselves or (if they're an admin) every report. A
+  // non-admin calling this just gets their own reports back, which is
+  // fine since this app's UI only ever calls it from the moderation
+  // screen.
+  fetchAdReports: async () => {
+    set({ isLoadingReports: true });
+    const { data, error } = await supabase
+      .from("ad_reports")
+      .select("*, reporter:reporter_id(id, full_name)")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.warn("[ads] fetchAdReports failed:", error.message);
+      set({ isLoadingReports: false });
+      return;
+    }
+    set({ adReports: (data ?? []).map(mapAdReportRow), isLoadingReports: false });
+  },
+
   getAd: (id) => get().ads.find((a) => a.id === id),
   getComments: (adId) => get().commentsByAd[adId] ?? [],
+  getReportsForAd: (adId) => get().adReports.filter((r) => r.adId === adId),
 
   submitAd: async (data) => {
     const userId = await requireUserId();
     const plan = get().plans.find((p) => p.id === data.planId) ?? get().plans[0];
-    const now = new Date();
+
+    // Real pending payment now, not a hardcoded "already paid" — the ad
+    // isn't reviewable (see approveAd's payment check, and the DB-level
+    // guard in 20260822000000_payments_table.sql) until a superadmin
+    // marks this payments row paid.
+    const payment = await usePaymentsStore.getState().createPayment("AD", plan.price, plan.currency);
+    if (!payment) {
+      console.warn("[ads] submitAd failed: couldn't create payment record");
+      return undefined;
+    }
 
     const { data: row, error } = await supabase
       .from("ads")
@@ -248,11 +344,7 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
         plan_duration_days: plan.durationDays,
         plan_price: plan.price,
         plan_currency: plan.currency,
-        payment_amount: plan.price,
-        payment_currency: plan.currency,
-        payment_status: "paid",
-        payment_paid_at: now.toISOString(),
-        payment_reference: mockPaymentReference(),
+        payment_id: payment.id,
       })
       .select()
       .single();
@@ -298,7 +390,7 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
       .eq("id", id);
     if (error) {
       console.warn("[ads] updateAd failed:", error.message);
-      return;
+      return false;
     }
 
     if (data.media) {
@@ -319,6 +411,7 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
     }
 
     await get().fetchAd(id);
+    return true;
   },
 
   deleteAd: async (id) => {
@@ -338,6 +431,14 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
     const reviewerId = await requireUserId();
     const ad = get().ads.find((a) => a.id === id);
     if (!ad) return false;
+    // The database's RLS update policy is the real enforcement (see
+    // 20260822000000_payments_table.sql) — this check exists to fail
+    // fast with a clear message rather than let the admin hit a raw
+    // policy-violation error from Supabase.
+    if (ad.payment.status !== "paid") {
+      console.warn("[ads] approveAd blocked: payment is not marked paid yet");
+      return false;
+    }
     const now = new Date();
     const expiresAt = new Date(now.getTime() + ad.plan.durationDays * 24 * 60 * 60 * 1000);
 
@@ -373,6 +474,13 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
     const ad = get().ads.find((a) => a.id === id);
     if (!ad) return;
 
+    // Payment status is deliberately left untouched here — the old code
+    // auto-marked it "refunded" on rejection, but the new payments
+    // system has no refund concept (see the migration's notes on this).
+    // If the payment was still pending, it stays pending — a superadmin
+    // can cancel it separately from the payments review screen if the
+    // ad won't be resubmitted. If it was already paid, that's a real
+    // mobile money transaction outside this app's scope to reverse.
     const { error } = await supabase
       .from("ads")
       .update({
@@ -380,7 +488,6 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
         status_reason: reason,
         reviewed_by: reviewerId,
         reviewed_at: new Date().toISOString(),
-        payment_status: "refunded",
       })
       .eq("id", id);
     if (error) {
@@ -407,6 +514,7 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
       console.warn("[ads] suspendAd failed:", error.message);
       return;
     }
+    await get().resolveOpenReportsForAd(id, reviewerId);
     await get().fetchAd(id);
   },
 
@@ -434,7 +542,94 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
       console.warn("[ads] banAd failed:", error.message);
       return;
     }
+    await get().resolveOpenReportsForAd(id, reviewerId);
     await get().fetchAd(id);
+  },
+
+  resolveOpenReportsForAd: async (adId, resolverId) => {
+    const { error } = await supabase
+      .from("ad_reports")
+      .update({ status: "dismissed", resolved_by: resolverId, resolved_at: new Date().toISOString() })
+      .eq("ad_id", adId)
+      .eq("status", "open");
+    if (error) {
+      console.warn("[ads] resolveOpenReportsForAd failed:", error.message);
+      return;
+    }
+    set((state) => ({
+      adReports: state.adReports.map((r) =>
+        r.adId === adId && r.status === "open"
+          ? { ...r, status: "dismissed" as const, resolvedBy: resolverId, resolvedAt: new Date() }
+          : r,
+      ),
+    }));
+  },
+
+  dismissReport: async (reportId) => {
+    const resolverId = await requireUserId();
+    const { error } = await supabase
+      .from("ad_reports")
+      .update({ status: "dismissed", resolved_by: resolverId, resolved_at: new Date().toISOString() })
+      .eq("id", reportId);
+    if (error) {
+      console.warn("[ads] dismissReport failed:", error.message);
+      return false;
+    }
+    set((state) => ({
+      adReports: state.adReports.map((r) =>
+        r.id === reportId
+          ? { ...r, status: "dismissed" as const, resolvedBy: resolverId, resolvedAt: new Date() }
+          : r,
+      ),
+    }));
+    return true;
+  },
+
+  reportAd: async (adId, reason) => {
+    const reporterId = await requireUserId();
+    const { error } = await supabase
+      .from("ad_reports")
+      .insert({ ad_id: adId, reporter_id: reporterId, reason: reason.trim() });
+    if (error) {
+      console.warn("[ads] reportAd failed:", error.message);
+      return false;
+    }
+    return true;
+  },
+
+  // Owner self-serve lifecycle — all three call the same
+  // set_own_ad_lifecycle RPC, which validates the specific transition
+  // server-side (see 20260901000001_ad_moderation_and_reports.sql) and
+  // rejects anything else, including transitions a raw client update
+  // would otherwise be blocked from by RLS anyway.
+  pauseAd: async (id) => {
+    const { error } = await supabase.rpc("set_own_ad_lifecycle", { p_ad_id: id, p_new_status: "inactive" });
+    if (error) {
+      console.warn("[ads] pauseAd failed:", error.message);
+      return false;
+    }
+    await get().fetchAd(id);
+    return true;
+  },
+
+  resumeAd: async (id) => {
+    const { error } = await supabase.rpc("set_own_ad_lifecycle", { p_ad_id: id, p_new_status: "approved" });
+    if (error) {
+      console.warn("[ads] resumeAd failed:", error.message);
+      return false;
+    }
+    await get().fetchAd(id);
+    return true;
+  },
+
+  closeAd: async (id) => {
+    const { error } = await supabase.rpc("set_own_ad_lifecycle", { p_ad_id: id, p_new_status: "closed" });
+    if (error) {
+      console.warn("[ads] closeAd failed:", error.message);
+      return false;
+    }
+    await get().fetchAd(id);
+    return true;
   },
 
   toggleReaction: async (adId, reaction) => {

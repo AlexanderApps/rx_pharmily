@@ -3,7 +3,7 @@ export default ({ config }) => ({
   extra: {
     apiKey: "YOUR_API_KEY",
     apiUrl: "https://your-api-url.com",
-    googleMapsApiKey: "AIzaSyC-Yt2lPsqPVY1gzloCnVwqWkJy1yUOhgo",
+    // {/* googleMapsApiKey: "AIzaSyC-Yt2lPsqPVY1gzloCnVwqWkJy1yUOhgo",*/}
     eas: {
       projectId: "f194ccf8-7c6d-4334-834d-fa77bd87424c",
     },

@@ -1,15 +1,10 @@
 import React, { useEffect, useMemo } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-} from "react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import ScreenHeader from "@/shared/components/screen-header";
 import { toast } from "@/shared/hooks/use-toast";
 import { confirm } from "@/shared/hooks/use-confirm";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
@@ -52,32 +47,31 @@ export default function MediscopeDetailsScreen() {
   const isLoadingRequests = useMediscopeStore((state) => state.isLoading);
   const responsesByRequest = useMediscopeStore((state) => state.responsesByRequest);
   const fetchResponses = useMediscopeStore((state) => state.fetchResponses);
+  const updateRequestStatus = useMediscopeStore((state) => state.updateRequestStatus);
+  const deleteRequest = useMediscopeStore((state) => state.deleteRequest);
+  const markFulfilled = useMediscopeStore((state) => state.markFulfilled);
 
   useEffect(() => {
     if (id) fetchResponses(id);
   }, [id]);
 
-  const updateRequestStatus = useMediscopeStore((state) => state.updateRequestStatus);
-  const deleteRequest = useMediscopeStore((state) => state.deleteRequest);
-  const markFulfilled = useMediscopeStore((state) => state.markFulfilled);
-
   const request = useMemo(() => requests.find((r) => r.id === id), [requests, id]);
   const responses = useMemo(
-    () => (id ? responsesByRequest[id] ?? [] : []),
+    () => (id ? (responsesByRequest[id] ?? []) : []),
     [responsesByRequest, id],
   );
 
   if (!request) {
     if (isLoadingRequests) {
       return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
           <DetailSkeleton rows={4} />
         </SafeAreaView>
       );
     }
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <Text style={{ color: colors.text, padding: 16 }}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <Text className="p-4" style={{ color: colors.text }}>
           No MediScope request found for id: {id}
         </Text>
       </SafeAreaView>
@@ -88,12 +82,12 @@ export default function MediscopeDetailsScreen() {
 
   if (!isOwner) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <View style={{ padding: 16, gap: 12 }}>
-          <Text style={{ color: colors.text, fontSize: 15, fontWeight: "600" }}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <View className="p-4 gap-3">
+          <Text className="text-[15px] font-semibold" style={{ color: colors.text }}>
             This is a management view
           </Text>
-          <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+          <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
             Only {request.facilityName} can manage this request.
           </Text>
           <Pressable
@@ -103,9 +97,10 @@ export default function MediscopeDetailsScreen() {
                 params: { id: request.id },
               })
             }
-            style={[styles.deleteButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+            className="flex-row items-center justify-center py-3 rounded-[10px] border"
+            style={{ backgroundColor: colors.primary, borderColor: colors.primary }}
           >
-            <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>View request</Text>
+            <Text className="text-white text-sm font-semibold">View request</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -117,12 +112,15 @@ export default function MediscopeDetailsScreen() {
   const handleMarkFulfilled = async (responseId: string) => {
     const confirmed = await confirm({
       title: "Mark as fulfilled?",
-      message: "This response will be marked as the one that fulfilled your request.",
+      message:
+        "This response will be marked as the one that fulfilled your request.",
       confirmLabel: "Confirm",
     });
     if (!confirmed) return;
     const ok = await markFulfilled(request.id, responseId);
-    toast[ok ? "success" : "error"](ok ? "Marked as fulfilled." : "Couldn't update the request.");
+    toast[ok ? "success" : "error"](
+      ok ? "Marked as fulfilled." : "Couldn't update the request.",
+    );
   };
 
   const handleDelete = async () => {
@@ -144,64 +142,96 @@ export default function MediscopeDetailsScreen() {
 
   const handleStatusChange = async (status: typeof request.status) => {
     const ok = await updateRequestStatus(request.id, status);
-    toast[ok ? "success" : "error"](ok ? "Status updated." : "Couldn't update the status.");
+    toast[ok ? "success" : "error"](
+      ok ? "Status updated." : "Couldn't update the status.",
+    );
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
-            {request.product}
-          </Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            {request.code}
-          </Text>
-        </View>
-        {(request.status === "draft" || request.status === "published") && (
-          <Pressable
-            onPress={() =>
-              router.push({
-                pathname: "/mediscope/add-mediscope-request",
-                params: { id: request.id },
-              })
-            }
-            style={[styles.headerIconButton, { backgroundColor: colors.backgroundSecondary }]}
-          >
-            <MaterialCommunityIcons name="pencil-outline" size={18} color={colors.text} />
-          </Pressable>
-        )}
-        <PrintButton
-          variant="icon"
-          fileName={`MediScope-${request.code}`}
-          getHtml={() => buildMediscopeSummaryHtml(request, responses)}
-        />
-      </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Header */}
+      <ScreenHeader
+        title={request.product}
+        subtitle={request.code}
+        actions={
+          <>
+            {(request.status === "draft" || request.status === "published") && (
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: "/mediscope/add-mediscope-request",
+                    params: { id: request.id },
+                  })
+                }
+                className="w-[34px] h-[34px] rounded-[10px] items-center justify-center"
+                style={{ backgroundColor: colors.backgroundSecondary }}
+              >
+                <MaterialCommunityIcons
+                  name="pencil-outline"
+                  size={18}
+                  color={colors.text}
+                />
+              </Pressable>
+            )}
+            <PrintButton
+              variant="icon"
+              fileName={`MediScope-${request.code}`}
+              getHtml={() => buildMediscopeSummaryHtml(request, responses)}
+            />
+          </>
+        }
+      />
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerClassName="p-4 gap-3.5">
         {request.imageUrl ? (
-          <LoadingImage source={{ uri: request.imageUrl }} style={styles.image} resizeMode="cover" expandable />
+          <LoadingImage
+            source={{ uri: request.imageUrl }}
+            style={{ width: "100%", height: 180, borderRadius: 14 }}
+            resizeMode="cover"
+            expandable
+          />
         ) : (
-          <MediscopeNamePlaceholder product={request.product} style={styles.image} fontSize={22} />
+          <MediscopeNamePlaceholder
+            product={request.product}
+            className="w-full h-[180px] rounded-[14px]"
+            fontSize={22}
+          />
         )}
 
-        <View style={styles.statusRow}>
-          <View style={[styles.statusPill, { backgroundColor: colors.backgroundElement }]}>
-            <MaterialCommunityIcons name={statusMeta.icon as any} size={13} color={colors.text} />
-            <Text style={[styles.statusPillText, { color: colors.text }]}>{statusMeta.label}</Text>
+        {/* Status pills */}
+        <View className="flex-row gap-2">
+          <View
+            className="flex-row items-center gap-1.5 px-2.5 py-1 rounded-lg"
+            style={{ backgroundColor: colors.backgroundElement }}
+          >
+            <MaterialCommunityIcons
+              name={statusMeta.icon as any}
+              size={13}
+              color={colors.text}
+            />
+            <Text className="text-xs font-semibold" style={{ color: colors.text }}>
+              {statusMeta.label}
+            </Text>
           </View>
           {request.visibilityScope === "Restricted" && (
-            <View style={[styles.statusPill, { backgroundColor: colors.warning + "18" }]}>
-              <MaterialCommunityIcons name="lock-outline" size={13} color={colors.warning} />
-              <Text style={[styles.statusPillText, { color: colors.warning }]}>Restricted</Text>
+            <View
+              className="flex-row items-center gap-1.5 px-2.5 py-1 rounded-lg"
+              style={{ backgroundColor: colors.warning + "18" }}
+            >
+              <MaterialCommunityIcons
+                name="lock-outline"
+                size={13}
+                color={colors.warning}
+              />
+              <Text className="text-xs font-semibold" style={{ color: colors.warning }}>
+                Restricted
+              </Text>
             </View>
           )}
         </View>
 
-        <View style={styles.postedByRow}>
+        {/* Posted by */}
+        <View className="flex-row items-center gap-2.5 mb-3.5">
           <ClickableAvatar
             entityType="facility"
             entityId={request.facility}
@@ -211,52 +241,84 @@ export default function MediscopeDetailsScreen() {
             size={38}
           />
           <View>
-            <Text style={[styles.postedByLabel, { color: colors.textSecondary }]}>Requested by</Text>
-            <Text style={[styles.postedByName, { color: colors.text }]}>{request.facilityName}</Text>
+            <Text
+              className="text-[11px] font-semibold uppercase tracking-wide"
+              style={{ color: colors.textSecondary }}
+            >
+              Requested by
+            </Text>
+            <Text className="text-sm font-bold mt-0.5" style={{ color: colors.text }}>
+              {request.facilityName}
+            </Text>
           </View>
         </View>
 
+        {/* Info card */}
         <View
-          style={[styles.card, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+          className="rounded-[14px] border p-4 gap-2"
+          style={{
+            backgroundColor: colors.backgroundSecondary,
+            borderColor: colors.border,
+          }}
         >
-          <View style={styles.row}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Location</Text>
-            <Text style={[styles.value, { color: colors.text }]}>{request.facilityLocation}</Text>
+          <View className="flex-row justify-between py-0.5 gap-2">
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>
+              Location
+            </Text>
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
+              {request.facilityLocation}
+            </Text>
           </View>
-          <View style={styles.row}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Posted</Text>
-            <Text style={[styles.value, { color: colors.text }]}>{fmtDate(request.createdAt)}</Text>
+          <View className="flex-row justify-between py-0.5 gap-2">
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>
+              Posted
+            </Text>
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
+              {fmtDate(request.createdAt)}
+            </Text>
           </View>
           {request.submissionDeadline && (
-            <View style={styles.row}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Deadline</Text>
-              <Text style={[styles.value, { color: colors.text }]}>
+            <View className="flex-row justify-between py-0.5 gap-2">
+              <Text className="text-xs" style={{ color: colors.textSecondary }}>
+                Deadline
+              </Text>
+              <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
                 {fmtDate(request.submissionDeadline)}
               </Text>
             </View>
           )}
           {request.comment ? (
-            <View style={styles.row}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Comment</Text>
-              <Text style={[styles.value, { color: colors.text, flex: 1, textAlign: "right" }]}>
+            <View className="flex-row justify-between py-0.5 gap-2">
+              <Text className="text-xs" style={{ color: colors.textSecondary }}>
+                Comment
+              </Text>
+              <Text
+                className="text-[13px] font-medium flex-1 text-right"
+                style={{ color: colors.text }}
+              >
                 {request.comment}
               </Text>
             </View>
           ) : null}
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        {/* Responses */}
+        <Text className="text-sm font-bold" style={{ color: colors.text }}>
           Responses ({responses.length})
         </Text>
         {responses.length === 0 ? (
-          <Text style={{ color: colors.textSecondary, fontSize: 13 }}>No responses yet.</Text>
+          <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+            No responses yet.
+          </Text>
         ) : (
-          <View style={{ gap: 8 }}>
+          <View className="gap-2">
             {responses.map((response) => (
               <Pressable
                 key={response.id}
                 onPress={() =>
-                  request.status !== "fulfilled" ? handleMarkFulfilled(response.id) : undefined
+                  request.status !== "fulfilled"
+                    ? handleMarkFulfilled(response.id)
+                    : undefined
                 }
               >
                 <MediscopeResponseCard
@@ -268,108 +330,71 @@ export default function MediscopeDetailsScreen() {
           </View>
         )}
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Manage</Text>
-        <View style={styles.statusActionsRow}>
+        {/* Manage */}
+        <Text className="text-sm font-bold" style={{ color: colors.text }}>
+          Manage
+        </Text>
+        <View className="flex-row gap-2 flex-wrap">
           {request.status === "draft" && (
             <Pressable
               onPress={() => handleStatusChange("published")}
-              style={[styles.statusActionButton, { backgroundColor: colors.primary }]}
+              className="flex-row items-center gap-1.5 px-3.5 py-2.5 rounded-[10px]"
+              style={{ backgroundColor: colors.primary }}
             >
               <MaterialCommunityIcons name="publish" size={15} color="#fff" />
-              <Text style={[styles.statusActionText, { color: "#fff" }]}>Publish</Text>
+              <Text className="text-xs font-semibold text-white">Publish</Text>
             </Pressable>
           )}
           {request.status === "published" && (
             <Pressable
               onPress={() => handleStatusChange("closed")}
-              style={[
-                styles.statusActionButton,
-                { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, borderWidth: 1 },
-              ]}
+              className="flex-row items-center gap-1.5 px-3.5 py-2.5 rounded-[10px] border"
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+              }}
             >
-              <MaterialCommunityIcons name="lock-outline" size={15} color={colors.text} />
-              <Text style={[styles.statusActionText, { color: colors.text }]}>Close</Text>
+              <MaterialCommunityIcons
+                name="lock-outline"
+                size={15}
+                color={colors.text}
+              />
+              <Text className="text-xs font-semibold" style={{ color: colors.text }}>
+                Close
+              </Text>
             </Pressable>
           )}
           {(request.status === "draft" || request.status === "published") && (
             <Pressable
               onPress={() => handleStatusChange("cancelled")}
-              style={[styles.statusActionButton, { backgroundColor: colors.error + "18" }]}
+              className="flex-row items-center gap-1.5 px-3.5 py-2.5 rounded-[10px]"
+              style={{ backgroundColor: colors.error + "18" }}
             >
               <MaterialCommunityIcons name="cancel" size={15} color={colors.error} />
-              <Text style={[styles.statusActionText, { color: colors.error }]}>Cancel</Text>
+              <Text className="text-xs font-semibold" style={{ color: colors.error }}>
+                Cancel
+              </Text>
             </Pressable>
           )}
         </View>
 
-        <Pressable onPress={handleDelete} style={[styles.deleteButton, { borderColor: colors.error }]}>
-          <MaterialCommunityIcons name="trash-can-outline" size={16} color={colors.error} />
-          <Text style={[styles.deleteButtonText, { color: colors.error }]}>Delete request</Text>
+        <Pressable
+          onPress={handleDelete}
+          className="flex-row items-center justify-center gap-1.5 py-3 rounded-[10px] border"
+          style={{ borderColor: colors.error }}
+        >
+          <MaterialCommunityIcons
+            name="trash-can-outline"
+            size={16}
+            color={colors.error}
+          />
+          <Text className="text-[13px] font-semibold" style={{ color: colors.error }}>
+            Delete request
+          </Text>
         </Pressable>
 
-        <View style={{ height: 24 }} />
+        <View className="h-6" />
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  headerTitle: { fontSize: 16, fontWeight: "700" },
-  headerSubtitle: { fontSize: 12, marginTop: 2 },
-  headerIconButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  content: { padding: 16, gap: 14 },
-  image: { width: "100%", height: 180, borderRadius: 14 },
-  statusRow: { flexDirection: "row", gap: 8 },
-  statusPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  statusPillText: { fontSize: 12, fontWeight: "600" },
-  card: { borderRadius: 14, borderWidth: 1, padding: 16, gap: 8 },
-  postedByRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 },
-  postedByLabel: { fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.4 },
-  postedByName: { fontSize: 14, fontWeight: "700", marginTop: 1 },
-  row: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3, gap: 8 },
-  label: { fontSize: 12 },
-  value: { fontSize: 13, fontWeight: "500" },
-  sectionTitle: { fontSize: 14, fontWeight: "700" },
-  statusActionsRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  statusActionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  statusActionText: { fontSize: 12, fontWeight: "600" },
-  deleteButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  deleteButtonText: { fontSize: 13, fontWeight: "600" },
-});

@@ -1,4 +1,3 @@
-import { RxRfqMarketPlaceData } from "@/features/rxrfqs/types/rxrfqs.types";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
@@ -7,10 +6,7 @@ import {
   View,
   Text,
   Pressable,
-  Share,
-  StyleSheet,
-  Platform,
-} from "react-native";
+  Share, Platform} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { format } from "timeago.js";
 import {
@@ -23,47 +19,48 @@ import {
 } from "@/features/rxrfqs/components/rds";
 import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
-import { router, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { ContextText } from "@/shared/components/context-text";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
+import { useChatStore } from "@/features/chat/hooks/use-chat-data";
+import DetailSkeleton from "@/shared/components/detail-skeleton";
 
-interface RxMarketplaceDetailScreenProps {
-  onBack: () => void;
-  onSubmitQuote: (item: RxRfqMarketPlaceData) => void;
-  onContactFacility: (item: RxRfqMarketPlaceData) => void;
-}
-
-const RxMarketplaceDetailScreen = ({
-  onSubmitQuote,
-  onContactFacility,
-}: RxMarketplaceDetailScreenProps) => {
+const RxMarketplaceDetailScreen: React.FC = () => {
   const { colors } = useTheme();
+  const router = useRouter();
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isContacting, setIsContacting] = useState(false);
 
   const rxRfqData = useRxRfqsStore((state) => state.rxrfqMarketPlace);
+  const isLoadingRfqs = useRxRfqsStore((state) => state.isLoading);
   const facilities = useProfileStore((state) => state.facilities);
   const incotermList = useRxRfqsStore((state) => state.incotermOptions);
+  const startFacilityConversation = useChatStore((state) => state.startFacilityConversation);
 
   // 1. Grab the id passed via router.push params
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  // 2. Locate or fetch the matching record from your global state/cache hook
-  // Replace this with your actual data source (e.g., useRxRfqQuery(id) or Context)
+  // 2. Locate the matching record from the already-primed marketplace list
   const item = useMemo(() => {
     return rxRfqData.find((item) => item.id === id);
-  }, [id]);
+  }, [rxRfqData, id]);
 
   const incotermDes = useMemo(() => {
     return incotermList.find((option) => option.code === item?.incoterms);
-  }, []);
+  }, [incotermList, item?.incoterms]);
 
   if (!item) {
+    if (isLoadingRfqs) {
+      return (
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+          <DetailSkeleton rows={4} />
+        </SafeAreaView>
+      );
+    }
     return (
       <SafeAreaView
-        style={[
-          styles.fallbackContainer,
-          { backgroundColor: colors.background },
-        ]}
+        className="flex-1 justify-center items-center"
+        style={{ backgroundColor: colors.background }}
       >
         <Text style={{ color: colors.text }}>
           Request details could not be loaded.
@@ -88,6 +85,19 @@ const RxMarketplaceDetailScreen = ({
     } catch (_) {}
   };
 
+  const handleContact = async () => {
+    if (isContacting) return;
+    setIsContacting(true);
+    try {
+      const conversationId = await startFacilityConversation({ id: item.facilityId, name: facilityName });
+      if (conversationId) {
+        router.push({ pathname: "/chat/thread", params: { id: conversationId } });
+      }
+    } finally {
+      setIsContacting(false);
+    }
+  };
+
   const deadlineDate = new Date(item.submissionDeadline);
   const deliveryDate = new Date(item.deliveryDate);
   const isUrgent = deadlineDate.getTime() - Date.now() < 1000 * 60 * 60 * 48; // < 48h
@@ -107,64 +117,67 @@ const RxMarketplaceDetailScreen = ({
 
   return (
     <SafeAreaView
-      style={[styles.screen, { backgroundColor: colors.background }]}
+      className="flex-1"
+      style={{ backgroundColor: colors.background }}
     >
       {/* Nav bar */}
-      <View style={[styles.navbar, { borderBottomColor: colors.border }]}>
+      <View className="flex-row items-center px-4 py-3 border-b-[0.5px] gap-3" style={{ borderBottomColor: colors.border }}>
+        {Platform.OS !== "web" && (
         <Pressable
           onPress={() => router.back()}
-          style={styles.backBtn}
+          className="w-9 h-9 justify-center items-center"
           hitSlop={8}
         >
           <Ionicons name="arrow-back-outline" size={22} color={colors.text} />
         </Pressable>
-        <View style={styles.navbarMeta}>
-          <Text style={[styles.navbarCode, { color: colors.text }]}>
+        )}
+        <View className="flex-1">
+          <Text className="text-[15px] font-medium" style={{ color: colors.text }}>
             {item.code}
           </Text>
-          <Text style={[styles.navbarTime, { color: colors.textSecondary }]}>
+          <Text className="text-xs mt-px" style={{ color: colors.textSecondary }}>
             {format(item.publishedAt)}
           </Text>
         </View>
         {/* Status pill */}
         <View
-          style={[
-            styles.statusPill,
-            { backgroundColor: colors.success + "20" },
-          ]}
+          className="px-2.5 py-1 rounded-full"
+          style={{ backgroundColor: colors.success + "20" }}
         >
-          <Text style={[styles.statusPillText, { color: colors.success }]}>
+          <Text className="text-xs font-medium capitalize" style={{ color: colors.success }}>
             {item.status}
           </Text>
         </View>
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Facility hero block */}
-        <View style={styles.hero}>
+        <View className="flex-row items-center gap-3 mb-3">
           <ClickableAvatar
             entityType="facility"
             entityId={item.facilityId}
             name={facilityName}
             avatarColor={colors.secondary}
+            imageUri={facility?.logoUrl}
             subtitle="Posted this RFQ"
             size={56}
           />
-          <View style={styles.heroMeta}>
-            <Text style={[styles.heroName, { color: colors.text }]}>
+          <View className="flex-1 gap-1">
+            <Text className="text-lg font-semibold" style={{ color: colors.text }}>
               {facilityName}
             </Text>
-            <View style={styles.heroLocationRow}>
+            <View className="flex-row items-center gap-1">
               <MaterialCommunityIcons
                 name="map-marker-outline"
                 size={14}
                 color={colors.textSecondary}
               />
               <Text
-                style={[styles.heroLocation, { color: colors.textSecondary }]}
+                className="text-[13px]"
+                style={{ color: colors.textSecondary }}
               >
                 {facilityLocation}
               </Text>
@@ -174,7 +187,7 @@ const RxMarketplaceDetailScreen = ({
 
         {/* Description */}
         {item.description ? (
-          <Text style={[styles.description, { color: colors.textSecondary }]}>
+          <Text className="text-sm leading-5 mb-5" style={{ color: colors.textSecondary }}>
             {item.description}
           </Text>
         ) : null}
@@ -184,17 +197,15 @@ const RxMarketplaceDetailScreen = ({
         <Card>
           {isUrgent && (
             <View
-              style={[
-                styles.urgentBanner,
-                { backgroundColor: colors.warning + "18" },
-              ]}
+              className="flex-row items-center gap-1.5 px-3.5 py-2"
+              style={{ backgroundColor: colors.warning + "18" }}
             >
               <Ionicons
                 name="hourglass-outline"
                 size={14}
                 color={colors.warning}
               />
-              <Text style={[styles.urgentText, { color: colors.warning }]}>
+              <Text className="text-[13px] font-medium" style={{ color: colors.warning }}>
                 Deadline closing soon — {format(deadlineDate)}
               </Text>
             </View>
@@ -264,7 +275,7 @@ const RxMarketplaceDetailScreen = ({
             params: { id: item.id },
           })
         }
-        onContact={() => onContactFacility(item)}
+        onContact={handleContact}
         onShare={handleShare}
         onBookmark={() => setIsBookmarked((v) => !v)}
       />
@@ -273,290 +284,3 @@ const RxMarketplaceDetailScreen = ({
 };
 
 export default RxMarketplaceDetailScreen;
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  fallbackContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  navbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    gap: 12,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  navbarMeta: {
-    flex: 1,
-  },
-  navbarCode: {
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  navbarTime: {
-    fontSize: 12,
-    marginTop: 1,
-  },
-  statusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  statusPillText: {
-    fontSize: 12,
-    fontWeight: "500",
-    textTransform: "capitalize",
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  hero: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 12,
-  },
-  heroIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  heroMeta: {
-    flex: 1,
-    gap: 4,
-  },
-  heroName: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  heroLocationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  heroLocation: {
-    fontSize: 13,
-  },
-  description: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-    marginBottom: 8,
-    marginTop: 20,
-  },
-  card: {
-    borderRadius: 16,
-    borderWidth: 0.5,
-    overflow: "hidden",
-  },
-  urgentBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  urgentText: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderTopWidth: 0.5,
-    borderTopColor: "rgba(0,0,0,0.06)",
-  },
-  infoRowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  infoLabel: {
-    fontSize: 13,
-  },
-  infoValue: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  termsText: {
-    fontSize: 14,
-    lineHeight: 21,
-    padding: 14,
-  },
-  termsDivider: {
-    height: 0.5,
-    marginHorizontal: 14,
-  },
-  commentRow: {
-    flexDirection: "row",
-    gap: 8,
-    padding: 14,
-    alignItems: "flex-start",
-  },
-  commentText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  productRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    padding: 12,
-  },
-  productIndex: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  productIndexText: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  productMeta: {
-    flex: 1,
-    gap: 2,
-  },
-  productName: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  productQty: {
-    fontSize: 13,
-  },
-  productComment: {
-    fontSize: 12,
-    marginTop: 2,
-    fontStyle: "italic",
-  },
-  productDivider: {
-    height: 0.5,
-    marginLeft: 54,
-  },
-  fabGroup: {
-    position: "absolute",
-    bottom: Platform.OS === "ios" ? 32 : 24,
-    left: 16,
-    right: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  fabSecondary: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  fabIconBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    borderWidth: 0.5,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  fabPrimary: {
-    flex: 1,
-    height: 44,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  fabPrimaryText: {
-    fontSize: 15,
-    fontWeight: "500",
-  },
-
-  productIndicators: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    marginTop: 6,
-  },
-  altBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  altBadgeText: {
-    fontSize: 11,
-    fontWeight: "500",
-  },
-  commentToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  commentToggleText: {
-    fontSize: 11,
-    fontWeight: "500",
-  },
-  commentBlock: {
-    marginTop: 8,
-    borderLeftWidth: 2,
-    paddingLeft: 10,
-  },
-  commentBlockText: {
-    fontSize: 13,
-    lineHeight: 19,
-    fontStyle: "italic",
-  },
-  termsToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    paddingVertical: 10,
-    borderTopWidth: 0.5,
-  },
-  termsToggleText: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  infoRowRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  infoBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  infoBadgeText: {
-    fontSize: 11,
-    fontWeight: "500",
-  },
-});

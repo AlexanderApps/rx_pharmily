@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, Text, StyleSheet } from "react-native";
+import { Pressable, Text } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 
@@ -29,13 +29,11 @@ const SearchFilterChip: React.FC<SearchFilterChipProps> = ({
   return (
     <Pressable
       onPress={onPress}
-      style={[
-        styles.chip,
-        {
-          backgroundColor: active ? tint + "18" : colors.backgroundElement,
-          borderColor: active ? tint : colors.border,
-        },
-      ]}
+      className="flex-row items-center gap-1.5 border px-3 py-[7px] rounded-full"
+      style={{
+        backgroundColor: active ? tint + "18" : colors.backgroundElement,
+        borderColor: active ? tint : colors.border,
+      }}
     >
       {icon && (
         <MaterialCommunityIcons
@@ -45,10 +43,8 @@ const SearchFilterChip: React.FC<SearchFilterChipProps> = ({
         />
       )}
       <Text
-        style={[
-          styles.label,
-          { color: active ? tint : colors.text, fontWeight: active ? "700" : "600" },
-        ]}
+        className="text-xs"
+        style={{ color: active ? tint : colors.text, fontWeight: active ? "700" : "600" }}
       >
         {label}
       </Text>
@@ -58,15 +54,3 @@ const SearchFilterChip: React.FC<SearchFilterChipProps> = ({
 
 export default SearchFilterChip;
 
-const styles = StyleSheet.create({
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-  },
-  label: { fontSize: 12 },
-});

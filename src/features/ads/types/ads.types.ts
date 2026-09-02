@@ -22,8 +22,24 @@ export type AdStatus =
   | "pending" // submitted + paid, awaiting admin review
   | "approved" // live
   | "rejected" // admin declined at review
-  | "suspended" // was live, temporarily paused by admin
-  | "banned"; // permanently removed by admin
+  | "suspended" // was live, temporarily paused by admin (moderation)
+  | "banned" // permanently removed by admin (moderation)
+  | "inactive" // was live, temporarily paused by its own owner
+  | "closed"; // permanently closed by its own owner
+
+export type AdReportStatus = "open" | "dismissed";
+
+export interface AdReport {
+  id: string;
+  adId: string;
+  reporterId: string;
+  reporterName: string;
+  reason: string;
+  status: AdReportStatus;
+  createdAt: Date;
+  resolvedBy?: string;
+  resolvedAt?: Date;
+}
 
 export type AdMediaType = "image" | "video";
 
@@ -58,16 +74,22 @@ export interface AdPlan {
   featured?: boolean;
 }
 
-export type PaymentStatus = "unpaid" | "paid" | "refunded";
-
+// Mirrors features/payments/types/payments.types.ts's Payment shape
+// exactly, kept as a separate local type rather than importing it — this
+// file is deliberately self-contained (see header comment above), and a
+// real Payment object is structurally assignable here without an import
+// regardless.
 export interface AdPayment {
-  planId: string;
-  amount: number;
-  currency: string;
-  status: PaymentStatus;
-  paidAt?: Date;
-  // Mock reference only — there's no real payment gateway wired up here.
+  id: string;
   reference: string;
+  status: "pending" | "paid" | "cancelled";
+  amountDue: number;
+  amountPaid?: number;
+  currency: string;
+  initiatedBy: string;
+  reviewedBy?: string;
+  paidAt?: Date;
+  createdAt: Date;
 }
 
 export type ReactionType = "like" | "dislike";
@@ -85,6 +107,7 @@ export interface Ad {
   status: AdStatus;
   statusReason?: string;
   reviewedBy?: string;
+  reviewedByName?: string;
   reviewedAt?: Date;
 
   plan: AdPlan;

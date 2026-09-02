@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View, Pressable } from "react-native";
+import { Text, View, Pressable } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 
@@ -34,32 +34,34 @@ export const ResponseItemCard = ({ item, onPress }: ResponseItemCardProps) => {
   return (
     <Pressable
       onPress={() => onPress?.(item)}
-      style={({ pressed }) => [
-        styles.card,
-        {
-          backgroundColor: colors.backgroundSecondary,
-          borderColor: colors.border,
-          opacity: pressed ? 0.7 : 1,
-        },
-      ]}
+      className="rounded-xl border p-4 my-1.5"
+      style={({ pressed }) => ({
+        backgroundColor: colors.backgroundSecondary,
+        borderColor: colors.border,
+        opacity: pressed ? 0.7 : 1,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+      })}
     >
       {/* Product Title Section */}
-      <View style={styles.header}>
-        <View style={styles.productTitleRow}>
+      <View className="flex-row justify-between items-center mb-2.5">
+        <View className="flex-row items-center flex-1 gap-2">
           <Text
-            style={[styles.productName, { color: colors.text }]}
+            className="text-base font-semibold flex-1"
+            style={{ color: colors.text }}
             numberOfLines={1}
           >
             {item.product}
           </Text>
           {item.offeredAlternative && (
             <View
-              style={[
-                styles.badge,
-                { backgroundColor: colors.backgroundElement },
-              ]}
+              className="px-2 py-[3px] rounded-md"
+              style={{ backgroundColor: colors.backgroundElement }}
             >
-              <Text style={[styles.badgeText, { color: colors.text }]}>
+              <Text className="text-[11px] font-bold uppercase" style={{ color: colors.text }}>
                 Alternative
               </Text>
             </View>
@@ -70,10 +72,8 @@ export const ResponseItemCard = ({ item, onPress }: ResponseItemCardProps) => {
       {/* Alternative Details Warning Banner if offeredAlternative is true */}
       {item.offeredAlternative && item.alternativeProductDetails && (
         <View
-          style={[
-            styles.alternativeBox,
-            { backgroundColor: colors.backgroundElement },
-          ]}
+          className="flex-row items-center p-2.5 rounded-lg gap-1.5 mb-3"
+          style={{ backgroundColor: colors.backgroundElement }}
         >
           <MaterialCommunityIcons
             name="swap-horizontal"
@@ -81,7 +81,8 @@ export const ResponseItemCard = ({ item, onPress }: ResponseItemCardProps) => {
             color={colors.textSecondary}
           />
           <Text
-            style={[styles.alternativeText, { color: colors.textSecondary }]}
+            className="text-[13px] flex-1 italic"
+            style={{ color: colors.textSecondary }}
             numberOfLines={2}
           >
             {item.alternativeProductDetails}
@@ -90,30 +91,30 @@ export const ResponseItemCard = ({ item, onPress }: ResponseItemCardProps) => {
       )}
 
       {/* Numerical Metrics Matrix Grid */}
-      <View style={styles.grid}>
-        <View style={styles.gridCol}>
-          <Text style={[styles.metaLabel, { color: colors.textSecondary }]}>
+      <View className="flex-row justify-between items-center">
+        <View className="flex-col">
+          <Text className="text-xs mb-0.5" style={{ color: colors.textSecondary }}>
             Qty
           </Text>
-          <Text style={[styles.metaValue, { color: colors.text }]}>
+          <Text className="text-sm font-medium" style={{ color: colors.text }}>
             {item.quantity}
           </Text>
         </View>
 
-        <View style={styles.gridCol}>
-          <Text style={[styles.metaLabel, { color: colors.textSecondary }]}>
+        <View className="flex-col">
+          <Text className="text-xs mb-0.5" style={{ color: colors.textSecondary }}>
             Rate
           </Text>
-          <Text style={[styles.metaValue, { color: colors.text }]}>
+          <Text className="text-sm font-medium" style={{ color: colors.text }}>
             {formatCurrency(item.rate)}
           </Text>
         </View>
 
-        <View style={[styles.gridCol, styles.alignRight]}>
-          <Text style={[styles.metaLabel, { color: colors.textSecondary }]}>
+        <View className="flex-col items-end">
+          <Text className="text-xs mb-0.5" style={{ color: colors.textSecondary }}>
             Total Amount
           </Text>
-          <Text style={[styles.totalAmount, { color: colors.text }]}>
+          <Text className="text-[15px] font-bold" style={{ color: colors.text }}>
             {formatCurrency(item.amount)}
           </Text>
         </View>
@@ -122,7 +123,8 @@ export const ResponseItemCard = ({ item, onPress }: ResponseItemCardProps) => {
       {/* Bottom Context Comment Area */}
       {item.comment && item.comment.trim().length > 0 && (
         <View
-          style={[styles.commentSection, { borderTopColor: colors.border }]}
+          className="flex-row items-start border-t-[0.5px] mt-3 pt-2.5 gap-1.5"
+          style={{ borderTopColor: colors.border }}
         >
           <MaterialCommunityIcons
             name="comment-text-outline"
@@ -130,7 +132,8 @@ export const ResponseItemCard = ({ item, onPress }: ResponseItemCardProps) => {
             color={colors.textSecondary}
           />
           <Text
-            style={[styles.commentText, { color: colors.textSecondary }]}
+            className="text-xs flex-1 leading-4"
+            style={{ color: colors.textSecondary }}
             numberOfLines={2}
           >
             {item.comment}
@@ -141,92 +144,3 @@ export const ResponseItemCard = ({ item, onPress }: ResponseItemCardProps) => {
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 16,
-    marginVertical: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  productTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    gap: 8,
-  },
-  productName: {
-    fontSize: 16,
-    fontWeight: "600",
-    flex: 1,
-  },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  alternativeBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 10,
-    borderRadius: 8,
-    gap: 6,
-    marginBottom: 12,
-  },
-  alternativeText: {
-    fontSize: 13,
-    flex: 1,
-    fontStyle: "italic",
-  },
-  grid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  gridCol: {
-    flexDirection: "column",
-  },
-  alignRight: {
-    alignItems: "flex-end",
-  },
-  metaLabel: {
-    fontSize: 12,
-    marginBottom: 2,
-  },
-  metaValue: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  totalAmount: {
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  commentSection: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    borderTopWidth: 0.5,
-    marginTop: 12,
-    paddingTop: 10,
-    gap: 6,
-  },
-  commentText: {
-    fontSize: 12,
-    flex: 1,
-    lineHeight: 16,
-  },
-});

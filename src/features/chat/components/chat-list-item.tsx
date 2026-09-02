@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Conversation, ChatMessage } from "@/features/chat/types/chat.types";
@@ -49,13 +49,16 @@ const ChatListItem: React.FC<ChatListItemProps> = ({
   return (
     <Pressable
       onPress={onPress}
+      className="flex-row gap-3 px-4 py-3 items-start active:bg-background-element"
       style={({ pressed }) => [
-        styles.row,
         { backgroundColor: pressed ? colors.backgroundElement : "transparent" },
       ]}
     >
       {isFacility ? (
-        <View style={[styles.facilityAvatar, { backgroundColor: colors.primary }]}>
+        <View
+          className="w-11 h-11 rounded-[10px] items-center justify-center"
+          style={{ backgroundColor: colors.primary }}
+        >
           <MaterialCommunityIcons name="office-building" size={20} color="#fff" />
         </View>
       ) : (
@@ -69,50 +72,59 @@ const ChatListItem: React.FC<ChatListItemProps> = ({
         />
       )}
 
-      <View style={styles.body}>
-        <View style={styles.topLine}>
+      <View className="flex-1 gap-0.5">
+        <View className="flex-row justify-between gap-2">
           <Text
-            style={[styles.name, { color: colors.text }]}
+            className="text-[15px] font-semibold flex-1"
+            style={{ color: colors.text }}
             numberOfLines={1}
           >
             {participant.name}
           </Text>
-          <Text style={[styles.time, { color: colors.textSecondary }]}>
+          <Text
+            className="text-[11px]"
+            style={{ color: colors.textSecondary }}
+          >
             {fmtRelative(conversation.lastMessageAt)}
           </Text>
         </View>
 
         {isFacility ? (
-          <Text style={[styles.facility, { color: colors.textSecondary }]} numberOfLines={1}>
+          <Text
+            className="text-xs"
+            style={{ color: colors.textSecondary }}
+            numberOfLines={1}
+          >
             {participant.memberCount > 0
               ? `${participant.memberCount} member${participant.memberCount === 1 ? "" : "s"}`
               : "Facility"}
           </Text>
         ) : (
           <Text
-            style={[styles.facility, { color: colors.textSecondary }]}
+            className="text-xs"
+            style={{ color: colors.textSecondary }}
             numberOfLines={1}
           >
             {participant.facility}
           </Text>
         )}
 
-        <View style={styles.bottomLine}>
+        <View className="flex-row items-center justify-between gap-2 mt-0.5">
           <Text
-            style={[
-              styles.preview,
-              {
-                color: unreadCount > 0 ? colors.text : colors.textSecondary,
-                fontWeight: unreadCount > 0 ? "600" : "400",
-              },
-            ]}
+            className={`text-[13px] flex-1 ${unreadCount > 0 ? "font-semibold" : "font-normal"}`}
+            style={{
+              color: unreadCount > 0 ? colors.text : colors.textSecondary,
+            }}
             numberOfLines={1}
           >
             {previewText(lastMessage)}
           </Text>
           {unreadCount > 0 && (
-            <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
-              <Text style={styles.unreadBadgeText}>
+            <View
+              className="min-w-[18px] h-[18px] rounded-full items-center justify-center px-1"
+              style={{ backgroundColor: colors.primary }}
+            >
+              <Text className="text-white text-[10px] font-bold">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </Text>
             </View>
@@ -120,14 +132,15 @@ const ChatListItem: React.FC<ChatListItemProps> = ({
         </View>
 
         {context && (
-          <View style={styles.contextRow}>
+          <View className="flex-row items-center gap-1 mt-1">
             <MaterialCommunityIcons
               name={context.type === "rfq" ? "file-document-outline" : "heart-search"}
               size={12}
               color={colors.textSecondary}
             />
             <Text
-              style={[styles.contextText, { color: colors.textSecondary }]}
+              className="text-[11px]"
+              style={{ color: colors.textSecondary }}
               numberOfLines={1}
             >
               {context.code}
@@ -140,52 +153,3 @@ const ChatListItem: React.FC<ChatListItemProps> = ({
 };
 
 export default ChatListItem;
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    alignItems: "flex-start",
-  },
-  avatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  facilityAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  body: { flex: 1, gap: 2 },
-  topLine: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
-  name: { fontSize: 15, fontWeight: "600", flex: 1 },
-  time: { fontSize: 11 },
-  facility: { fontSize: 12 },
-  bottomLine: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-    marginTop: 2,
-  },
-  preview: { fontSize: 13, flex: 1 },
-  unreadBadge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 4,
-  },
-  unreadBadgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
-  contextRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
-  contextText: { fontSize: 11 },
-});

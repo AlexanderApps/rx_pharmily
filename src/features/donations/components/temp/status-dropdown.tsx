@@ -1,11 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  FlatList,
-} from "react-native";
+import { View, Text, TouchableOpacity, FlatList } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import BottomSheet from "@/shared/components/bottom-sheet";
@@ -89,21 +83,16 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
   const statusColor = selectedStatus?.getColor() || colors.backgroundElement;
 
   return (
-    <View style={styles.container}>
-      <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+    <View className="w-full gap-2">
+      <Text className="text-[13px] font-semibold uppercase tracking-[0.5px]" style={{ color: colors.text }}>{label}</Text>
 
       <TouchableOpacity
-        style={[
-          styles.button,
-          {
-            backgroundColor: statusColor + "15",
-            borderColor: statusColor,
-          },
-        ]}
+        className="flex-row items-center justify-between px-3 py-3 rounded-md border-[1.5px]"
+        style={{ backgroundColor: statusColor + "15", borderColor: statusColor }}
         onPress={toggleBottomSheet}
         activeOpacity={0.7}
       >
-        <View style={styles.buttonContent}>
+        <View className="flex-row items-center gap-2.5 flex-1">
           {selectedStatus && (
             <MaterialCommunityIcons
               name={selectedStatus.icon}
@@ -111,7 +100,7 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
               color={statusColor}
             />
           )}
-          <Text style={[styles.buttonText, { color: statusColor }]}>
+          <Text className="text-sm font-semibold" style={{ color: statusColor }}>
             {selectedStatus?.label}
           </Text>
         </View>
@@ -119,7 +108,7 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
           name="chevron-down"
           size={20}
           color={statusColor}
-          style={[styles.icon, isOpen && styles.iconRotated]}
+          style={isOpen ? { marginLeft: 8, transform: [{ rotate: "180deg" }] } : { marginLeft: 8 }}
         />
       </TouchableOpacity>
 
@@ -133,8 +122,8 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
         onChange={handleBottomSheetChange}
         backgroundColor={colors.backgroundSecondary}
       >
-        <View style={styles.bottomSheetHeader}>
-          <Text style={[styles.bottomSheetTitle, { color: colors.text }]}>
+        <View className="pb-4 items-center">
+          <Text className="text-base font-semibold" style={{ color: colors.text }}>
             Select Status
           </Text>
         </View>
@@ -142,26 +131,24 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
         <FlatList
           data={STATUS_OPTIONS}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={{ paddingBottom: 24 }}
           renderItem={({ item }) => {
             const itemColor = item.getColor();
             const isSelected = value === item.value;
             return (
               <TouchableOpacity
-                style={[
-                  styles.optionItem,
-                  { borderBottomColor: colors.border },
-                  isSelected && { backgroundColor: itemColor + "10" },
-                ]}
+                className="flex-row justify-between items-center px-4 py-4 border-b-[0.5px] gap-3"
+                style={{
+                  borderBottomColor: colors.border,
+                  backgroundColor: isSelected ? itemColor + "10" : "transparent",
+                }}
                 onPress={() => handleSelect(item.value)}
                 activeOpacity={0.6}
               >
-                <View style={styles.optionContent}>
+                <View className="flex-row items-center gap-3 flex-1">
                   <View
-                    style={[
-                      styles.iconContainer,
-                      { backgroundColor: itemColor + "20" },
-                    ]}
+                    className="w-10 h-10 rounded-lg items-center justify-center"
+                    style={{ backgroundColor: itemColor + "20" }}
                   >
                     <MaterialCommunityIcons
                       name={item.icon}
@@ -169,15 +156,13 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
                       color={itemColor}
                     />
                   </View>
-                  <View style={styles.textContainer}>
-                    <Text style={[styles.optionLabel, { color: itemColor }]}>
+                  <View className="flex-1 gap-0.5">
+                    <Text className="text-sm font-semibold" style={{ color: itemColor }}>
                       {item.label}
                     </Text>
                     <Text
-                      style={[
-                        styles.optionDescription,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-xs font-normal"
+                      style={{ color: colors.textSecondary }}
                     >
                       {item.description}
                     </Text>
@@ -199,87 +184,5 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-    gap: 8,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  button: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 6,
-    borderWidth: 1.5,
-  },
-  buttonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    flex: 1,
-  },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  icon: {
-    marginLeft: 8,
-  },
-  iconRotated: {
-    transform: [{ rotate: "180deg" }],
-  },
-  bottomSheetHeader: {
-    paddingBottom: 16,
-    alignItems: "center",
-  },
-  bottomSheetTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  listContent: {
-    paddingBottom: 24,
-  },
-  optionItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 0.5,
-    gap: 12,
-  },
-  optionContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  textContainer: {
-    flex: 1,
-    gap: 2,
-  },
-  optionLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  optionDescription: {
-    fontSize: 12,
-    fontWeight: "400",
-  },
-});
-
 export default StatusDropdown;
+

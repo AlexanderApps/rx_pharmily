@@ -24,7 +24,10 @@ const INITIAL_FORM_STATE: RxRfqsFormData = {
   strictMinShelfLife: false,
   minShelfLifeMonths: 18,
   deliveryDate: new Date(),
-  currency: "",
+  // Was "" — an explicit empty string always overrode the DB column's
+  // own default('GHS'), so that default never actually applied. Fixed
+  // here, at the actual source of the value.
+  currency: "GHS",
 };
 
 export default function useAddRxRfqRequest(

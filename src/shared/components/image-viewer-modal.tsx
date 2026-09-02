@@ -1,5 +1,5 @@
 import React from "react";
-import { Image, ImageProps, Modal, Pressable, StyleSheet } from "react-native";
+import { Image, ImageProps, Modal, Pressable } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 interface ImageViewerModalProps {
@@ -16,12 +16,16 @@ interface ImageViewerModalProps {
 const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ visible, source, onClose }) => {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.imageWrap} onPress={() => {}}>
-          <Image source={source} style={styles.image} resizeMode="contain" />
+      <Pressable className="flex-1 items-center justify-center bg-[rgba(0,0,0,0.92)]" onPress={onClose}>
+        <Pressable className="w-full h-[80%]" onPress={() => {}}>
+          <Image source={source} className="w-full h-full" resizeMode="contain" />
         </Pressable>
 
-        <Pressable onPress={onClose} style={styles.closeButton} hitSlop={10}>
+        <Pressable
+          onPress={onClose}
+          className="absolute top-[50px] right-5 w-[38px] h-[38px] rounded-full items-center justify-center bg-[rgba(255,255,255,0.15)]"
+          hitSlop={10}
+        >
           <MaterialCommunityIcons name="close" size={22} color="#fff" />
         </Pressable>
       </Pressable>
@@ -31,30 +35,3 @@ const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ visible, source, on
 
 export default ImageViewerModal;
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.92)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  imageWrap: {
-    width: "100%",
-    height: "80%",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-  },
-  closeButton: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.15)",
-  },
-});

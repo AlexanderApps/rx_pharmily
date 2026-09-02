@@ -43,10 +43,8 @@ const ProductComboBox: React.FC<ProductComboBoxProps> = ({
   return (
     <View>
       <View
-        style={[
-          styles.inputWrap,
-          { backgroundColor: colors.backgroundElement, borderColor: error ? colors.error : colors.border },
-        ]}
+        className="flex-row items-center gap-2 border rounded-[10px] px-3 py-[11px]"
+        style={{ backgroundColor: colors.backgroundElement, borderColor: error ? colors.error : colors.border }}
       >
         <MaterialCommunityIcons name="magnify" size={16} color={colors.textSecondary} />
         <TextInput
@@ -56,7 +54,8 @@ const ProductComboBox: React.FC<ProductComboBoxProps> = ({
           onBlur={() => setTimeout(() => setFocused(false), 150)}
           placeholder={placeholder}
           placeholderTextColor={colors.textSecondary}
-          style={[styles.input, { color: colors.text }]}
+          className="flex-1 text-sm p-0"
+          style={{ color: colors.text }}
         />
         {value.trim().length > 0 && (
           <Pressable onPress={() => onChange("", true)} hitSlop={8}>
@@ -66,32 +65,34 @@ const ProductComboBox: React.FC<ProductComboBoxProps> = ({
       </View>
 
       {value.trim().length > 0 && (
-        <View style={styles.statusRow}>
+        <View className="flex-row items-center gap-[5px] mt-1.5">
           <MaterialCommunityIcons
             name={isCustomProduct ? "pencil-outline" : "check-decagram-outline"}
             size={12}
             color={isCustomProduct ? colors.warning : colors.success}
           />
-          <Text style={[styles.statusText, { color: isCustomProduct ? colors.warning : colors.success }]}>
+          <Text className="text-[11px] font-semibold" style={{ color: isCustomProduct ? colors.warning : colors.success }}>
             {isCustomProduct ? "Custom entry — not in the catalog yet" : "Matched to a catalog product"}
           </Text>
         </View>
       )}
 
-      {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
+      {error && <Text className="text-[11px] mt-1" style={{ color: colors.error }}>{error}</Text>}
 
       {showDropdown && (
         <View
-          style={[styles.dropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+          className="border rounded-[10px] mt-1.5 overflow-hidden"
+          style={{ backgroundColor: colors.backgroundSecondary, borderColor: colors.border }}
         >
           {suggestions.map((item) => (
             <Pressable
               key={item.id}
               onPressIn={() => handleSelectSuggestion(item.name)}
-              style={[styles.suggestionRow, { borderBottomColor: colors.border }]}
+              className="flex-row items-center gap-2 px-3 py-[11px]"
+              style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
             >
               <MaterialCommunityIcons name="pill" size={14} color={colors.textSecondary} />
-              <Text style={[styles.suggestionText, { color: colors.text }]} numberOfLines={1}>
+              <Text className="text-[13px] flex-1" style={{ color: colors.text }} numberOfLines={1}>
                 {item.name}
               </Text>
             </Pressable>
@@ -104,33 +105,3 @@ const ProductComboBox: React.FC<ProductComboBoxProps> = ({
 
 export default ProductComboBox;
 
-const styles = StyleSheet.create({
-  inputWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-  },
-  input: { flex: 1, fontSize: 14, padding: 0 },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 6 },
-  statusText: { fontSize: 11, fontWeight: "600" },
-  errorText: { fontSize: 11, marginTop: 4 },
-  dropdown: {
-    borderWidth: 1,
-    borderRadius: 10,
-    marginTop: 6,
-    overflow: "hidden",
-  },
-  suggestionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  suggestionText: { fontSize: 13, flex: 1 },
-});

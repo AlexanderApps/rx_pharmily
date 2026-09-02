@@ -1,5 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet, TextInput, Modal } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  TextInput,
+  Modal, Platform} from "react-native";
 import { router, Redirect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -9,6 +15,7 @@ import { isAdminRole } from "@/features/auth/types/auth.types";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import KycStatusBadge from "@/features/profile/components/kyc-status-badge";
 import { toast } from "@/shared/hooks/use-toast";
+import StatusFilterTabs from "@/shared/components/status-filter-tabs";
 
 type Tab = "facilities" | "organizations" | "members" | "links";
 type SelectedRequest = { tab: Tab; id: string } | null;
@@ -50,15 +57,13 @@ export default function FacilityOrgRequestsScreen() {
   const [selected, setSelected] = useState<SelectedRequest>(null);
   const [rejecting, setRejecting] = useState(false);
   const [reasonText, setReasonText] = useState("");
-
-  // "Already a member of" context for the currently-open membership
-  // request — fetched on demand when the detail view opens, since it's
-  // about a specific other person's memberships, not something worth
-  // keeping loaded globally.
   const [requesterMemberships, setRequesterMemberships] = useState<
     { facilityId: string; facilityName: string; role: string }[] | null
   >(null);
   const [loadingMemberships, setLoadingMemberships] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
+
+  const matchesFilter = (status: string) => statusFilter === "all" || status === statusFilter;
 
   const pendingFacilities = useMemo(
     () => facilityCreationRequests.filter((r) => r.status === "pending"),
@@ -77,14 +82,55 @@ export default function FacilityOrgRequestsScreen() {
     [facilityOrganizationRequests],
   );
 
-  const memberRequest = selected?.tab === "members" ? pendingMembers.find((r) => r.id === selected.id) : undefined;
-  const linkRequest = selected?.tab === "links" ? pendingLinks.find((r) => r.id === selected.id) : undefined;
-  const facilityRequest = selected?.tab === "facilities" ? pendingFacilities.find((r) => r.id === selected.id) : undefined;
-  const orgRequest = selected?.tab === "organizations" ? pendingOrgs.find((r) => r.id === selected.id) : undefined;
+  const filteredFacilities = useMemo(
+    () => facilityCreationRequests.filter((r) => matchesFilter(r.status)),
+    [facilityCreationRequests, statusFilter],
+  );
+  const filteredOrgs = useMemo(
+    () => organizationCreationRequests.filter((r) => matchesFilter(r.status)),
+    [organizationCreationRequests, statusFilter],
+  );
+  const filteredMembers = useMemo(
+    () => facilityMembershipRequests.filter((r) => matchesFilter(r.status)),
+    [facilityMembershipRequests, statusFilter],
+  );
+  const filteredLinks = useMemo(
+    () => facilityOrganizationRequests.filter((r) => matchesFilter(r.status)),
+    [facilityOrganizationRequests, statusFilter],
+  );
 
-  const linkFacility = linkRequest ? facilities.find((f) => f.id === linkRequest.facilityId) : undefined;
-  const linkOrganization = linkRequest ? organizations.find((o) => o.id === linkRequest.organizationId) : undefined;
-  const targetFacility = memberRequest ? facilities.find((f) => f.id === memberRequest.facilityId) : undefined;
+  const memberRequest =
+    selected?.tab === "members"
+      ? facilityMembershipRequests.find((r) => r.id === selected.id)
+      : undefined;
+  const linkRequest =
+    selected?.tab === "links"
+      ? facilityOrganizationRequests.find((r) => r.id === selected.id)
+      : undefined;
+  const facilityRequest =
+    selected?.tab === "facilities"
+      ? facilityCreationRequests.find((r) => r.id === selected.id)
+      : undefined;
+  const orgRequest =
+    selected?.tab === "organizations"
+      ? organizationCreationRequests.find((r) => r.id === selected.id)
+      : undefined;
+
+  const selectedStatus =
+    memberRequest?.status ??
+    linkRequest?.status ??
+    facilityRequest?.status ??
+    orgRequest?.status;
+
+  const linkFacility = linkRequest
+    ? facilities.find((f) => f.id === linkRequest.facilityId)
+    : undefined;
+  const linkOrganization = linkRequest
+    ? organizations.find((o) => o.id === linkRequest.organizationId)
+    : undefined;
+  const targetFacility = memberRequest
+    ? facilities.find((f) => f.id === memberRequest.facilityId)
+    : undefined;
 
   useEffect(() => {
     if (!memberRequest) {
@@ -136,131 +182,198 @@ export default function FacilityOrgRequestsScreen() {
   ];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Header */}
+      <View
+        className="flex-row items-center gap-3 px-4 py-3 border-b"
+        style={{ borderBottomColor: colors.border }}
+      >
+        {Platform.OS !== "web" && (
+        <Pressable onPress={() => router.back()} className="p-1">
           <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.text }]}>Facility & Org Requests</Text>
+        )}
+        <Text className="text-[17px] font-bold" style={{ color: colors.text }}>
+          Facility & Org Requests
+        </Text>
       </View>
 
-      <View style={[styles.tabRow, { borderBottomColor: colors.border }]}>
+      {/* Tabs */}
+      <View className="flex-row border-b" style={{ borderBottomColor: colors.border }}>
         {TABS.map((t) => (
-          <Pressable key={t.key} onPress={() => setTab(t.key)} style={styles.tabButton}>
-            <View style={styles.tabLabelRow}>
+          <Pressable
+            key={t.key}
+            onPress={() => setTab(t.key)}
+            className="flex-1 items-center py-3"
+          >
+            <View className="flex-row items-center gap-1.5">
               <Text
-                style={[
-                  styles.tabText,
-                  { color: tab === t.key ? colors.primary : colors.textSecondary, fontWeight: tab === t.key ? "700" : "500" },
-                ]}
+                className="text-xs"
+                style={{
+                  color: tab === t.key ? colors.primary : colors.textSecondary,
+                  fontWeight: tab === t.key ? "700" : "500",
+                }}
               >
                 {t.label}
               </Text>
               {t.count > 0 && (
-                <View style={[styles.badge, { backgroundColor: colors.error }]}>
-                  <Text style={styles.badgeText}>{t.count > 99 ? "99+" : t.count}</Text>
+                <View
+                  className="min-w-4 h-4 rounded-full px-1 items-center justify-center"
+                  style={{ backgroundColor: colors.error }}
+                >
+                  <Text className="text-white text-[10px] font-bold">
+                    {t.count > 99 ? "99+" : t.count}
+                  </Text>
                 </View>
               )}
             </View>
-            {tab === t.key && <View style={[styles.tabIndicator, { backgroundColor: colors.primary }]} />}
+            {tab === t.key && (
+              <View
+                className="h-0.5 w-[60%] rounded-sm mt-2"
+                style={{ backgroundColor: colors.primary }}
+              />
+            )}
           </Pressable>
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <StatusFilterTabs
+        options={[
+          { key: "pending", label: "Pending" },
+          { key: "approved", label: "Approved" },
+          { key: "rejected", label: "Rejected" },
+          { key: "all", label: "All" },
+        ]}
+        selected={statusFilter}
+        onSelect={(key) => setStatusFilter(key as typeof statusFilter)}
+      />
+
+      <ScrollView contentContainerClassName="p-4 gap-2.5">
         {tab === "facilities" &&
-          (pendingFacilities.length === 0 ? (
-            <EmptyState colors={colors} text="No pending facility requests." />
+          (filteredFacilities.length === 0 ? (
+            <EmptyState colors={colors} text="No facility requests here." />
           ) : (
-            pendingFacilities.map((r) => (
+            filteredFacilities.map((r) => (
               <RequestCard
                 key={r.id}
                 colors={colors}
                 title={r.name}
                 subtitle={`${r.type} · ${r.location}, ${r.region}`}
+                trailing={
+                  r.status !== "pending" ? (
+                    <RequestStatusBadge colors={colors} status={r.status} />
+                  ) : undefined
+                }
                 onPress={() => setSelected({ tab: "facilities", id: r.id })}
               />
             ))
           ))}
 
         {tab === "organizations" &&
-          (pendingOrgs.length === 0 ? (
-            <EmptyState colors={colors} text="No pending organization requests." />
+          (filteredOrgs.length === 0 ? (
+            <EmptyState colors={colors} text="No organization requests here." />
           ) : (
-            pendingOrgs.map((r) => (
+            filteredOrgs.map((r) => (
               <RequestCard
                 key={r.id}
                 colors={colors}
                 title={r.name}
                 subtitle={`${r.type}${r.headquartersLocation ? ` · ${r.headquartersLocation}` : ""}`}
+                trailing={
+                  r.status !== "pending" ? (
+                    <RequestStatusBadge colors={colors} status={r.status} />
+                  ) : undefined
+                }
                 onPress={() => setSelected({ tab: "organizations", id: r.id })}
               />
             ))
           ))}
 
         {tab === "members" &&
-          (pendingMembers.length === 0 ? (
-            <EmptyState colors={colors} text="No pending membership requests." />
+          (filteredMembers.length === 0 ? (
+            <EmptyState colors={colors} text="No membership requests here." />
           ) : (
-            pendingMembers.map((r) => (
+            filteredMembers.map((r) => (
               <RequestCard
                 key={r.id}
                 colors={colors}
                 title={r.requesterName}
                 subtitle={r.requesterEmail}
-                trailing={<KycStatusBadge status={r.requesterKycStatus} compact />}
+                trailing={
+                  <View className="flex-row items-center gap-1.5">
+                    {r.status !== "pending" && (
+                      <RequestStatusBadge colors={colors} status={r.status} />
+                    )}
+                    <KycStatusBadge status={r.requesterKycStatus} compact />
+                  </View>
+                }
                 onPress={() => setSelected({ tab: "members", id: r.id })}
               />
             ))
           ))}
 
         {tab === "links" &&
-          (pendingLinks.length === 0 ? (
-            <EmptyState colors={colors} text="No pending facility-to-organization requests." />
+          (filteredLinks.length === 0 ? (
+            <EmptyState colors={colors} text="No facility-to-organization requests here." />
           ) : (
-            pendingLinks.map((r) => (
+            filteredLinks.map((r) => (
               <RequestCard
                 key={r.id}
                 colors={colors}
                 title={r.facilityName}
                 subtitle={`wants to join ${r.organizationName}`}
+                trailing={
+                  r.status !== "pending" ? (
+                    <RequestStatusBadge colors={colors} status={r.status} />
+                  ) : undefined
+                }
                 onPress={() => setSelected({ tab: "links", id: r.id })}
               />
             ))
           ))}
 
-        <View style={{ height: 24 }} />
+        <View className="h-6" />
       </ScrollView>
 
-      <Modal visible={!!selected} transparent animationType="slide" onRequestClose={closeDetail}>
-        <View style={styles.detailOverlay}>
-          <View style={[styles.detailCard, { backgroundColor: colors.background }]}>
-            <View style={styles.detailHeader}>
-              <Text style={[styles.detailTitle, { color: colors.text }]}>Request Details</Text>
+      {/* Detail Modal */}
+      <Modal visible={!!selected} transparent animationType="fade" onRequestClose={closeDetail}>
+        <View className="flex-1 bg-black/50 items-center justify-center p-6">
+          <View
+            className="w-full rounded-2xl p-5 gap-1"
+            style={{ backgroundColor: colors.background, maxWidth: 480, maxHeight: "85%" }}
+          >
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-base font-bold" style={{ color: colors.text }}>
+                Request Details
+              </Text>
               <Pressable onPress={closeDetail} hitSlop={8}>
                 <MaterialCommunityIcons name="close" size={22} color={colors.textSecondary} />
               </Pressable>
             </View>
 
-            <ScrollView style={{ maxHeight: "70%" }} contentContainerStyle={{ paddingBottom: 8 }}>
+            <ScrollView className="max-h-[70%]" contentContainerClassName="pb-2">
               {memberRequest && (
                 <>
                   <DetailSection colors={colors} label="Requester">
-                    <View style={styles.requesterRow}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.detailValue, { color: colors.text }]}>{memberRequest.requesterName}</Text>
-                        <Text style={[styles.detailSub, { color: colors.textSecondary }]}>{memberRequest.requesterEmail}</Text>
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-1">
+                        <Text className="text-[15px] font-bold" style={{ color: colors.text }}>
+                          {memberRequest.requesterName}
+                        </Text>
+                        <Text className="text-[13px] mt-0.5" style={{ color: colors.textSecondary }}>
+                          {memberRequest.requesterEmail}
+                        </Text>
                       </View>
                       <KycStatusBadge status={memberRequest.requesterKycStatus} compact />
                     </View>
                   </DetailSection>
 
                   <DetailSection colors={colors} label="Wants to join">
-                    <Text style={[styles.detailValue, { color: colors.text }]}>
+                    <Text className="text-[15px] font-bold" style={{ color: colors.text }}>
                       {targetFacility?.name ?? "Unknown facility"}
                     </Text>
                     {targetFacility && (
-                      <Text style={[styles.detailSub, { color: colors.textSecondary }]}>
+                      <Text className="text-[13px] mt-0.5" style={{ color: colors.textSecondary }}>
                         {targetFacility.type} · {targetFacility.location}, {targetFacility.region}
                       </Text>
                     )}
@@ -268,24 +381,36 @@ export default function FacilityOrgRequestsScreen() {
 
                   <DetailSection colors={colors} label="Already a member of">
                     {loadingMemberships ? (
-                      <Text style={[styles.detailSub, { color: colors.textSecondary }]}>Loading...</Text>
+                      <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+                        Loading...
+                      </Text>
                     ) : requesterMemberships && requesterMemberships.length > 0 ? (
                       requesterMemberships.map((m) => (
-                        <View key={m.facilityId} style={styles.membershipRow}>
-                          <MaterialCommunityIcons name="hospital-building" size={14} color={colors.textSecondary} />
-                          <Text style={[styles.detailSub, { color: colors.text }]}>
+                        <View key={m.facilityId} className="flex-row items-center gap-1.5 mt-1">
+                          <MaterialCommunityIcons
+                            name="hospital-building"
+                            size={14}
+                            color={colors.textSecondary}
+                          />
+                          <Text className="text-[13px]" style={{ color: colors.text }}>
                             {m.facilityName} · {m.role}
                           </Text>
                         </View>
                       ))
                     ) : (
-                      <Text style={[styles.detailSub, { color: colors.textSecondary }]}>Not a member anywhere yet.</Text>
+                      <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+                        Not a member anywhere yet.
+                      </Text>
                     )}
                   </DetailSection>
 
                   <DetailSection colors={colors} label="Requested">
-                    <Text style={[styles.detailSub, { color: colors.textSecondary }]}>
-                      {memberRequest.createdAt.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })}
+                    <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+                      {memberRequest.createdAt.toLocaleDateString(undefined, {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
                     </Text>
                   </DetailSection>
                 </>
@@ -294,10 +419,12 @@ export default function FacilityOrgRequestsScreen() {
               {linkRequest && (
                 <>
                   <DetailSection colors={colors} label="Facility">
-                    <Text style={[styles.detailValue, { color: colors.text }]}>{linkRequest.facilityName}</Text>
+                    <Text className="text-[15px] font-bold" style={{ color: colors.text }}>
+                      {linkRequest.facilityName}
+                    </Text>
                     {linkFacility && (
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}>
-                        <Text style={[styles.detailSub, { color: colors.textSecondary }]}>
+                      <View className="flex-row items-center gap-2 mt-1">
+                        <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
                           {linkFacility.type} · {linkFacility.location}, {linkFacility.region}
                         </Text>
                         <KycStatusBadge status={linkFacility.kyc.status} compact />
@@ -306,18 +433,26 @@ export default function FacilityOrgRequestsScreen() {
                   </DetailSection>
 
                   <DetailSection colors={colors} label="Wants to join organization">
-                    <Text style={[styles.detailValue, { color: colors.text }]}>{linkRequest.organizationName}</Text>
+                    <Text className="text-[15px] font-bold" style={{ color: colors.text }}>
+                      {linkRequest.organizationName}
+                    </Text>
                     {linkOrganization && (
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}>
-                        <Text style={[styles.detailSub, { color: colors.textSecondary }]}>{linkOrganization.type}</Text>
+                      <View className="flex-row items-center gap-2 mt-1">
+                        <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+                          {linkOrganization.type}
+                        </Text>
                         <KycStatusBadge status={linkOrganization.kyc.status} compact />
                       </View>
                     )}
                   </DetailSection>
 
                   <DetailSection colors={colors} label="Requested">
-                    <Text style={[styles.detailSub, { color: colors.textSecondary }]}>
-                      {linkRequest.createdAt.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })}
+                    <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+                      {linkRequest.createdAt.toLocaleDateString(undefined, {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
                     </Text>
                   </DetailSection>
                 </>
@@ -326,36 +461,55 @@ export default function FacilityOrgRequestsScreen() {
               {facilityRequest && (
                 <>
                   <DetailSection colors={colors} label="Facility name">
-                    <Text style={[styles.detailValue, { color: colors.text }]}>{facilityRequest.name}</Text>
+                    <Text className="text-[15px] font-bold" style={{ color: colors.text }}>
+                      {facilityRequest.name}
+                    </Text>
                   </DetailSection>
+
                   <DetailSection colors={colors} label="Type & location">
-                    <Text style={[styles.detailSub, { color: colors.text }]}>
+                    <Text className="text-[13px]" style={{ color: colors.text }}>
                       {facilityRequest.type} · {facilityRequest.location}, {facilityRequest.region}
                     </Text>
                   </DetailSection>
+
                   {facilityRequest.address && (
                     <DetailSection colors={colors} label="Address">
-                      <Text style={[styles.detailSub, { color: colors.text }]}>{facilityRequest.address}</Text>
+                      <Text className="text-[13px]" style={{ color: colors.text }}>
+                        {facilityRequest.address}
+                      </Text>
                     </DetailSection>
                   )}
+
                   {(facilityRequest.phone || facilityRequest.email) && (
                     <DetailSection colors={colors} label="Contact">
                       {facilityRequest.phone && (
-                        <Text style={[styles.detailSub, { color: colors.text }]}>{facilityRequest.phone}</Text>
+                        <Text className="text-[13px]" style={{ color: colors.text }}>
+                          {facilityRequest.phone}
+                        </Text>
                       )}
                       {facilityRequest.email && (
-                        <Text style={[styles.detailSub, { color: colors.text }]}>{facilityRequest.email}</Text>
+                        <Text className="text-[13px]" style={{ color: colors.text }}>
+                          {facilityRequest.email}
+                        </Text>
                       )}
                     </DetailSection>
                   )}
+
                   {facilityRequest.registrationNumber && (
                     <DetailSection colors={colors} label="Registration number">
-                      <Text style={[styles.detailSub, { color: colors.text }]}>{facilityRequest.registrationNumber}</Text>
+                      <Text className="text-[13px]" style={{ color: colors.text }}>
+                        {facilityRequest.registrationNumber}
+                      </Text>
                     </DetailSection>
                   )}
+
                   <DetailSection colors={colors} label="Requested">
-                    <Text style={[styles.detailSub, { color: colors.textSecondary }]}>
-                      {facilityRequest.createdAt.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })}
+                    <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+                      {facilityRequest.createdAt.toLocaleDateString(undefined, {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
                     </Text>
                   </DetailSection>
                 </>
@@ -364,76 +518,131 @@ export default function FacilityOrgRequestsScreen() {
               {orgRequest && (
                 <>
                   <DetailSection colors={colors} label="Organization name">
-                    <Text style={[styles.detailValue, { color: colors.text }]}>{orgRequest.name}</Text>
+                    <Text className="text-[15px] font-bold" style={{ color: colors.text }}>
+                      {orgRequest.name}
+                    </Text>
                   </DetailSection>
+
                   <DetailSection colors={colors} label="Type">
-                    <Text style={[styles.detailSub, { color: colors.text }]}>{orgRequest.type}</Text>
+                    <Text className="text-[13px]" style={{ color: colors.text }}>
+                      {orgRequest.type}
+                    </Text>
                   </DetailSection>
+
                   {orgRequest.headquartersLocation && (
                     <DetailSection colors={colors} label="Headquarters">
-                      <Text style={[styles.detailSub, { color: colors.text }]}>{orgRequest.headquartersLocation}</Text>
+                      <Text className="text-[13px]" style={{ color: colors.text }}>
+                        {orgRequest.headquartersLocation}
+                      </Text>
                     </DetailSection>
                   )}
+
                   {(orgRequest.phone || orgRequest.email) && (
                     <DetailSection colors={colors} label="Contact">
                       {orgRequest.phone && (
-                        <Text style={[styles.detailSub, { color: colors.text }]}>{orgRequest.phone}</Text>
+                        <Text className="text-[13px]" style={{ color: colors.text }}>
+                          {orgRequest.phone}
+                        </Text>
                       )}
                       {orgRequest.email && (
-                        <Text style={[styles.detailSub, { color: colors.text }]}>{orgRequest.email}</Text>
+                        <Text className="text-[13px]" style={{ color: colors.text }}>
+                          {orgRequest.email}
+                        </Text>
                       )}
                     </DetailSection>
                   )}
+
                   {orgRequest.registrationNumber && (
                     <DetailSection colors={colors} label="Registration number">
-                      <Text style={[styles.detailSub, { color: colors.text }]}>{orgRequest.registrationNumber}</Text>
+                      <Text className="text-[13px]" style={{ color: colors.text }}>
+                        {orgRequest.registrationNumber}
+                      </Text>
                     </DetailSection>
                   )}
+
                   <DetailSection colors={colors} label="Requested">
-                    <Text style={[styles.detailSub, { color: colors.textSecondary }]}>
-                      {orgRequest.createdAt.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })}
+                    <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+                      {orgRequest.createdAt.toLocaleDateString(undefined, {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
                     </Text>
                   </DetailSection>
                 </>
               )}
             </ScrollView>
 
-            {rejecting ? (
-              <View style={{ gap: 10 }}>
+            {selectedStatus !== "pending" ? (
+              <View
+                className="flex-row items-center gap-2 p-3 rounded-[10px]"
+                style={{ backgroundColor: colors.backgroundSecondary }}
+              >
+                <RequestStatusBadge colors={colors} status={selectedStatus ?? "pending"} />
+                <Text className="text-xs" style={{ color: colors.textSecondary }}>
+                  This request has already been decided.
+                </Text>
+              </View>
+            ) : rejecting ? (
+              <View className="gap-2.5">
                 <TextInput
                   value={reasonText}
                   onChangeText={setReasonText}
                   placeholder="Reason (shown to the requester)"
                   placeholderTextColor={colors.textSecondary}
                   multiline
-                  style={[styles.reasonInput, { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }]}
+                  className="border rounded-lg p-2.5 text-[13px] min-h-[70px]"
+                  style={{
+                    backgroundColor: colors.backgroundElement,
+                    borderColor: colors.border,
+                    color: colors.text,
+                    textAlignVertical: "top",
+                  }}
                 />
-                <View style={styles.detailActions}>
-                  <Pressable onPress={() => setRejecting(false)} style={styles.detailActionButton}>
-                    <Text style={{ color: colors.textSecondary, fontWeight: "600" }}>Back</Text>
+                <View className="flex-row gap-2.5 mt-2">
+                  <Pressable onPress={() => setRejecting(false)} className="flex-1 items-center py-3">
+                    <Text className="font-semibold" style={{ color: colors.textSecondary }}>
+                      Back
+                    </Text>
                   </Pressable>
-                  <Pressable onPress={handleReject} style={styles.detailActionButton} disabled={!reasonText.trim()}>
-                    <Text style={{ color: colors.error, fontWeight: "700", opacity: reasonText.trim() ? 1 : 0.4 }}>
+                  <Pressable
+                    onPress={handleReject}
+                    className="flex-1 items-center py-3"
+                    disabled={!reasonText.trim()}
+                  >
+                    <Text
+                      className="font-bold"
+                      style={{
+                        color: colors.error,
+                        opacity: reasonText.trim() ? 1 : 0.4,
+                      }}
+                    >
                       Confirm Decline
                     </Text>
                   </Pressable>
                 </View>
               </View>
             ) : (
-              <View style={styles.detailActions}>
+              <View className="flex-row gap-2.5 mt-2">
                 <Pressable
                   onPress={() => setRejecting(true)}
-                  style={[styles.actionButton, { backgroundColor: colors.error + "18" }]}
+                  className="flex-1 flex-row items-center justify-center gap-1.5 py-3 rounded-[10px]"
+                  style={{ backgroundColor: colors.error + "18" }}
                 >
                   <MaterialCommunityIcons name="close" size={16} color={colors.error} />
-                  <Text style={{ color: colors.error, fontSize: 13, fontWeight: "700" }}>Reject</Text>
+                  <Text className="text-[13px] font-bold" style={{ color: colors.error }}>
+                    Reject
+                  </Text>
                 </Pressable>
                 <Pressable
                   onPress={handleApprove}
-                  style={[styles.actionButton, { backgroundColor: colors.success + "18" }]}
+                  className="flex-1 flex-row items-center justify-center gap-1.5 py-3 rounded-[10px]"
+                  style={{ backgroundColor: colors.success + "18" }}
                 >
                   <MaterialCommunityIcons name="check" size={16} color={colors.success} />
-                  <Text style={{ color: colors.success, fontSize: 13, fontWeight: "700" }}>Approve</Text>
+                  <Text className="text-[13px] font-bold" style={{ color: colors.success }}>
+                    Approve
+                  </Text>
                 </Pressable>
               </View>
             )}
@@ -444,11 +653,28 @@ export default function FacilityOrgRequestsScreen() {
   );
 }
 
+function RequestStatusBadge({ colors, status }: { colors: any; status: string }) {
+  const color =
+    status === "approved" ? colors.success : status === "rejected" ? colors.error : colors.warning;
+  const label =
+    status === "approved" ? "Approved" : status === "rejected" ? "Rejected" : "Pending";
+
+  return (
+    <View className="px-2 py-0.5 rounded-lg" style={{ backgroundColor: color + "18" }}>
+      <Text className="text-[10px] font-bold" style={{ color }}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 function EmptyState({ colors, text }: { colors: any; text: string }) {
   return (
-    <View style={styles.emptyWrap}>
+    <View className="items-center justify-center py-16 gap-2.5">
       <MaterialCommunityIcons name="check-circle-outline" size={28} color={colors.textSecondary} />
-      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{text}</Text>
+      <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+        {text}
+      </Text>
     </View>
   );
 }
@@ -469,16 +695,14 @@ function RequestCard({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: colors.backgroundSecondary, opacity: pressed ? 0.7 : 1 },
-      ]}
+      className="flex-row items-center gap-2.5 rounded-xl p-3.5 active:opacity-70"
+      style={{ backgroundColor: colors.backgroundSecondary }}
     >
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
+      <View className="flex-1">
+        <Text className="text-sm font-bold" style={{ color: colors.text }} numberOfLines={1}>
           {title}
         </Text>
-        <Text style={[styles.cardMeta, { color: colors.textSecondary }]} numberOfLines={1}>
+        <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }} numberOfLines={1}>
           {subtitle}
         </Text>
       </View>
@@ -488,44 +712,24 @@ function RequestCard({
   );
 }
 
-function DetailSection({ colors, label, children }: { colors: any; label: string; children: React.ReactNode }) {
+function DetailSection({
+  colors,
+  label,
+  children,
+}: {
+  colors: any;
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
-    <View style={styles.detailSection}>
-      <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{label.toUpperCase()}</Text>
+    <View className="mb-4">
+      <Text
+        className="text-[10px] font-bold tracking-wide mb-1 uppercase"
+        style={{ color: colors.textSecondary }}
+      >
+        {label}
+      </Text>
       {children}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
-  back: { padding: 4 },
-  title: { fontSize: 17, fontWeight: "700" },
-  tabRow: { flexDirection: "row", borderBottomWidth: 0.5 },
-  tabButton: { flex: 1, alignItems: "center", paddingVertical: 12 },
-  tabLabelRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  tabText: { fontSize: 12 },
-  badge: { minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4, alignItems: "center", justifyContent: "center" },
-  badgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
-  tabIndicator: { height: 2, width: "60%", borderRadius: 1, marginTop: 8 },
-  content: { padding: 16, gap: 10 },
-  card: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, padding: 14 },
-  cardTitle: { fontSize: 14, fontWeight: "700" },
-  cardMeta: { fontSize: 12, marginTop: 2 },
-  emptyWrap: { alignItems: "center", justifyContent: "center", paddingVertical: 60, gap: 10 },
-  emptyText: { fontSize: 13 },
-  detailOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  detailCard: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, gap: 4 },
-  detailHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
-  detailTitle: { fontSize: 16, fontWeight: "700" },
-  detailSection: { marginBottom: 16 },
-  detailLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, marginBottom: 4 },
-  detailValue: { fontSize: 15, fontWeight: "700" },
-  detailSub: { fontSize: 13, marginTop: 1 },
-  requesterRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  membershipRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
-  reasonInput: { borderWidth: 1, borderRadius: 8, padding: 10, fontSize: 13, minHeight: 70, textAlignVertical: "top" },
-  detailActions: { flexDirection: "row", gap: 10, marginTop: 8 },
-  detailActionButton: { flex: 1, alignItems: "center", paddingVertical: 12 },
-  actionButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 12, borderRadius: 10 },
-});

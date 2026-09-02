@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
-import { Pressable, StyleSheet, TextInput } from "react-native";
+import { Pressable, TextInput, Platform} from "react-native";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -44,45 +44,27 @@ export default function SearchDonationsContent() {
   }, []);
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={{ flex: 1 }}>
+    <ThemedView className="flex-1">
+      <SafeAreaView className="flex-1">
+        {/* Header Search Top Bar */}
         <ThemedView
-          style={{
-            paddingHorizontal: 20,
-            paddingBottom: 16,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border,
-          }}
+          className="px-5 pb-4 border-b"
+          style={{ borderBottomColor: colors.border }}
         >
-          <ThemedView
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 12,
-              marginTop: 16,
-            }}
-          >
+          <ThemedView className="flex-row items-center gap-3 mt-4">
             {/* Back Button */}
+            {Platform.OS !== "web" && (
             <Pressable
               onPress={() => router.back()}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 14,
-                backgroundColor: colors.backgroundElement,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
+              className="w-11 h-11 rounded-[14px] justify-center items-center"
+              style={{ backgroundColor: colors.backgroundElement }}
             >
               <Ionicons name="arrow-back" size={22} color={colors.text} />
             </Pressable>
+            )}
 
-            {/* Search */}
-            <ThemedView
-              style={{
-                flex: 1,
-              }}
-            >
+            {/* Input Search Container */}
+            <ThemedView className="flex-1">
               <Input
                 ref={searchInputRef}
                 placeholder="Search medications..."
@@ -117,14 +99,9 @@ export default function SearchDonationsContent() {
           </ThemedView>
         </ThemedView>
 
-        {/* Screen Content */}
-        <ThemedView
-          style={{
-            flex: 1,
-            paddingVertical: 10,
-          }}
-        >
-          {/* Filters */}
+        {/* Screen Content Wrapper */}
+        <ThemedView className="flex-1 py-2.5">
+          {/* Filters List Area */}
           <FilterMenu>
             <FilterButton
               label="Region"
@@ -154,19 +131,14 @@ export default function SearchDonationsContent() {
             />
           </FilterMenu>
 
-          {/* Content */}
-          <ThemedView
-            style={{
-              flex: 1,
-              padding: 16,
-            }}
-          >
+          {/* Results Target Area */}
+          <ThemedView className="flex-1 p-4">
             <ThemedText type="small">
               Search results will appear here.
             </ThemedText>
           </ThemedView>
 
-          {/* Bottom Sheet Modal */}
+          {/* Bottom Sheet Modal Sheet Component */}
           <BottomSheet
             ref={filterModalRef}
             snapPoints={snapPoints}
@@ -181,26 +153,14 @@ export default function SearchDonationsContent() {
             <ThemedView type="backgroundSecondary">
               <ThemedView
                 type="backgroundSecondary"
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 12,
-                }}
+                className="flex-row justify-between items-center mb-3"
               >
-                <ThemedText
-                  style={{ fontSize: 18, fontWeight: "600", marginBottom: 16 }}
-                >
+                <ThemedText className="text-base font-semibold mb-4">
                   {modalTitle}
                 </ThemedText>
                 <ThemedView
                   type="backgroundSelected"
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    padding: 8,
-                    borderRadius: 999,
-                  }}
+                  className="flex-row items-center p-2 rounded-full"
                 >
                   <Pressable onPress={closeFilterModal}>
                     <Ionicons name="close" size={18} color={colors.textSecondary} />
@@ -223,9 +183,3 @@ export default function SearchDonationsContent() {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});

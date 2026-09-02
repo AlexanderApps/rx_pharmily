@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  ScrollView,
-  Pressable,
-} from "react-native";
+import { View, Text, ScrollView, Pressable } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import LoadingImage from "@/shared/components/loading-image";
@@ -41,10 +35,8 @@ export default function AccountScreen({ avatarUrl }: AccountScreenProps) {
     router.replace("/login");
   };
 
-  const pressedOverlay =
-    colors.text === "#ffffff"
-      ? "rgba(255, 255, 255, 0.05)"
-      : "rgba(0, 0, 0, 0.03)";
+  // Safe dynamic press highlights across platforms
+  const activeBg = colors.text === "#ffffff" ? "active:bg-white/5" : "active:bg-black/3";
 
   const menuSections: { title: string; links: MenuLink[] }[] = [
     {
@@ -60,16 +52,14 @@ export default function AccountScreen({ avatarUrl }: AccountScreenProps) {
     },
     {
       title: "System",
-      links: isAdmin
-        ? [
-            {
-              id: "admin",
-              label: "Admin",
-              icon: "shield-crown-outline",
-              onPress: () => router.push("/admin"),
-            },
-          ]
-        : [],
+      links: isAdmin ? [
+        {
+          id: "admin",
+          label: "Admin",
+          icon: "shield-crown-outline",
+          onPress: () => router.push("/admin"),
+        },
+      ] : [],
     },
     {
       title: "Activity & Settings",
@@ -108,169 +98,145 @@ export default function AccountScreen({ avatarUrl }: AccountScreenProps) {
   ];
 
   return (
-    <ThemedView style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        {/* Custom Header */}
-        <ThemedView
-          style={{
-            paddingHorizontal: 20,
-            paddingVertical: 16,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.backgroundSecondary,
-          }}
+    <ThemedView className="flex-1">
+      <SafeAreaView className="flex-1">
+        {/* Header Bar */}
+        <ThemedView 
+          className="px-5 py-4 border-b"
+          style={{ borderBottomColor: colors.backgroundSecondary }}
         >
-          <ThemedText
-            style={{
-              fontSize: 24,
-              fontWeight: "bold",
-            }}
-          >
+          <ThemedText className="text-[24px] font-bold">
             Account
           </ThemedText>
-
-          <ThemedText
-            style={{
-              // color: colors.textSecondarySecondary,
-              marginTop: 4,
-            }}
-          >
+          <ThemedText className="mt-1">
             Manage your history and settings
           </ThemedText>
         </ThemedView>
-        <ScrollView
-          style={[styles.container, { backgroundColor: colors.background }]}
-          contentContainerStyle={styles.contentContainer}
+
+        {/* Scrollable Container */}
+        <ScrollView 
+          className="flex-1"
+          style={{ backgroundColor: colors.background }}
+          contentContainerClassName="px-4 pt-6 pb-10 gap-6"
           showsVerticalScrollIndicator={false}
         >
-          {/* Profile Header Block */}
-          <Pressable
-            onPress={() => router.push("/profile/user-profile")}
-            style={[
-              styles.profileCard,
-              { backgroundColor: colors.backgroundSecondary },
-            ]}
+          {/* Profile Card */}
+          <Pressable 
+            onPress={() => router.push("/profile/user-profile")} 
+            className="items-center py-6 rounded-[16px] w-full"
+            style={{ backgroundColor: colors.backgroundSecondary }}
           >
-            <View style={styles.avatarContainer}>
-              {/* 2. Conditional Image / Dynamic Icon Placeholder Node Matrix 👇 */}
+            <View className="relative mb-3.5">
               {avatarUrl ? (
-                <LoadingImage source={{ uri: avatarUrl }} style={styles.avatarImage} />
+                <LoadingImage 
+                  source={{ uri: avatarUrl }} 
+                  style={{ width: 84, height: 84, borderRadius: 42 }} 
+                />
               ) : (
-                <View
-                  style={[
-                    styles.avatarPlaceholder,
-                    { backgroundColor: colors.backgroundElement },
-                  ]}
+                <View 
+                  className="w-[84px] h-[84px] rounded-full items-center justify-center"
+                  style={{ backgroundColor: colors.backgroundElement }}
                 >
-                  <MaterialCommunityIcons
-                    name="account"
-                    size={44}
-                    color={colors.textSecondary}
-                  />
+                  <MaterialCommunityIcons name="account" size={44} color={colors.textSecondary} />
                 </View>
               )}
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.avatarEditButton,
-                  {
-                    backgroundColor: colors.text,
-                    opacity: pressed ? 0.8 : 1,
-                  },
-                ]}
+              
+              {/* Camera Edit Badge */}
+              <Pressable 
+                className="absolute bottom-0 right-0 w-[26px] h-[26px] rounded-full justify-center items-center active:opacity-80"
+                style={{ backgroundColor: colors.text }}
               >
-                <MaterialCommunityIcons
-                  name="camera"
-                  size={14}
-                  color={colors.backgroundSecondary}
-                />
+                <MaterialCommunityIcons name="camera" size={14} color={colors.backgroundSecondary} />
               </Pressable>
             </View>
-            <Text style={[styles.profileName, { color: colors.text }]}>
+            
+            <Text 
+              className="text-[18px] font-bold mb-0.5" 
+              style={{ color: colors.text }}
+            >
               {user.fullName}
             </Text>
-            <Text
-              style={[styles.profileEmail, { color: colors.textSecondary }]}
+            
+            <Text 
+              className="text-[13px] font-medium" 
+              style={{ color: colors.textSecondary }}
             >
               {user.email}
             </Text>
           </Pressable>
 
-          {/* Navigation Sections */}
+          {/* Menu Sections Grid */}
           {menuSections
             .filter((section) => section.links.length > 0)
             .map((section) => (
-            <View key={section.title} style={styles.sectionContainer}>
-              <Text
-                style={[styles.sectionTitle, { color: colors.textSecondary }]}
-              >
-                {section.title}
-              </Text>
-
-              <View
-                style={[
-                  styles.linksWrapper,
-                  { backgroundColor: colors.backgroundSecondary },
-                ]}
-              >
-                {section.links.map((link, index) => {
-                  const isLast = index === section.links.length - 1;
-                  const itemTextColor = link.color || colors.text;
-                  const iconColor = link.color || colors.textSecondary;
-
-                  return (
-                    <Pressable
-                      key={link.id}
-                      onPress={link.onPress}
-                      style={({ pressed }) => [
-                        styles.linkItem,
-                        {
-                          backgroundColor: pressed
-                            ? pressedOverlay
-                            : "transparent",
-                        },
-                        !isLast && {
-                          borderBottomColor: colors.border,
-                          borderBottomWidth: 0.5,
-                        },
-                      ]}
-                    >
-                      <View style={styles.linkLeftContent}>
-                        <MaterialCommunityIcons
-                          name={link.icon}
-                          size={22}
-                          color={iconColor}
+              <View key={section.title} className="gap-2">
+                <Text 
+                  className="text-[12px] font-semibold uppercase tracking-[0.6px] pl-1" 
+                  style={{ color: colors.textSecondary }}
+                >
+                  {section.title}
+                </Text>
+                
+                <View 
+                  className="rounded-[16px] overflow-hidden"
+                  style={{ backgroundColor: colors.backgroundSecondary }}
+                >
+                  {section.links.map((link, index) => {
+                    const isLast = index === section.links.length - 1;
+                    const itemTextColor = link.color || colors.text;
+                    const iconColor = link.color || colors.textSecondary;
+                    
+                    return (
+                      <Pressable
+                        key={link.id}
+                        onPress={link.onPress}
+                        className={`flex-row items-center justify-between px-4 py-[15px] ${activeBg}`}
+                        style={!isLast ? { borderBottomColor: colors.border, borderBottomWidth: 0.5 } : undefined}
+                      >
+                        <View className="flex-row items-center gap-3.5">
+                          <MaterialCommunityIcons name={link.icon} size={22} color={iconColor} />
+                          <Text 
+                            className="text-[15px] font-medium" 
+                            style={{ color: itemTextColor }}
+                          >
+                            {link.label}
+                          </Text>
+                        </View>
+                        <MaterialCommunityIcons 
+                          name="chevron-right" 
+                          size={20} 
+                          color={link.color ? link.color : colors.border} 
                         />
-                        <Text
-                          style={[styles.linkText, { color: itemTextColor }]}
-                        >
-                          {link.label}
-                        </Text>
-                      </View>
-                      <MaterialCommunityIcons
-                        name="chevron-right"
-                        size={20}
-                        color={link.color ? link.color : colors.border}
-                      />
-                    </Pressable>
-                  );
-                })}
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
-            </View>
-          ))}
+            ))}
 
-          <Pressable
-            onPress={handleLogout}
-            style={[
-              styles.logoutButton,
-              { backgroundColor: colors.backgroundSecondary, borderColor: colors.error },
-            ]}
+          {/* Log Out Button */}
+          <Pressable 
+            onPress={handleLogout} 
+            className="flex-row items-center justify-center gap-2 rounded-[14px] border py-3.5 mx-5 mt-2"
+            style={{ 
+              backgroundColor: colors.backgroundSecondary, 
+              borderColor: colors.error 
+            }}
           >
             <MaterialCommunityIcons name="logout" size={18} color={colors.error} />
-            <Text style={[styles.logoutText, { color: colors.error }]}>Log Out</Text>
+            <Text 
+              className="text-[14px] font-bold" 
+              style={{ color: colors.error }}
+            >
+              Log Out
+            </Text>
           </Pressable>
 
-          {/* App Version Stamp */}
-          <Text style={[styles.versionText, { color: colors.textSecondary }]}>
+          {/* App Version Label */}
+          <Text 
+            className="text-[11px] text-center font-semibold mt-2" 
+            style={{ color: colors.textSecondary }}
+          >
             Version 1.0.4 (Production)
           </Text>
         </ScrollView>
@@ -278,119 +244,3 @@ export default function AccountScreen({ avatarUrl }: AccountScreenProps) {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 40,
-    gap: 24,
-  },
-  profileCard: {
-    alignItems: "center",
-    paddingVertical: 24,
-    borderRadius: 16,
-    width: "100%",
-    // elevation: 2,
-    // shadowColor: "#000",
-    // shadowOpacity: 0.04,
-    // shadowRadius: 8,
-    // shadowOffset: { width: 0, height: 2 },
-  },
-  avatarContainer: {
-    position: "relative",
-    marginBottom: 14,
-  },
-  avatarImage: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-  },
-  avatarPlaceholder: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarEditButton: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    justifyContent: "center",
-    alignItems: "center",
-    // elevation: 4,
-    // shadowColor: "#000",
-    // shadowOpacity: 0.15,
-    // shadowRadius: 4,
-    // shadowOffset: { width: 0, height: 2 },
-  },
-  profileName: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 2,
-  },
-  profileEmail: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  sectionContainer: {
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-    paddingLeft: 4,
-  },
-  linksWrapper: {
-    borderRadius: 16,
-    overflow: "hidden",
-    // elevation: 2,
-    // shadowColor: "#000",
-    // shadowOpacity: 0.04,
-    // shadowRadius: 8,
-    // shadowOffset: { width: 0, height: 2 },
-  },
-  linkItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-  },
-  linkLeftContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
-  linkText: {
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingVertical: 14,
-    marginHorizontal: 20,
-    marginTop: 8,
-  },
-  logoutText: { fontSize: 14, fontWeight: "700" },
-  versionText: {
-    fontSize: 11,
-    textAlign: "center",
-    fontWeight: "600",
-    marginTop: 8,
-  },
-});

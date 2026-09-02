@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { RxRfqVisibilityRuleType } from "@/features/rxrfqs/types/rxrfqs.types";
 
@@ -21,25 +21,23 @@ export const RxRfqRuleTypeSelector: React.FC<RxRfqRuleTypeSelectorProps> = ({
   const { colors } = useTheme();
 
   return (
-    <View style={styles.row}>
+    <View className="flex-row gap-2 my-1">
       {RULE_TYPES.map((type) => (
         <TouchableOpacity
           key={type}
-          style={[
-            styles.button,
-            { borderColor: "rgba(128,128,128,0.3)" },
-            selected === type && {
+          className="flex-1 py-2.5 rounded-md border items-center"
+          style={{
+            borderColor: "rgba(128,128,128,0.3)",
+            ...(selected === type && {
               backgroundColor: colors.primary,
               borderColor: colors.primary,
-            },
-          ]}
+            }),
+          }}
           onPress={() => onSelect(type)}
         >
           <Text
-            style={[
-              styles.buttonText,
-              { color: selected === type ? "#fff" : colors.text },
-            ]}
+            className="text-[11px] font-semibold"
+            style={{ color: selected === type ? "#fff" : colors.text }}
           >
             {type}
           </Text>
@@ -49,14 +47,3 @@ export const RxRfqRuleTypeSelector: React.FC<RxRfqRuleTypeSelectorProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  row: { flexDirection: "row", gap: 8, marginVertical: 4 },
-  button: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 6,
-    borderWidth: 1,
-    alignItems: "center",
-  },
-  buttonText: { fontSize: 11, fontWeight: "600" },
-});

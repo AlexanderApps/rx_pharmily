@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, LayoutAnimation, Platform, UIManager } from "react-native";
+import { View, Text, Pressable, LayoutAnimation, Platform, UIManager } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { FaqItem } from "@/features/help/types/help.types";
@@ -24,10 +24,11 @@ const FaqAccordionItem: React.FC<FaqAccordionItemProps> = ({ item }) => {
   return (
     <Pressable
       onPress={toggle}
-      style={[styles.card, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+      className="rounded-[14px] border p-3.5 gap-2"
+      style={{ backgroundColor: colors.backgroundSecondary, borderColor: colors.border }}
     >
-      <View style={styles.headerRow}>
-        <Text style={[styles.question, { color: colors.text }]}>{item.question}</Text>
+      <View className="flex-row items-center justify-between gap-2.5">
+        <Text className="text-sm font-semibold flex-1" style={{ color: colors.text }}>{item.question}</Text>
         <MaterialCommunityIcons
           name={expanded ? "chevron-up" : "chevron-down"}
           size={18}
@@ -35,7 +36,7 @@ const FaqAccordionItem: React.FC<FaqAccordionItemProps> = ({ item }) => {
         />
       </View>
       {expanded && (
-        <Text style={[styles.answer, { color: colors.textSecondary }]}>{item.answer}</Text>
+        <Text className="text-[13px] leading-[19px]" style={{ color: colors.textSecondary }}>{item.answer}</Text>
       )}
     </Pressable>
   );
@@ -43,9 +44,3 @@ const FaqAccordionItem: React.FC<FaqAccordionItemProps> = ({ item }) => {
 
 export default FaqAccordionItem;
 
-const styles = StyleSheet.create({
-  card: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 8 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
-  question: { fontSize: 14, fontWeight: "600", flex: 1 },
-  answer: { fontSize: 13, lineHeight: 19 },
-});

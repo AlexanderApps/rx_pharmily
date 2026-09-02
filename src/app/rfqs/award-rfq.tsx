@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import ScreenHeader from "@/shared/components/screen-header";
 import { confirm } from "@/shared/hooks/use-confirm";
 import { toast } from "@/shared/hooks/use-toast";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
@@ -43,13 +44,13 @@ export default function AwardRxRfqScreen() {
   if (!rfq) {
     if (isLoadingRfqs) {
       return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
           <DetailSkeleton rows={3} />
         </SafeAreaView>
       );
     }
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
         <Text style={{ color: colors.text, padding: 16 }}>
           No RFQ found for id: {id}
         </Text>
@@ -78,27 +79,12 @@ export default function AwardRxRfqScreen() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: colors.background }}
+      className="flex-1"
+      style={{ backgroundColor: colors.background }}
     >
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <MaterialCommunityIcons
-            name="arrow-left"
-            size={22}
-            color={colors.text}
-          />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            Award {rfq.code}
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Select the winning response
-          </Text>
-        </View>
-      </View>
+      <ScreenHeader title={`Award ${rfq.code}`} subtitle="Select the winning response" />
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
         {responses.length === 0 ? (
           <Text style={{ color: colors.textSecondary }}>
             No responses to award.
@@ -119,17 +105,3 @@ export default function AwardRxRfqScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: 2 },
-  content: { padding: 16, gap: 10 },
-});

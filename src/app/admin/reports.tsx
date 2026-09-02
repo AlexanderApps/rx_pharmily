@@ -1,16 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
+import { View, Text, FlatList, Pressable } from "react-native";
 import { router, Redirect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { format } from "timeago.js";
 import { useTheme } from "@/shared/hooks/use-theme";
+import EmptyState from "@/shared/components/empty-state";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { isAdminRole } from "@/features/auth/types/auth.types";
 import { useHelpStore } from "@/features/help/hooks/use-help-data";
 import { ReportStatus, ReportTicket, ReportType } from "@/features/help/types/help.types";
 import { toast } from "@/shared/hooks/use-toast";
+import StatusFilterTabs from "@/shared/components/status-filter-tabs";
 import ListSkeleton from "@/shared/components/list-skeleton";
+import ScreenHeader from "@/shared/components/screen-header";
 
 const TYPE_META: Record<ReportType, { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }> = {
   bug: { label: "Bug", icon: "bug-outline" },
@@ -42,7 +45,6 @@ export default function AdminReportsScreen() {
   const isLoadingReports = useHelpStore((state) => state.isLoadingReports);
   const fetchReports = useHelpStore((state) => state.fetchReports);
   const updateReportStatus = useHelpStore((state) => state.updateReportStatus);
-
   const [filter, setFilter] = useState<ReportStatus | "open" | "all">("open");
 
   useEffect(() => {
@@ -51,12 +53,18 @@ export default function AdminReportsScreen() {
 
   const filtered = useMemo(() => {
     const sorted = [...reports].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      (b, a) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
     if (filter === "all") return sorted;
     if (filter === "open") return sorted.filter((r) => r.status === "submitted" || r.status === "in_review");
     return sorted.filter((r) => r.status === filter);
   }, [reports, filter]);
+
+  const countFor = (value: ReportStatus | "open" | "all") => {
+    if (value === "all") return reports.length;
+    if (value === "open") return reports.filter((r) => r.status === "submitted" || r.status === "in_review").length;
+    return reports.filter((r) => r.status === value).length;
+  };
 
   const handleUpdateStatus = async (id: string, status: ReportStatus) => {
     const ok = await updateReportStatus(id, status);
@@ -68,35 +76,16 @@ export default function AdminReportsScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>Reports</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {reports.length} total
-          </Text>
-        </View>
-      </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Header element */}
+      <ScreenHeader title="Reports" subtitle={`${reports.length} total`} />
 
-      <View style={styles.filterRow}>
-        {FILTERS.map((f) => {
-          const active = filter === f.value;
-          return (
-            <Pressable
-              key={f.value}
-              onPress={() => setFilter(f.value)}
-              style={[styles.filterChip, { backgroundColor: active ? colors.primary : colors.backgroundElement }]}
-            >
-              <Text style={[styles.filterChipText, { color: active ? "#fff" : colors.textSecondary }]}>
-                {f.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      {/* Tabs list navigation */}
+      <StatusFilterTabs
+        options={FILTERS.map((f) => ({ key: f.value, label: f.label, count: countFor(f.value) }))}
+        selected={filter}
+        onSelect={(key) => setFilter(key as ReportStatus | "open" | "all")}
+      />
 
       {isLoadingReports && filtered.length === 0 ? (
         <ListSkeleton variant="card" rows={4} />
@@ -104,13 +93,10 @@ export default function AdminReportsScreen() {
         <FlatList
           data={filtered}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          contentContainerStyle={{ padding: 16, flexGrow: 1 }}
+          ItemSeparatorComponent={() => <View className="h-2.5" />}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <MaterialCommunityIcons name="flag-outline" size={36} color={colors.textSecondary} />
-              <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Nothing here.</Text>
-            </View>
+            <EmptyState icon="flag-outline" message="Nothing here." />
           }
           renderItem={({ item }) => <ReportCard report={item} onUpdateStatus={handleUpdateStatus} />}
         />
@@ -133,90 +119,55 @@ function ReportCard({
   const isOpen = report.status === "submitted" || report.status === "in_review";
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-      <View style={styles.cardTopRow}>
-        <View style={[styles.typeIconWrap, { backgroundColor: colors.primary + "18" }]}>
+    <View className="rounded-[14px] border p-[14px] gap-2.5" style={{ backgroundColor: colors.backgroundSecondary, borderColor: colors.border }}>
+      <View className="flex-row items-start gap-2.5">
+        <View className="w-8 h-8 rounded-[9px] items-center justify-center" style={{ backgroundColor: colors.primary + "18" }}>
           <MaterialCommunityIcons name={typeMeta.icon} size={16} color={colors.primary} />
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={2}>
+        <View className="flex-1">
+          <Text className="text-sm font-bold leading-[19px]" style={{ color: colors.text }} numberOfLines={2}>
             {report.subject}
           </Text>
-          <Text style={[styles.cardMeta, { color: colors.textSecondary }]}>
-            {typeMeta.label} · {format(report.createdAt)}
-            {report.reportedUser ? ` · re: ${report.reportedUser}` : ""}
+          <Text className="text-[11px] mt-0.5" style={{ color: colors.textSecondary }}>
+            {typeMeta.label} · {format(report.createdAt)} {report.reportedUser ? ` · re: ${report.reportedUser}` : ""}
           </Text>
         </View>
-        <View style={[styles.statusPill, { backgroundColor: statusColor + "18" }]}>
-          <Text style={[styles.statusPillText, { color: statusColor }]}>{statusMeta.label}</Text>
+        <View className="px-2 py-1 rounded-text rounded-lg" style={{ backgroundColor: statusColor + "18" }}>
+          <Text className="text-[10px] font-bold" style={{ color: statusColor }}>{statusMeta.label}</Text>
         </View>
       </View>
 
-      <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>{report.description}</Text>
+      <Text className="text-xs leading-[18px]" style={{ color: colors.textSecondary }}>{report.description}</Text>
 
       {isOpen && (
-        <View style={styles.actionsRow}>
+        <View className="flex-row flex-wrap gap-2">
           {report.status === "submitted" && (
             <Pressable
               onPress={() => onUpdateStatus(report.id, "in_review")}
-              style={[styles.actionButton, { backgroundColor: colors.info + "18" }]}
+              className="flex-row items-center gap-1.5 px-3 py-2 rounded-lg"
+              style={{ backgroundColor: colors.info + "18" }}
             >
-              <Text style={[styles.actionButtonText, { color: colors.info }]}>Start Review</Text>
+              <Text className="text-xs font-bold" style={{ color: colors.info }}>Start Review</Text>
             </Pressable>
           )}
           <Pressable
             onPress={() => onUpdateStatus(report.id, "resolved")}
-            style={[styles.actionButton, { backgroundColor: colors.success + "18" }]}
+            className="flex-row items-center gap-1.5 px-3 py-2 rounded-lg"
+            style={{ backgroundColor: colors.success + "18" }}
           >
             <MaterialCommunityIcons name="check" size={13} color={colors.success} />
-            <Text style={[styles.actionButtonText, { color: colors.success }]}>Resolve</Text>
+            <Text className="text-xs font-bold" style={{ color: colors.success }}>Resolve</Text>
           </Pressable>
           <Pressable
             onPress={() => onUpdateStatus(report.id, "dismissed")}
-            style={[styles.actionButton, { backgroundColor: colors.error + "18" }]}
+            className="flex-row items-center gap-1.5 px-3 py-2 rounded-lg"
+            style={{ backgroundColor: colors.error + "18" }}
           >
             <MaterialCommunityIcons name="close" size={13} color={colors.error} />
-            <Text style={[styles.actionButtonText, { color: colors.error }]}>Dismiss</Text>
+            <Text className="text-xs font-bold" style={{ color: colors.error }}>Dismiss</Text>
           </Pressable>
         </View>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: 1 },
-  filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 16, paddingTop: 12 },
-  filterChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20 },
-  filterChipText: { fontSize: 12, fontWeight: "600" },
-  listContent: { padding: 16, flexGrow: 1 },
-  empty: { alignItems: "center", justifyContent: "center", gap: 10, paddingTop: 80 },
-  card: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 10 },
-  cardTopRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  typeIconWrap: { width: 32, height: 32, borderRadius: 9, alignItems: "center", justifyContent: "center" },
-  cardTitle: { fontSize: 14, fontWeight: "700", lineHeight: 19 },
-  cardMeta: { fontSize: 11, marginTop: 3 },
-  statusPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  statusPillText: { fontSize: 10, fontWeight: "700" },
-  cardDescription: { fontSize: 12, lineHeight: 18 },
-  actionsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  actionButtonText: { fontSize: 12, fontWeight: "700" },
-});

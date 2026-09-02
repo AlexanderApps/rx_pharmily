@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, Platform} from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -24,13 +24,12 @@ export default function NotificationSettingsScreen() {
     <ThemedView style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }}>
         {/* Header Row */}
-        <View style={styles.headerRow}>
+        <View className="flex-row items-center px-4 py-3">
+          {Platform.OS !== "web" && (
           <Pressable
             onPress={() => router.back()}
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && { opacity: 0.7 },
-            ]}
+            className="p-1 mr-3"
+            style={({ pressed }) => (pressed ? { opacity: 0.7 } : undefined)}
           >
             <MaterialCommunityIcons
               name="arrow-left"
@@ -38,53 +37,53 @@ export default function NotificationSettingsScreen() {
               color={colors.text}
             />
           </Pressable>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
+          )}
+          <Text className="text-xl font-semibold" style={{ color: colors.text }}>
             Notifications
           </Text>
         </View>
 
         <ScrollView
-          style={[styles.container, { backgroundColor: colors.background }]}
-          contentContainerStyle={styles.contentContainer}
+          className="flex-1"
+          style={{ backgroundColor: colors.background }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
           showsVerticalScrollIndicator={false}
         >
           {/* SECTION 1: Delivery Channels */}
-          <View style={styles.sectionContainer}>
+          <View className="mt-6">
             <Text
-              style={[styles.sectionTitle, { color: colors.textSecondary }]}
+              className="text-sm font-semibold uppercase mb-2 ml-1"
+              style={{ color: colors.textSecondary }}
             >
               Delivery Channels
             </Text>
             <View
-              style={[
-                styles.cardWrapper,
-                { backgroundColor: colors.backgroundSecondary },
-              ]}
+              className="rounded-xl overflow-hidden"
+              style={{ backgroundColor: colors.backgroundSecondary }}
             >
               {/* Push Notifications Toggle Row */}
               <Pressable
                 onPress={() => setPushEnabled(!pushEnabled)}
-                style={({ pressed }) => [
-                  styles.rowItem,
-                  { borderBottomColor: colors.border, borderBottomWidth: 0.5 },
-                  pressed && styles.rowPressed,
-                ]}
+                className="flex-row items-center justify-between p-4"
+                style={({ pressed }) => ({
+                  borderBottomColor: colors.border,
+                  borderBottomWidth: 0.5,
+                  opacity: pressed ? 0.7 : 1,
+                })}
               >
-                <View style={styles.rowLeft}>
+                <View className="flex-row items-center flex-1 mr-4">
                   <MaterialCommunityIcons
                     name="bell-outline"
                     size={22}
                     color={colors.textSecondary}
                   />
-                  <View style={styles.textMetaWrapper}>
-                    <Text style={[styles.rowText, { color: colors.text }]}>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-base font-medium mb-0.5" style={{ color: colors.text }}>
                       Push Notifications
                     </Text>
                     <Text
-                      style={[
-                        styles.descriptionText,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-[13px]"
+                      style={{ color: colors.textSecondary }}
                     >
                       Receive instant alerts on your device
                     </Text>
@@ -101,26 +100,22 @@ export default function NotificationSettingsScreen() {
               {/* Email Notifications Toggle Row */}
               <Pressable
                 onPress={() => setEmailEnabled(!emailEnabled)}
-                style={({ pressed }) => [
-                  styles.rowItem,
-                  pressed && styles.rowPressed,
-                ]}
+                className="flex-row items-center justify-between p-4"
+                style={({ pressed }) => (pressed ? { opacity: 0.7 } : undefined)}
               >
-                <View style={styles.rowLeft}>
+                <View className="flex-row items-center flex-1 mr-4">
                   <MaterialCommunityIcons
                     name="email-outline"
                     size={22}
                     color={colors.textSecondary}
                   />
-                  <View style={styles.textMetaWrapper}>
-                    <Text style={[styles.rowText, { color: colors.text }]}>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-base font-medium mb-0.5" style={{ color: colors.text }}>
                       Email Digests
                     </Text>
                     <Text
-                      style={[
-                        styles.descriptionText,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-[13px]"
+                      style={{ color: colors.textSecondary }}
                     >
                       Get activity summaries sent to your inbox
                     </Text>
@@ -137,42 +132,40 @@ export default function NotificationSettingsScreen() {
           </View>
 
           {/* SECTION 2: Notification Categories */}
-          <View style={styles.sectionContainer}>
+          <View className="mt-6">
             <Text
-              style={[styles.sectionTitle, { color: colors.textSecondary }]}
+              className="text-sm font-semibold uppercase mb-2 ml-1"
+              style={{ color: colors.textSecondary }}
             >
               Activity & Preferences
             </Text>
             <View
-              style={[
-                styles.cardWrapper,
-                { backgroundColor: colors.backgroundSecondary },
-              ]}
+              className="rounded-xl overflow-hidden"
+              style={{ backgroundColor: colors.backgroundSecondary }}
             >
               {/* General System Updates Row */}
               <Pressable
                 onPress={() => setGeneralNotifs(!generalNotifs)}
-                style={({ pressed }) => [
-                  styles.rowItem,
-                  { borderBottomColor: colors.border, borderBottomWidth: 0.5 },
-                  pressed && styles.rowPressed,
-                ]}
+                className="flex-row items-center justify-between p-4"
+                style={({ pressed }) => ({
+                  borderBottomColor: colors.border,
+                  borderBottomWidth: 0.5,
+                  opacity: pressed ? 0.7 : 1,
+                })}
               >
-                <View style={styles.rowLeft}>
+                <View className="flex-row items-center flex-1 mr-4">
                   <MaterialCommunityIcons
                     name="cog-outline"
                     size={22}
                     color={colors.textSecondary}
                   />
-                  <View style={styles.textMetaWrapper}>
-                    <Text style={[styles.rowText, { color: colors.text }]}>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-base font-medium mb-0.5" style={{ color: colors.text }}>
                       General Updates
                     </Text>
                     <Text
-                      style={[
-                        styles.descriptionText,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-[13px]"
+                      style={{ color: colors.textSecondary }}
                     >
                       App announcements and profile changes
                     </Text>
@@ -189,27 +182,26 @@ export default function NotificationSettingsScreen() {
               {/* RFQs & Quotes Row */}
               <Pressable
                 onPress={() => setRfqNotifs(!rfqNotifs)}
-                style={({ pressed }) => [
-                  styles.rowItem,
-                  { borderBottomColor: colors.border, borderBottomWidth: 0.5 },
-                  pressed && styles.rowPressed,
-                ]}
+                className="flex-row items-center justify-between p-4"
+                style={({ pressed }) => ({
+                  borderBottomColor: colors.border,
+                  borderBottomWidth: 0.5,
+                  opacity: pressed ? 0.7 : 1,
+                })}
               >
-                <View style={styles.rowLeft}>
+                <View className="flex-row items-center flex-1 mr-4">
                   <MaterialCommunityIcons
                     name="file-document-edit-outline"
                     size={22}
                     color={colors.textSecondary}
                   />
-                  <View style={styles.textMetaWrapper}>
-                    <Text style={[styles.rowText, { color: colors.text }]}>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-base font-medium mb-0.5" style={{ color: colors.text }}>
                       RFQs & Estimates
                     </Text>
                     <Text
-                      style={[
-                        styles.descriptionText,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-[13px]"
+                      style={{ color: colors.textSecondary }}
                     >
                       Updates on requested quotes and pricing
                     </Text>
@@ -226,27 +218,26 @@ export default function NotificationSettingsScreen() {
               {/* Jobs Toggles Row */}
               <Pressable
                 onPress={() => setJobNotifs(!jobNotifs)}
-                style={({ pressed }) => [
-                  styles.rowItem,
-                  { borderBottomColor: colors.border, borderBottomWidth: 0.5 },
-                  pressed && styles.rowPressed,
-                ]}
+                className="flex-row items-center justify-between p-4"
+                style={({ pressed }) => ({
+                  borderBottomColor: colors.border,
+                  borderBottomWidth: 0.5,
+                  opacity: pressed ? 0.7 : 1,
+                })}
               >
-                <View style={styles.rowLeft}>
+                <View className="flex-row items-center flex-1 mr-4">
                   <MaterialCommunityIcons
                     name="briefcase-outline"
                     size={22}
                     color={colors.textSecondary}
                   />
-                  <View style={styles.textMetaWrapper}>
-                    <Text style={[styles.rowText, { color: colors.text }]}>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-base font-medium mb-0.5" style={{ color: colors.text }}>
                       Job Statuses
                     </Text>
                     <Text
-                      style={[
-                        styles.descriptionText,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-[13px]"
+                      style={{ color: colors.textSecondary }}
                     >
                       Alerts when your contract milestones shift
                     </Text>
@@ -263,26 +254,22 @@ export default function NotificationSettingsScreen() {
               {/* Donations Toggles Row */}
               <Pressable
                 onPress={() => setDonationNotifs(!donationNotifs)}
-                style={({ pressed }) => [
-                  styles.rowItem,
-                  pressed && styles.rowPressed,
-                ]}
+                className="flex-row items-center justify-between p-4"
+                style={({ pressed }) => (pressed ? { opacity: 0.7 } : undefined)}
               >
-                <View style={styles.rowLeft}>
+                <View className="flex-row items-center flex-1 mr-4">
                   <MaterialCommunityIcons
                     name="heart-outline"
                     size={22}
                     color={colors.textSecondary}
                   />
-                  <View style={styles.textMetaWrapper}>
-                    <Text style={[styles.rowText, { color: colors.text }]}>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-base font-medium mb-0.5" style={{ color: colors.text }}>
                       Donations & Receipts
                     </Text>
                     <Text
-                      style={[
-                        styles.descriptionText,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-[13px]"
+                      style={{ color: colors.textSecondary }}
                     >
                       Payment confirmations and impact metrics
                     </Text>
@@ -302,47 +289,3 @@ export default function NotificationSettingsScreen() {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backButton: {
-    padding: 4,
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-  },
-  container: { flex: 1 },
-  contentContainer: { paddingHorizontal: 16, paddingBottom: 32 },
-  sectionContainer: { marginTop: 24 },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  cardWrapper: { borderRadius: 12, overflow: "hidden" },
-  rowItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-  },
-  rowPressed: { opacity: 0.7 },
-  rowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    marginRight: 16,
-  },
-  textMetaWrapper: { marginLeft: 12, flex: 1 },
-  rowText: { fontSize: 16, fontWeight: "500", marginBottom: 2 },
-  descriptionText: { fontSize: 13 },
-});

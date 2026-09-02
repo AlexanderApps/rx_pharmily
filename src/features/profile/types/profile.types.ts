@@ -80,8 +80,10 @@ export interface UserProfile {
   createdAt: Date;
   publicVisibility: PublicProfileVisibility;
   location?: string;
+  region?: string;
   latitude?: number;
   longitude?: number;
+  avatarUrl?: string;
 }
 
 export interface UserProfileFormData {
@@ -92,8 +94,10 @@ export interface UserProfileFormData {
   licenseNumber?: string;
   bio?: string;
   location?: string;
+  region?: string;
   latitude?: number;
   longitude?: number;
+  avatarUrl?: string;
 }
 
 // ─── Facility ────────────────────────────────────────────────────────────
@@ -105,6 +109,21 @@ export type FacilityType =
   | "Diagnostic Lab"
   | "Clinic"
   | "Other";
+
+// The full set of FacilityType values, exported once here rather than
+// redefined per-consumer — a second, separately-maintained copy of this
+// list (features/rxrfqs/components/rxrfq-add-rule-sheet.tsx used to have
+// its own hardcoded MOCK_FACILITY_TYPES with entirely different values —
+// "Wholesale", "Public Hospital", "Private Lab" — that never matched any
+// real facility) is exactly the kind of drift this avoids.
+export const FACILITY_TYPES: FacilityType[] = [
+  "Retail Pharmacy",
+  "Hospital",
+  "Wholesale Distributor",
+  "Diagnostic Lab",
+  "Clinic",
+  "Other",
+];
 
 export interface FacilityProfile {
   id: string;
@@ -123,6 +142,7 @@ export interface FacilityProfile {
   createdAt: Date;
   latitude?: number;
   longitude?: number;
+  logoUrl?: string;
 }
 
 export interface FacilityProfileFormData {
@@ -136,6 +156,7 @@ export interface FacilityProfileFormData {
   registrationNumber?: string;
   latitude?: number;
   longitude?: number;
+  logoUrl?: string;
 }
 
 // A user can work for several facilities; a facility has several members.
@@ -205,6 +226,7 @@ export interface OrganizationCreationRequest {
   type: OrganizationType;
   registrationNumber?: string;
   headquartersLocation?: string;
+  region?: string;
   email?: string;
   phone?: string;
   status: RequestStatus;
@@ -222,6 +244,7 @@ export interface OrganizationCreationRequestFormData {
   type: OrganizationType;
   registrationNumber?: string;
   headquartersLocation?: string;
+  region?: string;
   email?: string;
   phone?: string;
   latitude?: number;
@@ -271,6 +294,7 @@ export interface OrganizationProfile {
   type: OrganizationType;
   registrationNumber?: string;
   headquartersLocation?: string;
+  region?: string;
   email?: string;
   phone?: string;
   adminUserId: string;
@@ -280,6 +304,7 @@ export interface OrganizationProfile {
   publicVisibility: PublicProfileVisibility;
   latitude?: number;
   longitude?: number;
+  logoUrl?: string;
 }
 
 export interface OrganizationProfileFormData {
@@ -287,10 +312,12 @@ export interface OrganizationProfileFormData {
   type: OrganizationType;
   registrationNumber?: string;
   headquartersLocation?: string;
+  region?: string;
   email?: string;
   phone?: string;
   latitude?: number;
   longitude?: number;
+  logoUrl?: string;
 }
 
 // ─── Cover letter templates (User) ─────────────────────────────────────

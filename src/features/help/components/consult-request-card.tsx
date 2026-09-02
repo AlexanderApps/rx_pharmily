@@ -28,34 +28,41 @@ const ConsultRequestCard: React.FC<ConsultRequestCardProps> = ({ request, onPres
   return (
     <Pressable
       onPress={onPress}
-      style={[
-        styles.card,
-        { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, shadowColor: colors.text },
-      ]}
+      className="rounded-2xl p-3.5 gap-2"
+      style={{
+        backgroundColor: colors.backgroundSecondary,
+        borderColor: colors.border,
+        borderWidth: StyleSheet.hairlineWidth,
+        shadowColor: colors.text,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 1,
+      }}
     >
-      <View style={styles.topRow}>
-        <View style={[styles.iconWrap, { backgroundColor: colors.primary + "18" }]}>
+      <View className="flex-row items-center gap-2.5">
+        <View className="w-9 h-9 rounded-[10px] items-center justify-center" style={{ backgroundColor: colors.primary + "18" }}>
           <MaterialCommunityIcons name="account-tie-outline" size={18} color={colors.primary} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.subject, { color: colors.text }]} numberOfLines={1}>
+          <Text className="text-sm font-bold" style={{ color: colors.text }} numberOfLines={1}>
             {request.subject}
           </Text>
-          <Text style={[styles.category, { color: colors.textSecondary }]}>{request.category}</Text>
+          <Text className="text-[11px] mt-px" style={{ color: colors.textSecondary }}>{request.category}</Text>
         </View>
-        <View style={[styles.statusPill, { backgroundColor: toneColor + "18" }]}>
+        <View className="flex-row items-center gap-1 px-2 py-1 rounded-lg" style={{ backgroundColor: toneColor + "18" }}>
           <MaterialCommunityIcons name={meta.icon} size={11} color={toneColor} />
-          <Text style={[styles.statusText, { color: toneColor }]}>{meta.label}</Text>
+          <Text className="text-[10px] font-bold" style={{ color: toneColor }}>{meta.label}</Text>
         </View>
       </View>
 
-      <View style={styles.footerRow}>
+      <View className="flex-row justify-between items-center ml-[46px]">
         {request.consultantName && (
-          <Text style={[styles.consultant, { color: colors.textSecondary }]} numberOfLines={1}>
+          <Text className="text-xs flex-1" style={{ color: colors.textSecondary }} numberOfLines={1}>
             with {request.consultantName}
           </Text>
         )}
-        <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>{format(request.createdAt)}</Text>
+        <Text className="text-[11px]" style={{ color: colors.textSecondary }}>{format(request.createdAt)}</Text>
       </View>
     </Pressable>
   );
@@ -63,24 +70,3 @@ const ConsultRequestCard: React.FC<ConsultRequestCardProps> = ({ request, onPres
 
 export default ConsultRequestCard;
 
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 14,
-    gap: 8,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  topRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  iconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  subject: { fontSize: 14, fontWeight: "700" },
-  category: { fontSize: 11, marginTop: 1 },
-  statusPill: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  statusText: { fontSize: 10, fontWeight: "700" },
-  footerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginLeft: 46 },
-  consultant: { fontSize: 12, flex: 1 },
-  timeAgo: { fontSize: 11 },
-});

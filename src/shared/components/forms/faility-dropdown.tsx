@@ -1,11 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  FlatList,
-} from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import BottomSheet from "@/shared/components/bottom-sheet";
@@ -72,29 +66,19 @@ const FacilityDropdown: React.FC<FacilityDropdownProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View className="w-full">
       <TouchableOpacity
-        style={[
-          styles.button,
-          {
-            backgroundColor: error
-              ? colors.backgroundSecondary
-              : colors.backgroundElement,
-            borderColor: error
-              ? colors.error
-              : isOpen
-                ? colors.backgroundElement
-                : colors.border,
-          },
-        ]}
+        className="flex-row items-center justify-between px-3 py-3 rounded-md border"
+        style={{
+          backgroundColor: error ? colors.backgroundSecondary : colors.backgroundElement,
+          borderColor: error ? colors.error : isOpen ? colors.backgroundElement : colors.border,
+        }}
         onPress={toggleBottomSheet}
         activeOpacity={0.7}
       >
         <Text
-          style={[
-            styles.buttonText,
-            { color: selectedFacility ? colors.text : colors.textSecondary },
-          ]}
+          className="text-sm font-medium flex-1"
+          style={{ color: selectedFacility ? colors.text : colors.textSecondary }}
         >
           {selectedFacility?.name || placeholder}
         </Text>
@@ -102,12 +86,12 @@ const FacilityDropdown: React.FC<FacilityDropdownProps> = ({
           name="chevron-down"
           size={22}
           color={error ? colors.error : colors.textSecondary}
-          style={[styles.icon, isOpen && styles.iconRotated]}
+          style={isOpen ? { marginLeft: 8, transform: [{ rotate: "180deg" }] } : { marginLeft: 8 }}
         />
       </TouchableOpacity>
 
       {error && (
-        <Text style={[styles.error, { color: colors.error }]}>{error}</Text>
+        <Text className="text-xs mt-1.5 font-medium" style={{ color: colors.error }}>{error}</Text>
       )}
 
       <BottomSheet
@@ -120,9 +104,9 @@ const FacilityDropdown: React.FC<FacilityDropdownProps> = ({
         onChange={handleBottomSheetChange}
         backgroundColor={colors.backgroundSecondary}
       >
-        <View style={{ flex: 1, padding: 20 }}>
-          <View style={styles.bottomSheetHeader}>
-            <Text style={[styles.bottomSheetTitle, { color: colors.text }]}>
+        <View className="flex-1 p-5">
+          <View className="pb-4 items-center">
+            <Text className="text-base font-semibold" style={{ color: colors.text }}>
               Select Facility
             </Text>
           </View>
@@ -133,20 +117,17 @@ const FacilityDropdown: React.FC<FacilityDropdownProps> = ({
               const isSelected = value === item.id;
               return (
                 <TouchableOpacity
-                  style={[
-                    styles.optionItem,
-                    { borderBottomColor: colors.border },
-                    isSelected && { backgroundColor: colors.backgroundElement },
-                  ]}
+                  className="flex-row justify-between items-center px-4 py-3.5 border-b-[0.5px]"
+                  style={{
+                    borderBottomColor: colors.border,
+                    backgroundColor: isSelected ? colors.backgroundElement : "transparent",
+                  }}
                   onPress={() => handleSelect(item.id)}
                   activeOpacity={0.6}
                 >
                   <Text
-                    style={[
-                      styles.optionText,
-                      { color: colors.text },
-                      isSelected && { fontWeight: "600" },
-                    ]}
+                    className="text-sm flex-1"
+                    style={{ color: colors.text, fontWeight: isSelected ? "600" : "500" }}
                   >
                     {item.name}
                   </Text>
@@ -167,56 +148,5 @@ const FacilityDropdown: React.FC<FacilityDropdownProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-  },
-  button: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: "500",
-    flex: 1,
-  },
-  icon: {
-    marginLeft: 8,
-  },
-  iconRotated: {
-    transform: [{ rotate: "180deg" }],
-  },
-  error: {
-    fontSize: 12,
-    marginTop: 6,
-    fontWeight: "500",
-  },
-  bottomSheetHeader: {
-    paddingBottom: 16,
-    alignItems: "center",
-  },
-  bottomSheetTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  optionItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 0.5,
-  },
-  optionText: {
-    fontSize: 14,
-    fontWeight: "500",
-    flex: 1,
-  },
-});
-
 export default FacilityDropdown;
+

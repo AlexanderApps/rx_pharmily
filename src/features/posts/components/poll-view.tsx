@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import React, { useMemo, useState } from "react";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Poll } from "@/features/posts/types/posts.types";
@@ -19,6 +19,40 @@ function timeLeftLabel(closesAt?: Date) {
   return `${Math.round(hours / 24)}d left`;
 }
 
+// A separate component (rather than inlining this in the .map() below) so
+// each option can track its own pressed state independently via
+// onPressIn/onPressOut, instead of Pressable's function-form style prop —
+// on Android that function form intermittently failed to actually commit
+// the borderWidth/borderColor to the native view, leaving the option with
+// no visible outline at all even though the same style object renders
+// correctly on web.
+const PollOptionButton: React.FC<{
+  label: string;
+  onPress: () => void;
+  borderColor: string;
+  backgroundColor: string;
+  pressedBackgroundColor: string;
+  textColor: string;
+}> = ({ label, onPress, borderColor, backgroundColor, pressedBackgroundColor, textColor }) => {
+  const [pressed, setPressed] = useState(false);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
+      style={[
+        styles.optionButton,
+        { borderColor, backgroundColor: pressed ? pressedBackgroundColor : backgroundColor },
+      ]}
+    >
+      <Text className="text-[13px]" style={{ color: textColor, flexShrink: 1 }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+};
+
 const PollView: React.FC<PollViewProps> = ({ postId, poll }) => {
   const { colors } = useTheme();
   const votePoll = usePostsStore((state) => state.votePoll);
@@ -34,8 +68,8 @@ const PollView: React.FC<PollViewProps> = ({ postId, poll }) => {
   const closeLabel = timeLeftLabel(poll.closesAt);
 
   return (
-    <View style={styles.wrap}>
-      <Text style={[styles.question, { color: colors.text }]}>{poll.question}</Text>
+    <View className="gap-2.5">
+      <Text className="text-sm font-semibold" style={{ color: colors.text }}>{poll.question}</Text>
 
       <View style={{ gap: 8 }}>
         {poll.options.map((option) => {
@@ -44,23 +78,15 @@ const PollView: React.FC<PollViewProps> = ({ postId, poll }) => {
 
           if (!showResults) {
             return (
-              <Pressable
+              <PollOptionButton
                 key={option.id}
+                label={option.label}
                 onPress={() => votePoll(postId, option.id)}
-                style={({ pressed }) => [
-                  styles.optionButton,
-                  {
-                    borderColor: colors.border,
-                    backgroundColor: pressed
-                      ? colors.backgroundSelected
-                      : colors.backgroundElement,
-                  },
-                ]}
-              >
-                <Text style={[styles.optionLabel, { color: colors.text }]}>
-                  {option.label}
-                </Text>
-              </Pressable>
+                borderColor={colors.border}
+                backgroundColor={colors.backgroundElement}
+                pressedBackgroundColor={colors.backgroundSelected}
+                textColor={colors.text}
+              />
             );
           }
 
@@ -69,27 +95,23 @@ const PollView: React.FC<PollViewProps> = ({ postId, poll }) => {
               key={option.id}
               onPress={() => !isClosed && votePoll(postId, option.id)}
               disabled={isClosed}
-              style={[
-                styles.resultOption,
-                {
-                  borderColor: isSelected ? colors.primary : colors.border,
-                  backgroundColor: colors.backgroundElement,
-                },
-              ]}
+              className="border rounded-[10px] overflow-hidden"
+              style={{
+                borderColor: isSelected ? colors.primary : colors.border,
+                backgroundColor: colors.backgroundElement,
+              }}
             >
               <View
-                style={[
-                  styles.resultFill,
-                  {
-                    width: `${pct}%`,
-                    backgroundColor: isSelected
-                      ? colors.primary + "30"
-                      : colors.backgroundSecondary,
-                  },
-                ]}
+                className="absolute top-0 left-0 bottom-0"
+                style={{
+                  width: `${pct}%`,
+                  backgroundColor: isSelected
+                    ? colors.primary + "30"
+                    : colors.backgroundSecondary,
+                }}
               />
-              <View style={styles.resultContent}>
-                <View style={styles.resultLabelRow}>
+              <View className="flex-row items-center justify-between py-2.5 px-3 gap-2">
+                <View className="flex-row items-center gap-1.5 flex-1">
                   {isSelected && (
                     <MaterialCommunityIcons
                       name="check-circle"
@@ -98,16 +120,14 @@ const PollView: React.FC<PollViewProps> = ({ postId, poll }) => {
                     />
                   )}
                   <Text
-                    style={[
-                      styles.optionLabel,
-                      { color: colors.text, fontWeight: isSelected ? "700" : "500" },
-                    ]}
+                    className="text-[13px]"
+                    style={{ color: colors.text, fontWeight: isSelected ? "700" : "500", flexShrink: 1 }}
                     numberOfLines={1}
                   >
                     {option.label}
                   </Text>
                 </View>
-                <Text style={[styles.pctText, { color: colors.textSecondary }]}>
+                <Text className="text-xs font-semibold" style={{ color: colors.textSecondary }}>
                   {pct}%
                 </Text>
               </View>
@@ -116,12 +136,12 @@ const PollView: React.FC<PollViewProps> = ({ postId, poll }) => {
         })}
       </View>
 
-      <View style={styles.footerRow}>
-        <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+      <View className="flex-row gap-1">
+        <Text className="text-[11px]" style={{ color: colors.textSecondary }}>
           {totalVotes} vote{totalVotes === 1 ? "" : "s"}
         </Text>
         {closeLabel && (
-          <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+          <Text className="text-[11px]" style={{ color: colors.textSecondary }}>
             · {closeLabel}
           </Text>
         )}
@@ -133,36 +153,10 @@ const PollView: React.FC<PollViewProps> = ({ postId, poll }) => {
 export default PollView;
 
 const styles = StyleSheet.create({
-  wrap: { gap: 10 },
-  question: { fontSize: 14, fontWeight: "600" },
   optionButton: {
     borderWidth: 1,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 12,
   },
-  optionLabel: { fontSize: 13, flexShrink: 1 },
-  resultOption: {
-    borderWidth: 1,
-    borderRadius: 10,
-    overflow: "hidden",
-  },
-  resultFill: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    bottom: 0,
-  },
-  resultContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 8,
-  },
-  resultLabelRow: { flexDirection: "row", alignItems: "center", gap: 6, flex: 1 },
-  pctText: { fontSize: 12, fontWeight: "600" },
-  footerRow: { flexDirection: "row", gap: 4 },
-  footerText: { fontSize: 11 },
 });

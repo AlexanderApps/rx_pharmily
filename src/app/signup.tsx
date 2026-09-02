@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
   TextInput,
   Pressable,
   ScrollView,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
@@ -27,6 +26,8 @@ export default function SignUpScreen() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmationSentTo, setConfirmationSentTo] = useState<string | null>(null);
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   const handleSignUp = async () => {
     if (!fullName.trim() || !email.trim() || !password) {
@@ -55,55 +56,104 @@ export default function SignUpScreen() {
 
   if (confirmationSentTo) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <View style={styles.confirmWrap}>
-          <View style={[styles.logoWrap, { backgroundColor: colors.success + "18" }]}>
-            <MaterialCommunityIcons name="email-check-outline" size={30} color={colors.success} />
-          </View>
-          <Text style={[styles.brandName, { color: colors.text }]}>Check your email</Text>
-          <Text style={[styles.confirmText, { color: colors.textSecondary }]}>
-            We sent a confirmation link to{" "}
-            <Text style={{ fontWeight: "700", color: colors.text }}>{confirmationSentTo}</Text>. Tap it, then
-            come back and sign in.
-          </Text>
-          <Pressable
-            onPress={() => router.replace("/login")}
-            style={[styles.submitButton, { backgroundColor: colors.primary, marginTop: 24 }]}
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: Platform.OS === "web" ? colors.backgroundSecondary : colors.background,
+        }}
+      >
+        <View className="flex-1 items-center justify-center p-8">
+          <View
+            className="items-center"
+            style={
+              Platform.OS === "web"
+                ? {
+                    width: "100%",
+                    maxWidth: 440,
+                    backgroundColor: colors.background,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    padding: 32,
+                  }
+                : undefined
+            }
           >
-            <Text style={styles.submitButtonText}>Back to Sign In</Text>
-          </Pressable>
+            <View className="w-16 h-16 rounded-[18px] items-center justify-center mb-4" style={{ backgroundColor: colors.success + "18" }}>
+              <MaterialCommunityIcons name="email-check-outline" size={30} color={colors.success} />
+            </View>
+            <Text className="text-xl font-extrabold mb-2.5" style={{ color: colors.text }}>Check your email</Text>
+            <Text className="text-sm text-center leading-[21px]" style={{ color: colors.textSecondary }}>
+              We sent a confirmation link to{" "}
+              <Text style={{ fontWeight: "700", color: colors.text }}>{confirmationSentTo}</Text>. Tap it, then
+              come back and sign in.
+            </Text>
+            <Pressable
+              onPress={() => router.replace("/login")}
+              className="rounded-[10px] py-3.5 items-center mt-6"
+              style={{ backgroundColor: colors.primary, width: "100%" }}
+            >
+              <Text className="text-white text-[15px] font-bold">Back to Sign In</Text>
+            </Pressable>
+          </View>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Platform.OS === "web" ? colors.backgroundSecondary : colors.background }}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={() => router.back()} style={styles.back}>
+        <View className="flex-row items-center gap-3 px-4 py-3 border-b-[0.5px]" style={{ borderBottomColor: colors.border, backgroundColor: colors.background }}>
+          {Platform.OS !== "web" && (
+          <Pressable onPress={() => router.back()} className="p-1">
             <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
           </Pressable>
+          )}
           <LogoMark size={22} />
-          <Text style={[styles.title, { color: colors.text }]}>Create Account</Text>
+          <Text className="text-[17px] font-bold" style={{ color: colors.text }}>Create Account</Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Text style={[styles.label, { color: colors.text }]}>Full Name</Text>
+        <ScrollView
+          contentContainerStyle={
+            Platform.OS === "web"
+              ? { flexGrow: 1, alignItems: "center", justifyContent: "center", padding: 24 }
+              : { padding: 20 }
+          }
+          keyboardShouldPersistTaps="handled"
+        >
+          <View
+            style={
+              Platform.OS === "web"
+                ? {
+                    width: "100%",
+                    maxWidth: 440,
+                    backgroundColor: colors.background,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    padding: 32,
+                  }
+                : undefined
+            }
+          >
+          <Text className="text-xs font-semibold" style={{ color: colors.text }}>Full Name</Text>
           <TextInput
             value={fullName}
             onChangeText={setFullName}
             placeholder="Jane Doe"
             placeholderTextColor={colors.textSecondary}
             editable={!submitting}
-            style={[
-              styles.input,
-              { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-            ]}
+            returnKeyType="next"
+            onSubmitEditing={() => emailRef.current?.focus()}
+            blurOnSubmit={false}
+            className="border rounded-[10px] px-3.5 py-3 text-sm mt-1.5"
+            style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
           />
 
-          <Text style={[styles.label, { color: colors.text, marginTop: 14 }]}>Email</Text>
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>Email</Text>
           <TextInput
+            ref={emailRef}
             value={email}
             onChangeText={setEmail}
             placeholder="you@example.com"
@@ -111,101 +161,64 @@ export default function SignUpScreen() {
             autoCapitalize="none"
             keyboardType="email-address"
             editable={!submitting}
-            style={[
-              styles.input,
-              { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-            ]}
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
+            blurOnSubmit={false}
+            className="border rounded-[10px] px-3.5 py-3 text-sm mt-1.5"
+            style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
           />
 
-          <Text style={[styles.label, { color: colors.text, marginTop: 14 }]}>Password</Text>
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>Password</Text>
           <TextInput
+            ref={passwordRef}
             value={password}
             onChangeText={setPassword}
             placeholder="At least 6 characters"
             placeholderTextColor={colors.textSecondary}
             secureTextEntry
             editable={!submitting}
-            style={[
-              styles.input,
-              { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-            ]}
+            returnKeyType="go"
+            onSubmitEditing={handleSignUp}
+            className="border rounded-[10px] px-3.5 py-3 text-sm mt-1.5"
+            style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
           />
 
-          <View style={[styles.noticeBox, { backgroundColor: colors.warning + "12" }]}>
+          <View className="flex-row items-start gap-2 rounded-[10px] p-3 mt-4" style={{ backgroundColor: colors.warning + "12" }}>
             <MaterialCommunityIcons name="information-outline" size={14} color={colors.warning} />
-            <Text style={[styles.noticeText, { color: colors.warning }]}>
+            <Text className="text-xs flex-1 leading-[17px]" style={{ color: colors.warning }}>
               New accounts start unverified. Submit KYC documents from your profile to get verified.
             </Text>
           </View>
 
           {error && (
-            <View style={[styles.errorBox, { backgroundColor: colors.error + "12" }]}>
+            <View className="flex-row items-start gap-1.5 rounded-lg p-2.5 mt-3" style={{ backgroundColor: colors.error + "12" }}>
               <MaterialCommunityIcons name="alert-circle-outline" size={14} color={colors.error} />
-              <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+              <Text className="text-xs flex-1 leading-[17px]" style={{ color: colors.error }}>{error}</Text>
             </View>
           )}
 
           <Pressable
             onPress={handleSignUp}
             disabled={submitting}
-            style={[styles.submitButton, { backgroundColor: colors.primary, opacity: submitting ? 0.7 : 1 }]}
+            className="rounded-[10px] py-3.5 items-center mt-5"
+            style={{ backgroundColor: colors.primary, opacity: submitting ? 0.7 : 1 }}
           >
             {submitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.submitButtonText}>Create Account</Text>
+              <Text className="text-white text-[15px] font-bold">Create Account</Text>
             )}
           </Pressable>
 
-          <Pressable onPress={() => router.back()} style={styles.signInRow}>
-            <Text style={[styles.signInText, { color: colors.textSecondary }]}>
+          <Pressable onPress={() => router.back()} className="items-center mt-[18px]">
+            <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
               Already have an account? <Text style={{ color: colors.primary, fontWeight: "700" }}>Sign in</Text>
             </Text>
           </Pressable>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-  },
-  back: { padding: 4 },
-  title: { fontSize: 17, fontWeight: "700" },
-  content: { padding: 20 },
-  label: { fontSize: 12, fontWeight: "600" },
-  input: {
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 14,
-    marginTop: 6,
-  },
-  noticeBox: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 16,
-  },
-  noticeText: { fontSize: 12, flex: 1, lineHeight: 17 },
-  errorBox: { flexDirection: "row", alignItems: "flex-start", gap: 6, borderRadius: 8, padding: 10, marginTop: 12 },
-  errorText: { fontSize: 12, flex: 1, lineHeight: 17 },
-  submitButton: { borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 20 },
-  submitButtonText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  signInRow: { alignItems: "center", marginTop: 18 },
-  signInText: { fontSize: 13 },
-  confirmWrap: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32 },
-  logoWrap: { width: 64, height: 64, borderRadius: 18, alignItems: "center", justifyContent: "center", marginBottom: 16 },
-  brandName: { fontSize: 20, fontWeight: "800", marginBottom: 10 },
-  confirmText: { fontSize: 14, textAlign: "center", lineHeight: 21 },
-});

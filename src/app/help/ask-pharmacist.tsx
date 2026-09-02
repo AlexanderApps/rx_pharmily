@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
+import { View, Text, FlatList, Pressable } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -8,6 +8,7 @@ import { useHelpStore } from "@/features/help/hooks/use-help-data";
 import PharmacistQuestionCard from "@/features/help/components/pharmacist-question-card";
 import EmergencyBanner from "@/features/help/components/emergency-banner";
 import ListSkeleton from "@/shared/components/list-skeleton";
+import ScreenHeader from "@/shared/components/screen-header";
 
 export default function AskPharmacistScreen() {
   const { colors } = useTheme();
@@ -25,24 +26,21 @@ export default function AskPharmacistScreen() {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>Ask Your Pharmacist</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            General medication questions
-          </Text>
-        </View>
-        <Pressable
-          onPress={() => router.push("/help/new-question")}
-          style={[styles.newButton, { backgroundColor: colors.primary }]}
-        >
-          <MaterialCommunityIcons name="plus" size={20} color="#fff" />
-        </Pressable>
-      </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Top Navigation Header Section */}
+      <ScreenHeader
+        title="Ask Your Pharmacist"
+        subtitle="General medication questions"
+        actions={
+          <Pressable
+            onPress={() => router.push("/help/new-question")}
+            className="w-[34px] h-[34px] rounded-xl items-center justify-center"
+            style={{ backgroundColor: colors.primary }}
+          >
+            <MaterialCommunityIcons name="plus" size={20} color="#fff" />
+          </Pressable>
+        }
+      />
 
       {isLoadingQuestions && sorted.length === 0 ? (
         <ListSkeleton rows={4} />
@@ -50,17 +48,17 @@ export default function AskPharmacistScreen() {
         <FlatList
           data={sorted}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          contentContainerStyle={{ padding: 16, flexGrow: 1 }}
+          ItemSeparatorComponent={() => <View className="h-2.5" />}
           ListHeaderComponent={
-            <View style={{ marginBottom: 12 }}>
+            <View className="mb-3">
               <EmergencyBanner variant="inline" />
             </View>
           }
           ListEmptyComponent={
-            <View style={styles.empty}>
+            <View className="items-center justify-center gap-2.5 pt-[60px]">
               <MaterialCommunityIcons name="pill" size={36} color={colors.textSecondary} />
-              <Text style={{ color: colors.textSecondary, fontSize: 13 }}>No questions yet.</Text>
+              <Text className="text-[13px]" style={{ color: colors.textSecondary }}>No questions yet.</Text>
             </View>
           }
           renderItem={({ item }) => (
@@ -74,20 +72,3 @@ export default function AskPharmacistScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: 1 },
-  newButton: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  listContent: { padding: 16, flexGrow: 1 },
-  empty: { alignItems: "center", justifyContent: "center", gap: 10, paddingTop: 60 },
-});

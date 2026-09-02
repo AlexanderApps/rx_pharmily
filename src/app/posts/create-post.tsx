@@ -5,7 +5,6 @@ import {
   TextInput,
   Pressable,
   ScrollView,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -21,7 +20,6 @@ import MediaPicker from "@/features/posts/components/media-picker";
 
 const MAX_LENGTH = 1000;
 const MAX_OPTIONS = 6;
-
 const DURATION_CHOICES: { label: string; hours: number | null }[] = [
   { label: "1 day", hours: 24 },
   { label: "3 days", hours: 72 },
@@ -54,6 +52,7 @@ export default function CreatePostScreen() {
     .toUpperCase();
 
   const filledOptions = options.map((o) => o.trim()).filter(Boolean);
+
   const canPost =
     postType === "text"
       ? text.trim().length > 0 || media.length > 0
@@ -82,7 +81,10 @@ export default function CreatePostScreen() {
 
     if (postType === "poll") {
       if (question.trim().length === 0 || filledOptions.length < 2) {
-        Alert.alert("Missing information", "Add a question and at least two options.");
+        Alert.alert(
+          "Missing information",
+          "Add a question and at least two options."
+        );
         return;
       }
       await addPost({
@@ -103,7 +105,10 @@ export default function CreatePostScreen() {
         newsSummary.trim().length === 0 ||
         newsSourceUrl.trim().length === 0
       ) {
-        Alert.alert("Missing information", "Add a title, summary, and article link.");
+        Alert.alert(
+          "Missing information",
+          "Add a title, summary, and article link."
+        );
         return;
       }
       await addPost({
@@ -117,36 +122,60 @@ export default function CreatePostScreen() {
         },
       });
     } else {
-      await addPost({ type: "text", text, media: media.length > 0 ? media : undefined });
+      await addPost({
+        type: "text",
+        text,
+        media: media.length > 0 ? media : undefined,
+      });
     }
 
     router.back();
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      className="flex-1"
+      style={{ backgroundColor: colors.background }}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
+        className="flex-1"
       >
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={() => router.back()} style={styles.headerButton}>
-            <Text style={[styles.cancelText, { color: colors.text }]}>Cancel</Text>
+        {/* Header */}
+        <View
+          className="flex-row items-center justify-between px-4 py-3 border-b"
+          style={{ borderBottomColor: colors.border }}
+        >
+          {Platform.OS !== "web" && (
+          <Pressable onPress={() => router.back()} className="p-1">
+            <Text className="text-[15px]" style={{ color: colors.text }}>
+              Cancel
+            </Text>
           </Pressable>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>New Post</Text>
+          )}
+
+          <Text
+            className="text-base font-bold"
+            style={{ color: colors.text }}
+          >
+            New Post
+          </Text>
+
           <Pressable
             onPress={handlePost}
             disabled={!canPost}
-            style={[
-              styles.postButton,
-              { backgroundColor: canPost ? colors.primary : colors.backgroundElement },
-            ]}
+            className="px-4 py-2 rounded-full"
+            style={{
+              backgroundColor: canPost
+                ? colors.primary
+                : colors.backgroundElement,
+            }}
           >
             <Text
-              style={[
-                styles.postButtonText,
-                { color: canPost ? "#fff" : colors.textSecondary },
-              ]}
+              className="text-sm font-semibold"
+              style={{
+                color: canPost ? "#fff" : colors.textSecondary,
+              }}
             >
               Post
             </Text>
@@ -154,26 +183,39 @@ export default function CreatePostScreen() {
         </View>
 
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerClassName="p-4 gap-3.5"
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.authorRow}>
-            <View style={[styles.avatar, { backgroundColor: currentUser.avatarColor }]}>
-              <Text style={styles.avatarText}>{initials}</Text>
+          {/* Author */}
+          <View className="flex-row items-center gap-2.5">
+            <View
+              className="w-10 h-10 rounded-full items-center justify-center"
+              style={{ backgroundColor: currentUser.avatarColor }}
+            >
+              <Text className="text-white text-[13px] font-bold">
+                {initials}
+              </Text>
             </View>
             <View>
-              <Text style={[styles.authorName, { color: colors.text }]}>
+              <Text
+                className="text-sm font-semibold"
+                style={{ color: colors.text }}
+              >
                 {currentUser.fullName}
               </Text>
               {currentUser.role ? (
-                <Text style={[styles.authorRole, { color: colors.textSecondary }]}>
+                <Text
+                  className="text-[11px] mt-px"
+                  style={{ color: colors.textSecondary }}
+                >
                   {currentUser.role}
                 </Text>
               ) : null}
             </View>
           </View>
 
-          <View style={styles.typeRow}>
+          {/* Post type chips */}
+          <View className="flex-row gap-2 flex-wrap">
             {(["text", "poll", "news"] as PostType[]).map((type) => {
               const active = postType === type;
               const icon =
@@ -184,16 +226,17 @@ export default function CreatePostScreen() {
                     : "text-box-outline";
               const label =
                 type === "poll" ? "Poll" : type === "news" ? "News" : "Text";
+
               return (
                 <Pressable
                   key={type}
                   onPress={() => setPostType(type)}
-                  style={[
-                    styles.typeChip,
-                    {
-                      backgroundColor: active ? colors.primary : colors.backgroundElement,
-                    },
-                  ]}
+                  className="flex-row items-center gap-1.5 px-3.5 py-2 rounded-full"
+                  style={{
+                    backgroundColor: active
+                      ? colors.primary
+                      : colors.backgroundElement,
+                  }}
                 >
                   <MaterialCommunityIcons
                     name={icon as any}
@@ -201,10 +244,10 @@ export default function CreatePostScreen() {
                     color={active ? "#fff" : colors.textSecondary}
                   />
                   <Text
-                    style={[
-                      styles.typeChipText,
-                      { color: active ? "#fff" : colors.textSecondary },
-                    ]}
+                    className="text-xs font-semibold"
+                    style={{
+                      color: active ? "#fff" : colors.textSecondary,
+                    }}
                   >
                     {label}
                   </Text>
@@ -213,23 +256,33 @@ export default function CreatePostScreen() {
             })}
           </View>
 
+          {/* Caption / text input */}
           <TextInput
             value={text}
             onChangeText={(v) => setText(v.slice(0, MAX_LENGTH))}
             placeholder={
-              postType === "text" ? "What's on your mind?" : "Add a caption (optional)"
+              postType === "text"
+                ? "What's on your mind?"
+                : "Add a caption (optional)"
             }
             placeholderTextColor={colors.textSecondary}
-            style={[styles.input, { color: colors.text }]}
+            className="text-base leading-[22px] min-h-[60px]"
+            style={{ color: colors.text, textAlignVertical: "top" }}
             multiline
             autoFocus={postType === "text"}
           />
 
-          {postType === "text" && <MediaPicker media={media} onChange={setMedia} />}
+          {postType === "text" && (
+            <MediaPicker media={media} onChange={setMedia} />
+          )}
 
+          {/* Poll section */}
           {postType === "poll" && (
-            <View style={styles.pollSection}>
-              <Text style={[styles.label, { color: colors.text }]}>
+            <View className="gap-1.5">
+              <Text
+                className="text-xs font-semibold"
+                style={{ color: colors.text }}
+              >
                 Question <Text style={{ color: colors.error }}>*</Text>
               </Text>
               <TextInput
@@ -237,35 +290,37 @@ export default function CreatePostScreen() {
                 onChangeText={setQuestion}
                 placeholder="Ask the community something..."
                 placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.fieldInput,
-                  {
-                    backgroundColor: colors.backgroundElement,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
+                className="border rounded-lg px-3 py-[11px] text-sm"
+                style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.border,
+                  color: colors.text,
+                }}
               />
 
-              <Text style={[styles.label, { color: colors.text, marginTop: 12 }]}>
+              <Text
+                className="text-xs font-semibold mt-3"
+                style={{ color: colors.text }}
+              >
                 Options <Text style={{ color: colors.error }}>*</Text>
               </Text>
+
               {options.map((option, index) => (
-                <View key={index} style={styles.optionRow}>
+                <View
+                  key={index}
+                  className="flex-row items-center gap-2 mt-1.5"
+                >
                   <TextInput
                     value={option}
                     onChangeText={(v) => updateOption(index, v)}
                     placeholder={`Option ${index + 1}`}
                     placeholderTextColor={colors.textSecondary}
-                    style={[
-                      styles.fieldInput,
-                      styles.optionInput,
-                      {
-                        backgroundColor: colors.backgroundElement,
-                        borderColor: colors.border,
-                        color: colors.text,
-                      },
-                    ]}
+                    className="flex-1 border rounded-lg px-3 py-[11px] text-sm"
+                    style={{
+                      backgroundColor: colors.backgroundElement,
+                      borderColor: colors.border,
+                      color: colors.text,
+                    }}
                   />
                   {options.length > 2 && (
                     <Pressable onPress={() => removeOption(index)} hitSlop={8}>
@@ -278,39 +333,51 @@ export default function CreatePostScreen() {
                   )}
                 </View>
               ))}
+
               {options.length < MAX_OPTIONS && (
-                <Pressable onPress={addOption} style={styles.addOptionRow}>
-                  <MaterialCommunityIcons name="plus" size={16} color={colors.primary} />
-                  <Text style={[styles.addOptionText, { color: colors.primary }]}>
+                <Pressable
+                  onPress={addOption}
+                  className="flex-row items-center gap-1.5 mt-2.5"
+                >
+                  <MaterialCommunityIcons
+                    name="plus"
+                    size={16}
+                    color={colors.primary}
+                  />
+                  <Text
+                    className="text-[13px] font-semibold"
+                    style={{ color: colors.primary }}
+                  >
                     Add option
                   </Text>
                 </Pressable>
               )}
 
-              <Text style={[styles.label, { color: colors.text, marginTop: 12 }]}>
+              <Text
+                className="text-xs font-semibold mt-3"
+                style={{ color: colors.text }}
+              >
                 Poll duration
               </Text>
-              <View style={styles.typeRow}>
+              <View className="flex-row gap-2 flex-wrap">
                 {DURATION_CHOICES.map((choice) => {
                   const active = durationHours === choice.hours;
                   return (
                     <Pressable
                       key={choice.label}
                       onPress={() => setDurationHours(choice.hours)}
-                      style={[
-                        styles.durationChip,
-                        {
-                          backgroundColor: active
-                            ? colors.primary
-                            : colors.backgroundElement,
-                        },
-                      ]}
+                      className="px-3 py-[7px] rounded-full"
+                      style={{
+                        backgroundColor: active
+                          ? colors.primary
+                          : colors.backgroundElement,
+                      }}
                     >
                       <Text
-                        style={[
-                          styles.typeChipText,
-                          { color: active ? "#fff" : colors.textSecondary },
-                        ]}
+                        className="text-xs font-semibold"
+                        style={{
+                          color: active ? "#fff" : colors.textSecondary,
+                        }}
                       >
                         {choice.label}
                       </Text>
@@ -321,9 +388,13 @@ export default function CreatePostScreen() {
             </View>
           )}
 
+          {/* News section */}
           {postType === "news" && (
-            <View style={styles.pollSection}>
-              <Text style={[styles.label, { color: colors.text }]}>
+            <View className="gap-1.5">
+              <Text
+                className="text-xs font-semibold"
+                style={{ color: colors.text }}
+              >
                 Title <Text style={{ color: colors.error }}>*</Text>
               </Text>
               <TextInput
@@ -331,17 +402,18 @@ export default function CreatePostScreen() {
                 onChangeText={setNewsTitle}
                 placeholder="Article headline"
                 placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.fieldInput,
-                  {
-                    backgroundColor: colors.backgroundElement,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
+                className="border rounded-lg px-3 py-[11px] text-sm"
+                style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.border,
+                  color: colors.text,
+                }}
               />
 
-              <Text style={[styles.label, { color: colors.text, marginTop: 12 }]}>
+              <Text
+                className="text-xs font-semibold mt-3"
+                style={{ color: colors.text }}
+              >
                 Summary <Text style={{ color: colors.error }}>*</Text>
               </Text>
               <TextInput
@@ -349,20 +421,20 @@ export default function CreatePostScreen() {
                 onChangeText={setNewsSummary}
                 placeholder="A couple of sentences on what it's about..."
                 placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.fieldInput,
-                  styles.newsSummaryInput,
-                  {
-                    backgroundColor: colors.backgroundElement,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
+                className="border rounded-lg px-3 py-[11px] text-sm min-h-20"
+                style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.border,
+                  color: colors.text,
+                  textAlignVertical: "top",
+                }}
                 multiline
-                textAlignVertical="top"
               />
 
-              <Text style={[styles.label, { color: colors.text, marginTop: 12 }]}>
+              <Text
+                className="text-xs font-semibold mt-3"
+                style={{ color: colors.text }}
+              >
                 Image URL (optional)
               </Text>
               <TextInput
@@ -372,17 +444,18 @@ export default function CreatePostScreen() {
                 placeholderTextColor={colors.textSecondary}
                 autoCapitalize="none"
                 keyboardType="url"
-                style={[
-                  styles.fieldInput,
-                  {
-                    backgroundColor: colors.backgroundElement,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
+                className="border rounded-lg px-3 py-[11px] text-sm"
+                style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.border,
+                  color: colors.text,
+                }}
               />
 
-              <Text style={[styles.label, { color: colors.text, marginTop: 12 }]}>
+              <Text
+                className="text-xs font-semibold mt-3"
+                style={{ color: colors.text }}
+              >
                 Article Link <Text style={{ color: colors.error }}>*</Text>
               </Text>
               <TextInput
@@ -392,44 +465,52 @@ export default function CreatePostScreen() {
                 placeholderTextColor={colors.textSecondary}
                 autoCapitalize="none"
                 keyboardType="url"
-                style={[
-                  styles.fieldInput,
-                  {
-                    backgroundColor: colors.backgroundElement,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
+                className="border rounded-lg px-3 py-[11px] text-sm"
+                style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.border,
+                  color: colors.text,
+                }}
               />
 
-              <View style={styles.rssNote}>
+              <View className="flex-row items-start gap-1.5 mt-3.5">
                 <MaterialCommunityIcons
                   name="rss"
                   size={13}
                   color={colors.textSecondary}
                 />
-                <Text style={[styles.rssNoteText, { color: colors.textSecondary }]}>
-                  News posts are added manually for now — pulling these from an RSS
-                  feed is planned for later.
+                <Text
+                  className="text-[11px] flex-1 leading-[15px]"
+                  style={{ color: colors.textSecondary }}
+                >
+                  News posts are added manually for now — pulling these from an
+                  RSS feed is planned for later.
                 </Text>
               </View>
             </View>
           )}
         </ScrollView>
 
-        <View style={styles.footer}>
+        {/* Footer */}
+        <View className="px-4 py-3 gap-1.5">
           {postType === "text" && (
-            <Text style={[styles.charCount, { color: colors.textSecondary }]}>
+            <Text
+              className="text-[11px] text-right"
+              style={{ color: colors.textSecondary }}
+            >
               {text.length}/{MAX_LENGTH}
             </Text>
           )}
-          <View style={styles.footerHint}>
+          <View className="flex-row items-center gap-1.5">
             <MaterialCommunityIcons
               name="information-outline"
               size={13}
               color={colors.textSecondary}
             />
-            <Text style={[styles.footerHintText, { color: colors.textSecondary }]}>
+            <Text
+              className="text-[11px] flex-1"
+              style={{ color: colors.textSecondary }}
+            >
               Visible to everyone in the RxPharmily community
             </Text>
           </View>
@@ -438,78 +519,3 @@ export default function CreatePostScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  headerButton: { padding: 4 },
-  cancelText: { fontSize: 15 },
-  headerTitle: { fontSize: 16, fontWeight: "700" },
-  postButton: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  postButtonText: { fontSize: 14, fontWeight: "600" },
-  content: { padding: 16, gap: 14 },
-  authorRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: { color: "#fff", fontSize: 13, fontWeight: "700" },
-  authorName: { fontSize: 14, fontWeight: "600" },
-  authorRole: { fontSize: 11, marginTop: 1 },
-  typeRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  typeChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  typeChipText: { fontSize: 12, fontWeight: "600" },
-  input: { fontSize: 16, lineHeight: 22, minHeight: 60, textAlignVertical: "top" },
-  pollSection: { gap: 6 },
-  label: { fontSize: 12, fontWeight: "600" },
-  fieldInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    fontSize: 14,
-  },
-  optionRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
-  optionInput: { flex: 1 },
-  newsSummaryInput: { minHeight: 80 },
-  rssNote: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 6,
-    marginTop: 14,
-  },
-  rssNoteText: { fontSize: 11, flex: 1, lineHeight: 15 },
-  addOptionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 10,
-  },
-  addOptionText: { fontSize: 13, fontWeight: "600" },
-  durationChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20 },
-  footer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 6,
-  },
-  charCount: { fontSize: 11, textAlign: "right" },
-  footerHint: { flexDirection: "row", alignItems: "center", gap: 5 },
-  footerHintText: { fontSize: 11, flex: 1 },
-});

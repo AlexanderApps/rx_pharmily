@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -36,6 +36,7 @@ const KycSection: React.FC<KycSectionProps> = ({
   const { colors } = useTheme();
   const [selectedType, setSelectedType] = useState<KycDocumentType>(documentTypes[0]);
   const [uploading, setUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewingPath, setViewingPath] = useState<string | null>(null);
 
   const canEdit = kyc.status === "unverified" || kyc.status === "rejected";
@@ -78,8 +79,10 @@ const KycSection: React.FC<KycSectionProps> = ({
       message: "Your documents will be sent for review. You'll be notified once a decision is made.",
       confirmLabel: "Submit",
     });
-    if (!confirmed) return;
+    if (!confirmed || isSubmitting) return;
+    setIsSubmitting(true);
     const result = await onSubmit();
+    setIsSubmitting(false);
     if (result === false) {
       toast.error("Couldn't submit for verification. Please try again.");
     } else {
@@ -89,27 +92,27 @@ const KycSection: React.FC<KycSectionProps> = ({
 
   return (
     <View style={{ gap: 12 }}>
-      <View style={styles.headerRow}>
-        <Text style={[styles.title, { color: colors.text }]}>Verification</Text>
+      <View className="flex-row items-center justify-between">
+        <Text className="text-sm font-bold" style={{ color: colors.text }}>Verification</Text>
         <KycStatusBadge status={kyc.status} />
       </View>
 
       {kyc.status === "rejected" && kyc.rejectionReason && (
-        <View style={[styles.reasonBox, { backgroundColor: colors.error + "12" }]}>
+        <View className="flex-row items-start gap-1.5 rounded-lg p-2.5" style={{ backgroundColor: colors.error + "12" }}>
           <MaterialCommunityIcons name="alert-circle-outline" size={14} color={colors.error} />
-          <Text style={[styles.reasonText, { color: colors.error }]}>{kyc.rejectionReason}</Text>
+          <Text className="text-xs flex-1 leading-[17px]" style={{ color: colors.error }}>{kyc.rejectionReason}</Text>
         </View>
       )}
 
       {kyc.status === "verified" && kyc.reviewedAt && (
-        <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+        <Text className="text-xs" style={{ color: colors.textSecondary }}>
           Verified {new Date(kyc.reviewedAt).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })}
           {kyc.reviewedBy ? ` by ${kyc.reviewedBy}` : ""}
         </Text>
       )}
 
       {kyc.status === "pending" && (
-        <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+        <Text className="text-xs" style={{ color: colors.textSecondary }}>
           Submitted for review — this usually takes 1–2 business days.
         </Text>
       )}
@@ -120,12 +123,13 @@ const KycSection: React.FC<KycSectionProps> = ({
             <Pressable
               key={doc.id}
               onPress={() => doc.imageUri && setViewingPath(doc.imageUri)}
-              style={[styles.docRow, { backgroundColor: colors.backgroundElement }]}
+              className="flex-row items-center gap-2.5 rounded-[10px] p-2.5"
+              style={{ backgroundColor: colors.backgroundElement }}
             >
               <MaterialCommunityIcons name="file-document-outline" size={16} color={colors.textSecondary} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.docType, { color: colors.text }]}>{doc.type}</Text>
-                <Text style={[styles.docFileName, { color: colors.textSecondary }]} numberOfLines={1}>
+                <Text className="text-[13px] font-semibold" style={{ color: colors.text }}>{doc.type}</Text>
+                <Text className="text-[11px] mt-px" style={{ color: colors.textSecondary }} numberOfLines={1}>
                   {doc.fileName}
                 </Text>
               </View>
@@ -144,19 +148,17 @@ const KycSection: React.FC<KycSectionProps> = ({
 
       {canEdit && (
         <>
-          <View style={styles.chipRow}>
+          <View className="flex-row flex-wrap gap-2">
             {documentTypes.map((type) => {
               const active = selectedType === type;
               return (
                 <Pressable
                   key={type}
                   onPress={() => setSelectedType(type)}
-                  style={[
-                    styles.chip,
-                    { backgroundColor: active ? colors.primary : colors.backgroundElement },
-                  ]}
+                  className="px-3 py-[7px] rounded-full"
+                  style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
                 >
-                  <Text style={[styles.chipText, { color: active ? "#fff" : colors.textSecondary }]}>
+                  <Text className="text-[11px] font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
                     {type}
                   </Text>
                 </Pressable>
@@ -167,21 +169,33 @@ const KycSection: React.FC<KycSectionProps> = ({
           <Pressable
             onPress={handleAddDocument}
             disabled={uploading}
-            style={[styles.addButton, { borderColor: colors.border, backgroundColor: colors.backgroundElement, opacity: uploading ? 0.6 : 1 }]}
+            className="flex-row items-center justify-center gap-2 py-3 rounded-[10px] border border-dashed"
+            style={{ borderColor: colors.border, backgroundColor: colors.backgroundElement, opacity: uploading ? 0.6 : 1 }}
           >
             {uploading ? (
               <ActivityIndicator size="small" color={colors.textSecondary} />
             ) : (
               <MaterialCommunityIcons name="camera-plus-outline" size={16} color={colors.textSecondary} />
             )}
-            <Text style={[styles.addButtonText, { color: colors.textSecondary }]}>
+            <Text className="text-[13px] font-semibold" style={{ color: colors.textSecondary }}>
               {uploading ? "Uploading..." : `Add ${selectedType} Photo`}
             </Text>
           </Pressable>
 
-          <Pressable onPress={handleSubmit} style={[styles.submitButton, { backgroundColor: colors.primary }]}>
-            <MaterialCommunityIcons name="shield-check-outline" size={16} color="#fff" />
-            <Text style={styles.submitButtonText}>Submit for Verification</Text>
+          <Pressable
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+            className="flex-row items-center justify-center gap-2 py-3.5 rounded-[10px]"
+            style={{ backgroundColor: colors.primary, opacity: isSubmitting ? 0.7 : 1 }}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <MaterialCommunityIcons name="shield-check-outline" size={16} color="#fff" />
+            )}
+            <Text className="text-white text-sm font-semibold">
+              {isSubmitting ? "Submitting..." : "Submit for Verification"}
+            </Text>
           </Pressable>
         </>
       )}
@@ -196,36 +210,3 @@ const KycSection: React.FC<KycSectionProps> = ({
 
 export default KycSection;
 
-const styles = StyleSheet.create({
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  title: { fontSize: 14, fontWeight: "700" },
-  reasonBox: { flexDirection: "row", alignItems: "flex-start", gap: 6, borderRadius: 8, padding: 10 },
-  reasonText: { fontSize: 12, flex: 1, lineHeight: 17 },
-  metaText: { fontSize: 12 },
-  docRow: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 10, padding: 10 },
-  docType: { fontSize: 13, fontWeight: "600" },
-  docFileName: { fontSize: 11, marginTop: 1 },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20 },
-  chipText: { fontSize: 11, fontWeight: "600" },
-  addButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderStyle: "dashed",
-  },
-  addButtonText: { fontSize: 13, fontWeight: "600" },
-  submitButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 13,
-    borderRadius: 10,
-  },
-  submitButtonText: { color: "#fff", fontSize: 14, fontWeight: "600" },
-});

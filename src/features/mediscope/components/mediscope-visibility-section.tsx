@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import { View, Text, TextInput, Pressable } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import {
@@ -54,17 +54,18 @@ const MediscopeVisibilitySection: React.FC<MediscopeVisibilitySectionProps> = ({
     rule.region || rule.facilityType || rule.facility || "";
 
   return (
-    <View style={{ gap: 10 }}>
-      <View style={styles.chipRow}>
+    <View className="gap-2.5">
+      <View className="flex-row flex-wrap gap-2">
         {(["All", "Restricted"] as MediscopeVisibilityScope[]).map((option) => {
           const active = scope === option;
           return (
             <Pressable
               key={option}
               onPress={() => onScopeChange(option)}
-              style={[styles.chip, { backgroundColor: active ? colors.primary : colors.backgroundElement }]}
+              className="px-3.5 py-2 rounded-full"
+              style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
             >
-              <Text style={[styles.chipText, { color: active ? "#fff" : colors.textSecondary }]}>
+              <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
                 {option === "All" ? "Everyone" : "Restricted"}
               </Text>
             </Pressable>
@@ -73,14 +74,15 @@ const MediscopeVisibilitySection: React.FC<MediscopeVisibilitySectionProps> = ({
       </View>
 
       {scope === "Restricted" && (
-        <View style={{ gap: 8 }}>
+        <View className="gap-2">
           {rules.map((rule) => (
             <View
               key={rule.id}
-              style={[styles.ruleRow, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}
+              className="flex-row items-center gap-2 border rounded-lg px-2.5 py-2"
+              style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border }}
             >
               <MaterialCommunityIcons name="map-marker-radius-outline" size={14} color={colors.textSecondary} />
-              <Text style={[styles.ruleText, { color: colors.text }]} numberOfLines={1}>
+              <Text className="text-xs flex-1" style={{ color: colors.text }} numberOfLines={1}>
                 {rule.ruleType}: {ruleLabel(rule)}
               </Text>
               <Pressable onPress={() => removeRule(rule.id)} hitSlop={8}>
@@ -89,19 +91,17 @@ const MediscopeVisibilitySection: React.FC<MediscopeVisibilitySectionProps> = ({
             </View>
           ))}
 
-          <View style={styles.chipRow}>
+          <View className="flex-row flex-wrap gap-2">
             {RULE_TYPES.map((type) => {
               const active = draftType === type;
               return (
                 <Pressable
                   key={type}
                   onPress={() => setDraftType(type)}
-                  style={[
-                    styles.smallChip,
-                    { backgroundColor: active ? colors.primary : colors.backgroundElement },
-                  ]}
+                  className="px-2.5 py-1.5 rounded-full"
+                  style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
                 >
-                  <Text style={[styles.smallChipText, { color: active ? "#fff" : colors.textSecondary }]}>
+                  <Text className="text-[11px] font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
                     {type}
                   </Text>
                 </Pressable>
@@ -109,7 +109,7 @@ const MediscopeVisibilitySection: React.FC<MediscopeVisibilitySectionProps> = ({
             })}
           </View>
 
-          <View style={styles.addRow}>
+          <View className="flex-row gap-2 items-center">
             <TextInput
               value={draftValue}
               onChangeText={setDraftValue}
@@ -121,14 +121,12 @@ const MediscopeVisibilitySection: React.FC<MediscopeVisibilitySectionProps> = ({
                     : "e.g. Ridge Hospital"
               }
               placeholderTextColor={colors.textSecondary}
-              style={[
-                styles.addInput,
-                { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-              ]}
+              className="flex-1 border rounded-lg px-3 py-2.5 text-[13px]"
+              style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
               onSubmitEditing={addRule}
               returnKeyType="done"
             />
-            <Pressable onPress={addRule} style={[styles.addButton, { backgroundColor: colors.text }]}>
+            <Pressable onPress={addRule} className="w-10 h-10 rounded-lg items-center justify-center" style={{ backgroundColor: colors.text }}>
               <MaterialCommunityIcons name="plus" size={18} color={colors.backgroundSecondary} />
             </Pressable>
           </View>
@@ -140,30 +138,3 @@ const MediscopeVisibilitySection: React.FC<MediscopeVisibilitySectionProps> = ({
 
 export default MediscopeVisibilitySection;
 
-const styles = StyleSheet.create({
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
-  chipText: { fontSize: 12, fontWeight: "600" },
-  smallChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16 },
-  smallChipText: { fontSize: 11, fontWeight: "600" },
-  ruleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  ruleText: { fontSize: 12, flex: 1 },
-  addRow: { flexDirection: "row", gap: 8, alignItems: "center" },
-  addInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 13,
-  },
-  addButton: { width: 40, height: 40, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-});

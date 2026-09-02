@@ -7,7 +7,6 @@ import React, {
 } from "react";
 import {
   View,
-  StyleSheet,
   Text,
   TouchableOpacity,
   TextInput,
@@ -113,15 +112,15 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
         backgroundColor={colors.backgroundSecondary}
       >
         {/* Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.title, { color: colors.text }]}>
+        <View className="flex-row justify-between items-center px-5 py-4 border-b" style={{ borderBottomColor: colors.border }}>
+          <Text className="text-lg font-bold" style={{ color: colors.text }}>
             {isEditing ? "Edit Item" : "Add New Item"}
           </Text>
           <TouchableOpacity
             onPress={() =>
               (ref as React.RefObject<BottomSheetModal>).current?.dismiss()
             }
-            style={styles.closeButton}
+            className="p-1"
           >
             <MaterialCommunityIcons
               name="close"
@@ -132,10 +131,10 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
         </View>
 
         {/* Form Fields Content - Let BottomSheet handle scrolling naturally */}
-        <View style={styles.content}>
-          <View style={styles.contentContainer}>
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>
+        <View className="flex-1">
+          <View className="px-5 pt-5 pb-10 gap-5">
+            <View className="w-full gap-2">
+              <Text className="text-sm font-semibold" style={{ color: colors.text }}>
                 Product <Text style={{ color: colors.error }}>*</Text>
               </Text>
               <ProductComboBox
@@ -148,18 +147,16 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
               />
             </View>
 
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>
+            <View className="w-full gap-2">
+              <Text className="text-sm font-semibold" style={{ color: colors.text }}>
                 Quantity <Text style={{ color: colors.error }}>*</Text>
               </Text>
               <View
-                style={[
-                  styles.quantityContainer,
-                  {
-                    backgroundColor: colors.backgroundElement,
-                    borderColor: errors.quantity ? colors.error : colors.border,
-                  },
-                ]}
+                className="flex-row items-center border rounded-lg overflow-hidden"
+                style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: errors.quantity ? colors.error : colors.border,
+                }}
               >
                 <TouchableOpacity
                   onPress={() =>
@@ -168,7 +165,7 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
                       quantity: Math.max(1, prev.quantity - 1),
                     }))
                   }
-                  style={styles.quantityButton}
+                  className="px-4 py-3 items-center justify-center"
                 >
                   <MaterialCommunityIcons
                     name="minus"
@@ -177,7 +174,8 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
                   />
                 </TouchableOpacity>
                 <TextInput
-                  style={[styles.quantityInput, { color: colors.text }]}
+                  className="flex-1 text-center text-base font-semibold py-2"
+                  style={{ color: colors.text }}
                   value={formData.quantity.toString()}
                   onChangeText={(value) => {
                     const num = parseInt(value, 10);
@@ -195,7 +193,7 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
                       quantity: prev.quantity + 1,
                     }))
                   }
-                  style={styles.quantityButton}
+                  className="px-4 py-3 items-center justify-center"
                 >
                   <MaterialCommunityIcons
                     name="plus"
@@ -205,25 +203,23 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
                 </TouchableOpacity>
               </View>
               {errors.quantity && (
-                <Text style={[styles.error, { color: colors.error }]}>
+                <Text className="text-xs font-medium mt-0.5" style={{ color: colors.error }}>
                   {errors.quantity}
                 </Text>
               )}
             </View>
 
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>
+            <View className="w-full gap-2">
+              <Text className="text-sm font-semibold" style={{ color: colors.text }}>
                 Batch (Optional)
               </Text>
               <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.backgroundElement,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
+                className="border rounded-lg px-3 py-3 text-[15px]"
+                style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.border,
+                  color: colors.text,
+                }}
                 value={formData.batch}
                 onChangeText={(batch) =>
                   setFormData((prev) => ({ ...prev, batch }))
@@ -233,8 +229,8 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
               />
             </View>
 
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>
+            <View className="w-full gap-2">
+              <Text className="text-sm font-semibold" style={{ color: colors.text }}>
                 Expiry Date <Text style={{ color: colors.error }}>*</Text>
               </Text>
               <DatePicker
@@ -245,22 +241,22 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
                 format="long"
               />
               {formData.expiryDate.getTime() < Date.now() && (
-                <View style={styles.expiryWarningRow}>
+                <View className="flex-row items-center gap-1.5 mt-0.5">
                   <MaterialCommunityIcons
                     name="alert-circle-outline"
                     size={14}
                     color={colors.warning}
                   />
-                  <Text style={[styles.expiryWarningText, { color: colors.warning }]}>
+                  <Text className="text-xs font-medium flex-1" style={{ color: colors.warning }}>
                     This date is in the past — the item will show as expired.
                   </Text>
                 </View>
               )}
             </View>
 
-            <View style={styles.statusStack}>
-              <View style={styles.section}>
-                <Text style={[styles.label, { color: colors.text }]}>
+            <View className="flex-col w-full gap-4">
+              <View className="w-full gap-2">
+                <Text className="text-sm font-semibold" style={{ color: colors.text }}>
                   Item Status
                 </Text>
                 <ItemStatusCheckbox
@@ -274,15 +270,14 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
             </View>
 
             <TouchableOpacity
-              style={[styles.saveButton, { backgroundColor: colors.text }]}
+              className="rounded-[10px] py-3.5 items-center justify-center mt-2.5"
+              style={{ backgroundColor: colors.text }}
               onPress={handleSave}
               activeOpacity={0.8}
             >
               <Text
-                style={[
-                  styles.saveButtonText,
-                  { color: colors.backgroundSecondary },
-                ]}
+                className="text-base font-semibold"
+                style={{ color: colors.backgroundSecondary }}
               >
                 {isEditing ? "Save Changes" : "Add Item"}
               </Text>
@@ -294,70 +289,5 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
   },
 );
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  title: { fontSize: 18, fontWeight: "700" },
-  closeButton: { padding: 4 },
-  content: { flex: 1 },
-  contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    gap: 20,
-  },
-  section: { width: "100%", gap: 8 },
-  statusStack: { flexDirection: "column", width: "100%", gap: 16 },
-  label: { fontSize: 14, fontWeight: "600" },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 15,
-  },
-  quantityContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 8,
-    overflow: "hidden",
-  },
-  quantityButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  quantityInput: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "600",
-    paddingVertical: 8,
-  },
-  error: { fontSize: 12, fontWeight: "500", marginTop: 2 },
-  expiryWarningRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    marginTop: 2,
-  },
-  expiryWarningText: { fontSize: 12, fontWeight: "500", flex: 1 },
-  saveButton: {
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
-  },
-  saveButtonText: { fontSize: 16, fontWeight: "600" },
-});
-
 export default DonatedItemModal;
+

@@ -1,23 +1,20 @@
-import React, { useMemo, useRef } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  Share,
-  StyleSheet,
-  Platform,
-} from "react-native";
+import React, { useEffect, useMemo } from "react";
+import { View, Text, Pressable, ScrollView, Platform} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { format } from "timeago.js";
 import { router, useLocalSearchParams } from "expo-router";
-import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { confirm } from "@/shared/hooks/use-confirm";
+import { toast } from "@/shared/hooks/use-toast";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
+import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useRxJobsStore } from "@/features/rxjobs/hooks/use-rxjobs-data";
-import ApplySheet from "@/features/rxjobs/components/apply-sheet";
+import {
+  ApplicationStatus,
+  JobStatus,
+} from "@/features/rxjobs/types/rxjobs.types";
 
 const fmtDate = (d?: Date) =>
   d
@@ -28,361 +25,475 @@ const fmtDate = (d?: Date) =>
       })
     : "-";
 
-// Public view — anyone browsing the market lands here (Apply/Save/Share).
-// Owners are routed to /jobs/job-details for management instead.
-export default function JobMarketDetailsScreen() {
+const JOB_STATUS_META: Record<
+  JobStatus,
+  {
+    label: string;
+    icon: keyof typeof MaterialCommunityIcons.glyphMap;
+    tone: "success" | "warning" | "error";
+  }
+> = {
+  open: { label: "Open", icon: "briefcase-check-outline", tone: "success" },
+  closed: { label: "Closed", icon: "briefcase-off-outline", tone: "warning" },
+  cancelled: { label: "Cancelled", icon: "cancel", tone: "error" },
+};
+
+const STATUS_META: Record<
+  ApplicationStatus,
+  {
+    label: string;
+    icon: string;
+    tone: "success" | "warning" | "error" | "info";
+  }
+> = {
+  submitted: { label: "Submitted", icon: "email-outline", tone: "info" },
+  reviewing: { label: "Reviewing", icon: "eye-outline", tone: "warning" },
+  shortlisted: { label: "Shortlisted", icon: "star-outline", tone: "success" },
+  hired: { label: "Hired", icon: "check-circle-outline", tone: "success" },
+  rejected: { label: "Rejected", icon: "close-circle-outline", tone: "error" },
+};
+
+const NEXT_ACTIONS: { status: ApplicationStatus; label: string }[] = [
+  { status: "reviewing", label: "Review" },
+  { status: "shortlisted", label: "Shortlist" },
+  { status: "hired", label: "Hire" },
+  { status: "rejected", label: "Reject" },
+];
+
+// Owner-only management screen. Anyone browsing someone else's listing is
+// routed to /jobs/job-market-details instead.
+export default function JobDetailsScreen() {
   const { colors } = useTheme();
+  const currentUserId = useAuthStore((state) => state.user?.id);
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const jobs = useRxJobsStore((state) => state.jobs);
   const isLoadingJobs = useRxJobsStore((state) => state.isLoading);
-  const hasApplied = useRxJobsStore((state) => state.hasApplied);
-  const isSaved = useRxJobsStore((state) => state.isSaved);
-  const toggleSaveJob = useRxJobsStore((state) => state.toggleSaveJob);
-  const applyToJob = useRxJobsStore((state) => state.applyToJob);
+  const applications = useRxJobsStore((state) => state.applications);
+  const fetchApplicationsForJob = useRxJobsStore(
+    (state) => state.fetchApplicationsForJob,
+  );
+  const deleteJob = useRxJobsStore((state) => state.deleteJob);
+  const closeJob = useRxJobsStore((state) => state.closeJob);
+  const cancelJob = useRxJobsStore((state) => state.cancelJob);
+  const reopenJob = useRxJobsStore((state) => state.reopenJob);
+  const updateApplicationStatus = useRxJobsStore(
+    (state) => state.updateApplicationStatus,
+  );
 
-  const applySheetRef = useRef<BottomSheetModal>(null);
+  useEffect(() => {
+    if (id) fetchApplicationsForJob(id);
+  }, [id]);
 
   const job = useMemo(() => jobs.find((j) => j.id === id), [jobs, id]);
-  const applied = job ? hasApplied(job.id) : false;
-  const saved = job ? isSaved(job.id) : false;
+  const jobApplications = useMemo(
+    () => applications.filter((a) => a.jobId === id),
+    [applications, id],
+  );
 
   if (!job) {
     if (isLoadingJobs) {
       return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
           <DetailSkeleton rows={3} />
         </SafeAreaView>
       );
     }
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <Text style={{ color: colors.text, padding: 16 }}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <Text className="p-4" style={{ color: colors.text }}>
           No job found for id: {id}
         </Text>
       </SafeAreaView>
     );
   }
 
-  const isImmediate = job.urgency === "Immediate";
-  const deadlineSoon =
-    job.applicationDeadline &&
-    job.applicationDeadline.getTime() - Date.now() < 1000 * 60 * 60 * 48;
+  const isOwner = job.postedBy === currentUserId;
 
-  const handleShare = async () => {
-    try {
-      await Share.share({
-        message: `${job.title} at ${job.companyName}\n${job.location}\n${job.salaryRange}`,
-      });
-    } catch {}
+  if (!isOwner) {
+    return (
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <View className="p-4 gap-3">
+          <Text className="text-[15px] font-semibold" style={{ color: colors.text }}>
+            This is a management view
+          </Text>
+          <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+            Only {job.companyName} can manage this listing.
+          </Text>
+          <Pressable
+            onPress={() =>
+              router.replace({
+                pathname: "/jobs/job-market-details",
+                params: { id: job.id },
+              })
+            }
+            className="py-3.5 rounded-xl items-center"
+            style={{ backgroundColor: colors.primary }}
+          >
+            <Text className="text-white text-[15px] font-semibold">View listing</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const handleDelete = async () => {
+    const ok = await confirm({
+      title: "Delete this listing?",
+      message: `"${job.title}" will be permanently removed.`,
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
+    const success = await deleteJob(job.id);
+    if (success) {
+      toast.success("Listing deleted.");
+      router.back();
+    } else {
+      toast.error("Couldn't delete the listing.");
+    }
   };
 
-  const handleSubmitApplication = async (coverNote: string) => {
-    await applyToJob(job.id, coverNote || undefined);
-    applySheetRef.current?.dismiss();
+  const handleClose = async () => {
+    const ok = await confirm({
+      title: "Close this listing?",
+      message:
+        "This marks the search as ended (e.g. the position was filled). You can still review applicants, and can reopen it later.",
+      confirmLabel: "Close Listing",
+    });
+    if (!ok) return;
+    await closeJob(job.id);
+    toast.success("Listing closed.");
   };
+
+  const handleCancel = async () => {
+    const ok = await confirm({
+      title: "Withdraw this listing?",
+      message:
+        "This removes it from search results before it was filled. You can reopen it later if you change your mind.",
+      confirmLabel: "Withdraw",
+      cancelLabel: "Keep it",
+      destructive: true,
+    });
+    if (!ok) return;
+    await cancelJob(job.id);
+    toast.success("Listing withdrawn.");
+  };
+
+  const handleReopen = async () => {
+    const ok = await confirm({
+      title: "Reopen this listing?",
+      message: "It will be visible in search results again.",
+      confirmLabel: "Reopen",
+    });
+    if (!ok) return;
+    await reopenJob(job.id);
+    toast.success("Listing reopened.");
+  };
+
+  const statusMeta = JOB_STATUS_META[job.status];
+  const statusColor = colors[statusMeta.tone];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Nav bar */}
-      <View style={[styles.navbar, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Navbar */}
+      <View
+        className="flex-row items-center px-4 py-3 border-b gap-3"
+        style={{ borderBottomColor: colors.border }}
+      >
+        {Platform.OS !== "web" && (
+        <Pressable
+          onPress={() => router.back()}
+          className="w-9 h-9 justify-center items-center"
+          hitSlop={8}
+        >
           <Ionicons name="arrow-back-outline" size={22} color={colors.text} />
         </Pressable>
-        <View style={styles.navbarMeta}>
-          <Text style={[styles.navbarCode, { color: colors.text }]} numberOfLines={1}>
-            {job.jobType}
-          </Text>
-          <Text style={[styles.navbarTime, { color: colors.textSecondary }]}>
-            Posted {format(job.createdAt)}
-          </Text>
-        </View>
-        <View
-          style={[
-            styles.statusPill,
-            { backgroundColor: (isImmediate ? colors.error : colors.info) + "20" },
-          ]}
-        >
+        )}
+        <View className="flex-1">
           <Text
-            style={[
-              styles.statusPillText,
-              { color: isImmediate ? colors.error : colors.info },
-            ]}
+            className="text-[15px] font-semibold"
+            style={{ color: colors.text }}
+            numberOfLines={1}
           >
-            {job.urgency}
+            {job.title}
           </Text>
+          <View className="flex-row items-center gap-2 mt-0.5">
+            <View
+              className="flex-row items-center gap-1 px-2 py-0.5 rounded-md"
+              style={{ backgroundColor: statusColor + "18" }}
+            >
+              <MaterialCommunityIcons
+                name={statusMeta.icon}
+                size={11}
+                color={statusColor}
+              />
+              <Text className="text-[10px] font-bold" style={{ color: statusColor }}>
+                {statusMeta.label}
+              </Text>
+            </View>
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>
+              Posted {format(job.createdAt)}
+            </Text>
+          </View>
         </View>
+        <Pressable
+          onPress={() =>
+            router.push({ pathname: "/jobs/post-job", params: { id: job.id } })
+          }
+          className="w-9 h-9 rounded-[10px] justify-center items-center"
+          style={{ backgroundColor: colors.backgroundSecondary }}
+        >
+          <MaterialCommunityIcons name="pencil-outline" size={18} color={colors.text} />
+        </Pressable>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Hero */}
-        <View style={styles.hero}>
+      <ScrollView contentContainerClassName="px-4 pt-4">
+        {/* Posted by */}
+        <View className="flex-row items-center gap-2.5 mb-3.5">
           <ClickableAvatar
             entityType="facility"
             entityId={job.postedBy}
             name={job.companyName}
             avatarColor={colors.primary}
             subtitle="Posted this job"
-            size={52}
+            size={38}
           />
-          <View style={styles.heroMeta}>
-            <Text style={[styles.heroTitle, { color: colors.text }]}>{job.title}</Text>
-            <Text style={[styles.heroCompany, { color: colors.textSecondary }]}>
+          <View>
+            <Text
+              className="text-[11px] font-semibold uppercase tracking-wide"
+              style={{ color: colors.textSecondary }}
+            >
+              Posted by
+            </Text>
+            <Text className="text-sm font-bold mt-0.5" style={{ color: colors.text }}>
               {job.companyName}
             </Text>
-            <View style={styles.heroLocationRow}>
-              <MaterialCommunityIcons
-                name="map-marker-outline"
-                size={14}
-                color={colors.textSecondary}
-              />
-              <Text style={[styles.heroLocation, { color: colors.textSecondary }]}>
-                {job.location}
-              </Text>
-            </View>
           </View>
         </View>
 
-        {applied && (
-          <View style={[styles.appliedBanner, { backgroundColor: colors.success + "18" }]}>
-            <MaterialCommunityIcons name="check-circle-outline" size={16} color={colors.success} />
-            <Text style={[styles.appliedBannerText, { color: colors.success }]}>
-              You've applied to this role
-            </Text>
-          </View>
-        )}
-
-        {deadlineSoon && !applied && (
-          <View style={[styles.appliedBanner, { backgroundColor: colors.warning + "18" }]}>
-            <Ionicons name="hourglass-outline" size={15} color={colors.warning} />
-            <Text style={[styles.appliedBannerText, { color: colors.warning }]}>
-              Applications close {format(job.applicationDeadline!)}
-            </Text>
-          </View>
-        )}
-
-        {/* Description */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>About the role</Text>
-        <Text style={[styles.description, { color: colors.textSecondary }]}>
-          {job.description}
-        </Text>
-
-        {/* Job info */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Details</Text>
+        {/* Info card */}
         <View
-          style={[styles.card, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+          className="rounded-2xl border overflow-hidden mb-5"
+          style={{
+            backgroundColor: colors.backgroundSecondary,
+            borderColor: colors.border,
+          }}
         >
-          <View style={styles.infoRow}>
-            <View style={styles.infoRowLeft}>
-              <MaterialCommunityIcons name="cash-multiple" size={16} color={colors.textSecondary} />
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Salary</Text>
-            </View>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{job.salaryRange}</Text>
+          <View className="flex-row justify-between items-center px-3.5 py-2.5">
+            <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+              Company
+            </Text>
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
+              {job.companyName}
+            </Text>
           </View>
-          <View style={[styles.infoRow, styles.infoRowBorder, { borderTopColor: colors.border }]}>
-            <View style={styles.infoRowLeft}>
-              <MaterialCommunityIcons name="briefcase-outline" size={16} color={colors.textSecondary} />
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Job type</Text>
-            </View>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{job.jobType}</Text>
+          <View
+            className="flex-row justify-between items-center px-3.5 py-2.5 border-t"
+            style={{ borderTopColor: colors.border }}
+          >
+            <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+              Job type
+            </Text>
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
+              {job.jobType}
+            </Text>
+          </View>
+          <View
+            className="flex-row justify-between items-center px-3.5 py-2.5 border-t"
+            style={{ borderTopColor: colors.border }}
+          >
+            <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+              Salary
+            </Text>
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
+              {job.salaryRange}
+            </Text>
           </View>
           {job.applicationDeadline && (
-            <View style={[styles.infoRow, styles.infoRowBorder, { borderTopColor: colors.border }]}>
-              <View style={styles.infoRowLeft}>
-                <MaterialCommunityIcons name="calendar-clock" size={16} color={colors.textSecondary} />
-                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
-                  Apply by
-                </Text>
-              </View>
-              <Text style={[styles.infoValue, { color: colors.text }]}>
+            <View
+              className="flex-row justify-between items-center px-3.5 py-2.5 border-t"
+              style={{ borderTopColor: colors.border }}
+            >
+              <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+                Apply by
+              </Text>
+              <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
                 {fmtDate(job.applicationDeadline)}
               </Text>
             </View>
           )}
         </View>
 
-        {/* Requirements */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          Requirements ({job.requirements.length})
-        </Text>
-        <View
-          style={[styles.card, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+        {/* Applicants */}
+        <Text
+          className="text-xs font-medium uppercase tracking-wide mb-2"
+          style={{ color: colors.text }}
         >
-          {job.requirements.map((req, index) => (
-            <View
-              key={index}
-              style={[
-                styles.reqRow,
-                index !== job.requirements.length - 1 && {
-                  borderBottomWidth: StyleSheet.hairlineWidth,
-                  borderBottomColor: colors.border,
-                },
-              ]}
+          Applicants ({jobApplications.length})
+        </Text>
+
+        {jobApplications.length === 0 ? (
+          <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+            No applicants yet.
+          </Text>
+        ) : (
+          <View className="gap-2">
+            {jobApplications.map((application) => {
+              const meta = STATUS_META[application.status];
+              const toneColor = colors[meta.tone];
+              return (
+                <View
+                  key={application.id}
+                  className="rounded-[14px] border p-3 gap-1.5 mb-2"
+                  style={{
+                    backgroundColor: colors.backgroundSecondary,
+                    borderColor: colors.border,
+                  }}
+                >
+                  <View className="flex-row items-center justify-between gap-2">
+                    <Text
+                      className="text-sm font-semibold flex-1"
+                      style={{ color: colors.text }}
+                      numberOfLines={1}
+                    >
+                      {application.applicantName}
+                    </Text>
+                    <View
+                      className="flex-row items-center gap-1 px-2 py-0.5 rounded-md"
+                      style={{ backgroundColor: toneColor + "18" }}
+                    >
+                      <MaterialCommunityIcons
+                        name={meta.icon as any}
+                        size={12}
+                        color={toneColor}
+                      />
+                      <Text
+                        className="text-[10px] font-bold"
+                        style={{ color: toneColor }}
+                      >
+                        {meta.label}
+                      </Text>
+                    </View>
+                  </View>
+                  {application.coverNote ? (
+                    <Text
+                      className="text-xs leading-[17px] italic"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      {application.coverNote}
+                    </Text>
+                  ) : null}
+                  <Text className="text-[11px]" style={{ color: colors.textSecondary }}>
+                    Applied {format(application.appliedAt)}
+                  </Text>
+                  <View className="flex-row flex-wrap gap-1.5 mt-1">
+                    {NEXT_ACTIONS.filter((a) => a.status !== application.status).map(
+                      (action) => (
+                        <Pressable
+                          key={action.status}
+                          onPress={() =>
+                            updateApplicationStatus(application.id, action.status)
+                          }
+                          className="px-2.5 py-1.5 rounded-lg"
+                          style={{ backgroundColor: colors.backgroundElement }}
+                        >
+                          <Text
+                            className="text-[11px] font-semibold"
+                            style={{ color: colors.text }}
+                          >
+                            {action.label}
+                          </Text>
+                        </Pressable>
+                      ),
+                    )}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Listing status actions */}
+        <Text
+          className="text-xs font-medium uppercase tracking-wide mb-2 mt-5"
+          style={{ color: colors.text }}
+        >
+          Listing Status
+        </Text>
+        <View className="flex-row gap-2 mt-1">
+          {job.status === "open" && (
+            <>
+              <Pressable
+                onPress={handleClose}
+                className="flex-row items-center gap-1.5 px-3.5 py-2.5 rounded-[10px]"
+                style={{ backgroundColor: colors.warning + "18" }}
+              >
+                <MaterialCommunityIcons
+                  name="briefcase-off-outline"
+                  size={15}
+                  color={colors.warning}
+                />
+                <Text
+                  className="text-[13px] font-semibold"
+                  style={{ color: colors.warning }}
+                >
+                  Close
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleCancel}
+                className="flex-row items-center gap-1.5 px-3.5 py-2.5 rounded-[10px]"
+                style={{ backgroundColor: colors.error + "18" }}
+              >
+                <MaterialCommunityIcons name="cancel" size={15} color={colors.error} />
+                <Text
+                  className="text-[13px] font-semibold"
+                  style={{ color: colors.error }}
+                >
+                  Withdraw
+                </Text>
+              </Pressable>
+            </>
+          )}
+          {job.status !== "open" && (
+            <Pressable
+              onPress={handleReopen}
+              className="flex-row items-center gap-1.5 px-3.5 py-2.5 rounded-[10px]"
+              style={{ backgroundColor: colors.success + "18" }}
             >
               <MaterialCommunityIcons
-                name="check-circle-outline"
-                size={16}
+                name="briefcase-check-outline"
+                size={15}
                 color={colors.success}
               />
-              <Text style={[styles.reqText, { color: colors.text }]}>{req}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={{ height: 110 }} />
-      </ScrollView>
-
-      {/* FAB group */}
-      <View style={styles.fabGroup}>
-        <View style={styles.fabSecondary}>
-          <Pressable
-            onPress={() => toggleSaveJob(job.id)}
-            style={[
-              styles.fabIconBtn,
-              {
-                backgroundColor: saved ? colors.primary + "18" : colors.backgroundSecondary,
-                borderColor: saved ? colors.primary : colors.border,
-              },
-            ]}
-          >
-            <Ionicons
-              name={saved ? "bookmark" : "bookmark-outline"}
-              size={20}
-              color={saved ? colors.primary : colors.textSecondary}
-            />
-          </Pressable>
-          <Pressable
-            onPress={handleShare}
-            style={[styles.fabIconBtn, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-          >
-            <Ionicons name="share-outline" size={20} color={colors.textSecondary} />
-          </Pressable>
+              <Text
+                className="text-[13px] font-semibold"
+                style={{ color: colors.success }}
+              >
+                Reopen
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         <Pressable
-          onPress={() => !applied && applySheetRef.current?.present()}
-          disabled={applied}
-          style={({ pressed }) => [
-            styles.fabPrimary,
-            {
-              backgroundColor: applied ? colors.backgroundElement : colors.primary,
-              opacity: pressed ? 0.85 : 1,
-            },
-          ]}
+          onPress={handleDelete}
+          className="flex-row items-center justify-center gap-1.5 py-3 rounded-[10px] border mt-2"
+          style={{ borderColor: colors.error }}
         >
           <MaterialCommunityIcons
-            name={applied ? "check" : "file-send-outline"}
-            size={18}
-            color={applied ? colors.textSecondary : "#fff"}
+            name="trash-can-outline"
+            size={16}
+            color={colors.error}
           />
-          <Text
-            style={[
-              styles.fabPrimaryText,
-              { color: applied ? colors.textSecondary : "#fff" },
-            ]}
-          >
-            {applied ? "Applied" : "Apply Now"}
+          <Text className="text-[13px] font-semibold" style={{ color: colors.error }}>
+            Delete listing
           </Text>
         </Pressable>
-      </View>
 
-      <ApplySheet
-        ref={applySheetRef}
-        job={job}
-        onClose={() => {}}
-        onSubmit={handleSubmitApplication}
-      />
+        <View className="h-6" />
+      </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  navbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    gap: 12,
-  },
-  backBtn: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
-  navbarMeta: { flex: 1 },
-  navbarCode: { fontSize: 15, fontWeight: "500" },
-  navbarTime: { fontSize: 12, marginTop: 1 },
-  statusPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
-  statusPillText: { fontSize: 12, fontWeight: "600" },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 16 },
-  hero: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
-  heroLogo: { width: 56, height: 56, borderRadius: 14, justifyContent: "center", alignItems: "center" },
-  heroLogoText: { fontSize: 16, fontWeight: "700" },
-  heroMeta: { flex: 1, gap: 3 },
-  heroTitle: { fontSize: 18, fontWeight: "700" },
-  heroCompany: { fontSize: 13 },
-  heroLocationRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  heroLocation: { fontSize: 13 },
-  appliedBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    marginBottom: 12,
-  },
-  appliedBannerText: { fontSize: 12, fontWeight: "600", flex: 1 },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-    marginBottom: 8,
-    marginTop: 20,
-  },
-  description: { fontSize: 14, lineHeight: 20 },
-  card: { borderRadius: 16, borderWidth: 0.5, overflow: "hidden" },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-  },
-  infoRowBorder: { borderTopWidth: 0.5 },
-  infoRowLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
-  infoLabel: { fontSize: 13 },
-  infoValue: { fontSize: 13, fontWeight: "500" },
-  reqRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 14 },
-  reqText: { fontSize: 13, flex: 1, lineHeight: 18 },
-  fabGroup: {
-    position: "absolute",
-    bottom: Platform.OS === "ios" ? 32 : 24,
-    left: 16,
-    right: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    pointerEvents: "box-none",
-    gap: 10,
-  },
-  fabSecondary: { flexDirection: "row", gap: 8 },
-  fabIconBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    borderWidth: 0.5,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  fabPrimary: {
-    flex: 1,
-    height: 44,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  fabPrimaryText: { fontSize: 15, fontWeight: "600" },
-});

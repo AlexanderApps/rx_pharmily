@@ -1,9 +1,10 @@
 import React, { useMemo } from "react";
-import { View, Text, Pressable, ScrollView, Switch, StyleSheet } from "react-native";
+import { View, Text, Pressable, ScrollView, Switch } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import ScreenHeader from "@/shared/components/screen-header";
 import {
   useNotificationStore,
   CATEGORY_META,
@@ -26,47 +27,46 @@ export default function NotificationSettingsScreen() {
   }, []);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>Notification Settings</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Choose exactly what you want to hear about, per feature
-          </Text>
-        </View>
-      </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Navigation Header Section */}
+      <ScreenHeader
+        title="Notification Settings"
+        subtitle="Choose exactly what you want to hear about, per feature"
+      />
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={{ padding: 16 }}>
         {sections.map(([section, metas]) => {
           const allOn = metas.every((m) => settings[m.category]);
           return (
-            <View key={section} style={styles.section}>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>{section}</Text>
+            <View key={section} className="mb-4.5">
+              {/* Feature Batch Selection Controls */}
+              <View className="flex-row items-center justify-between mb-2">
+                <Text className="text-[13px] font-bold uppercase tracking-wider" style={{ color: colors.text }}>
+                  {section}
+                </Text>
                 <Pressable onPress={() => setAllInSection(section, !allOn)}>
-                  <Text style={[styles.sectionAction, { color: colors.primary }]}>
+                  <Text className="text-xs font-semibold" style={{ color: colors.primary }}>
                     {allOn ? "Turn all off" : "Turn all on"}
                   </Text>
                 </Pressable>
               </View>
 
+              {/* Toggles Container Group Card */}
               <View
-                style={[styles.card, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                className="rounded-[14px] border overflow-hidden"
+                style={{ backgroundColor: colors.backgroundSecondary, borderColor: colors.border }}
               >
                 {metas.map((meta, index) => (
                   <View
                     key={meta.category}
-                    style={[
-                      styles.row,
-                      index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-                    ]}
+                    className="flex-row items-center p-3.5"
+                    style={
+                      index > 0 ? { borderTopWidth: 0.5, borderTopColor: colors.border } : undefined
+                    }
                   >
-                    <View style={{ flex: 1, paddingRight: 12 }}>
-                      <Text style={[styles.rowLabel, { color: colors.text }]}>{meta.label}</Text>
-                      <Text style={[styles.rowDescription, { color: colors.textSecondary }]}>
+                    <View className="flex-1 pr-3">
+                      <Text className="text-[13px] font-semibold" style={{ color: colors.text }}>{meta.label}</Text>
+                      <Text className="text-[11px] mt-0.5 leading-[15px]" style={{ color: colors.textSecondary }}>
                         {meta.description}
                       </Text>
                     </View>
@@ -81,36 +81,8 @@ export default function NotificationSettingsScreen() {
             </View>
           );
         })}
-        <View style={{ height: 24 }} />
+        <View className="h-6" />
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: 1 },
-  content: { padding: 16 },
-  section: { marginBottom: 18 },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  sectionTitle: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.4 },
-  sectionAction: { fontSize: 12, fontWeight: "600" },
-  card: { borderRadius: 14, borderWidth: 1, overflow: "hidden" },
-  row: { flexDirection: "row", alignItems: "center", padding: 14 },
-  rowLabel: { fontSize: 13, fontWeight: "600" },
-  rowDescription: { fontSize: 11, marginTop: 2, lineHeight: 15 },
-});

@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo } from "react";
 import { router } from "expo-router";
-import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
+import { View, Text, FlatList, Pressable, Platform} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { format } from "timeago.js";
 import { useTheme } from "@/shared/hooks/use-theme";
+import EmptyState from "@/shared/components/empty-state";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { ThemedView } from "@/shared/components/themed-view";
 import { useRxJobsStore } from "@/features/rxjobs/hooks/use-rxjobs-data";
@@ -12,7 +13,11 @@ import { ApplicationStatus, Job } from "@/features/rxjobs/types/rxjobs.types";
 
 const STATUS_META: Record<
   ApplicationStatus,
-  { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; tone: "success" | "warning" | "error" | "info" }
+  {
+    label: string;
+    icon: keyof typeof MaterialCommunityIcons.glyphMap;
+    tone: "success" | "warning" | "error" | "info";
+  }
 > = {
   submitted: { label: "Submitted", icon: "email-outline", tone: "info" },
   reviewing: { label: "Reviewing", icon: "eye-outline", tone: "warning" },
@@ -24,6 +29,7 @@ const STATUS_META: Record<
 export default function MyApplicationsScreen() {
   const { colors } = useTheme();
   const currentUserId = useAuthStore((state) => state.user?.id);
+
   const applications = useRxJobsStore((state) => state.applications);
   const jobs = useRxJobsStore((state) => state.jobs);
   const fetchMyApplications = useRxJobsStore((state) => state.fetchMyApplications);
@@ -32,10 +38,12 @@ export default function MyApplicationsScreen() {
     fetchMyApplications();
   }, []);
 
-
   const rows = useMemo(() => {
     return [...applications]
-      .sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime())
+      .sort(
+        (a, b) =>
+          new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime(),
+      )
       .map((application) => ({
         application,
         job: jobs.find((j) => j.id === application.jobId),
@@ -52,15 +60,26 @@ export default function MyApplicationsScreen() {
   };
 
   return (
-    <ThemedView style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={() => router.back()} style={styles.back}>
+    <ThemedView className="flex-1">
+      <SafeAreaView className="flex-1">
+        {/* Header */}
+        <View
+          className="flex-row items-center gap-3 px-4 py-3 border-b"
+          style={{ borderBottomColor: colors.border }}
+        >
+          {Platform.OS !== "web" && (
+          <Pressable
+            onPress={() => router.back()}
+            className="w-10 h-10 rounded-xl items-center justify-center"
+          >
             <Ionicons name="arrow-back" size={22} color={colors.text} />
           </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: colors.text }]}>My Applications</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          )}
+          <View className="flex-1">
+            <Text className="text-lg font-bold" style={{ color: colors.text }}>
+              My Applications
+            </Text>
+            <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>
               {applications.length} applied
             </Text>
           </View>
@@ -69,15 +88,10 @@ export default function MyApplicationsScreen() {
         <FlatList
           data={rows}
           keyExtractor={(row) => row.application.id}
-          contentContainerStyle={styles.listContent}
-          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          contentContainerClassName="p-4 grow"
+          ItemSeparatorComponent={() => <View className="h-2.5" />}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <MaterialCommunityIcons name="file-account-outline" size={36} color={colors.textSecondary} />
-              <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                You haven't applied to any jobs yet.
-              </Text>
-            </View>
+            <EmptyState icon="file-account-outline" message="You haven't applied to any jobs yet." />
           }
           renderItem={({ item }) => {
             const meta = STATUS_META[item.application.status];
@@ -85,24 +99,53 @@ export default function MyApplicationsScreen() {
             return (
               <Pressable
                 onPress={() => handlePress(item.job)}
-                style={[styles.card, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                className="rounded-[14px] border p-3.5 gap-1.5"
+                style={{
+                  backgroundColor: colors.backgroundSecondary,
+                  borderColor: colors.border,
+                }}
               >
-                <View style={styles.cardTopRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
+                <View className="flex-row items-start gap-2.5">
+                  <View className="flex-1">
+                    <Text
+                      className="text-sm font-bold"
+                      style={{ color: colors.text }}
+                      numberOfLines={1}
+                    >
                       {item.job?.title ?? "Listing no longer available"}
                     </Text>
-                    <Text style={[styles.cardMeta, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {item.job?.companyName ?? "-"} · Applied {format(item.application.appliedAt)}
+                    <Text
+                      className="text-[11px] mt-0.5"
+                      style={{ color: colors.textSecondary }}
+                      numberOfLines={1}
+                    >
+                      {item.job?.companyName ?? "-"} · Applied{" "}
+                      {format(item.application.appliedAt)}
                     </Text>
                   </View>
-                  <View style={[styles.statusPill, { backgroundColor: toneColor + "18" }]}>
-                    <MaterialCommunityIcons name={meta.icon} size={11} color={toneColor} />
-                    <Text style={[styles.statusPillText, { color: toneColor }]}>{meta.label}</Text>
+                  <View
+                    className="flex-row items-center gap-1 px-2 py-1 rounded-lg"
+                    style={{ backgroundColor: toneColor + "18" }}
+                  >
+                    <MaterialCommunityIcons
+                      name={meta.icon}
+                      size={11}
+                      color={toneColor}
+                    />
+                    <Text
+                      className="text-[10px] font-bold"
+                      style={{ color: toneColor }}
+                    >
+                      {meta.label}
+                    </Text>
                   </View>
                 </View>
                 {item.application.coverNote ? (
-                  <Text style={[styles.coverNote, { color: colors.textSecondary }]} numberOfLines={2}>
+                  <Text
+                    className="text-xs leading-[17px] italic"
+                    style={{ color: colors.textSecondary }}
+                    numberOfLines={2}
+                  >
                     {item.application.coverNote}
                   </Text>
                 ) : null}
@@ -114,26 +157,3 @@ export default function MyApplicationsScreen() {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-  },
-  back: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 18, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: 1 },
-  listContent: { padding: 16, flexGrow: 1 },
-  empty: { alignItems: "center", justifyContent: "center", gap: 10, paddingTop: 80 },
-  card: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 14, gap: 6 },
-  cardTopRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  cardTitle: { fontSize: 14, fontWeight: "700" },
-  cardMeta: { fontSize: 11, marginTop: 2 },
-  statusPill: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  statusPillText: { fontSize: 10, fontWeight: "700" },
-  coverNote: { fontSize: 12, lineHeight: 17, fontStyle: "italic" },
-});

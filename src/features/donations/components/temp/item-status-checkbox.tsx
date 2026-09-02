@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 
@@ -20,40 +20,31 @@ const ItemStatusCheckbox: React.FC<ItemStatusCheckboxProps> = ({
 
   return (
     <TouchableOpacity
-      style={[
-        styles.container,
-        {
-          backgroundColor: colors.backgroundElement,
-          borderColor: colors.border,
-        },
-        value && {
-          backgroundColor: colors.success + "15",
-          borderColor: colors.success,
-        },
-      ]}
+      className="flex-row items-center px-3 py-3 rounded-md border gap-2.5"
+      style={{
+        backgroundColor: value ? colors.success + "15" : colors.backgroundElement,
+        borderColor: value ? colors.success : colors.border,
+      }}
       onPress={() => onChange(!value)}
       activeOpacity={0.7}
     >
       <View
-        style={[
-          styles.checkbox,
-          { borderColor: colors.border },
-          value && {
-            backgroundColor: colors.success,
-            borderColor: colors.success,
-          },
-        ]}
+        className="w-5 h-5 rounded items-center justify-center border-2"
+        style={{
+          borderColor: value ? colors.success : colors.border,
+          backgroundColor: value ? colors.success : "transparent",
+        }}
       >
         {value && (
           <MaterialCommunityIcons name="check-bold" size={14} color="#fff" />
         )}
       </View>
-      <View style={styles.content}>
+      <View className="flex-1 gap-0.5">
         {label && (
-          <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+          <Text className="text-sm font-semibold" style={{ color: colors.text }}>{label}</Text>
         )}
         {description && (
-          <Text style={[styles.description, { color: colors.textSecondary }]}>
+          <Text className="text-xs font-normal" style={{ color: colors.textSecondary }}>
             {description}
           </Text>
         )}
@@ -69,36 +60,5 @@ const ItemStatusCheckbox: React.FC<ItemStatusCheckboxProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    gap: 10,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  content: {
-    flex: 1,
-    gap: 2,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  description: {
-    fontSize: 12,
-    fontWeight: "400",
-  },
-});
-
 export default ItemStatusCheckbox;
+

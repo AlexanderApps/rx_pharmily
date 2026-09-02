@@ -1,5 +1,20 @@
 export type DonationStatus = "opened" | "hidden" | "closed";
 
+export type DonationVisibilityScope = "All" | "Restricted";
+
+export type DonationVisibilityRuleType =
+  | "Region"
+  | "Facility Type"
+  | "Specific Facility";
+
+export interface DonationVisibilityRule {
+  id: string;
+  ruleType: DonationVisibilityRuleType;
+  region?: string;
+  facilityType?: string;
+  facility?: string;
+}
+
 // A single donated line item within a donation posting. `status` is a
 // verified/needs-review flag (set by whoever logs the item), separate from
 // `isActive` which controls whether the item is still available to claim.
@@ -28,6 +43,8 @@ export interface Donation {
   comment: string;
   isActive: boolean;
   status: DonationStatus;
+  visibilityScope: DonationVisibilityScope;
+  visibilityRules: DonationVisibilityRule[];
   donatedItems: DonationItem[];
   createdAt: Date;
   createdBy: string;
@@ -44,6 +61,8 @@ export interface DonationFormData {
   comment: string;
   isActive: boolean;
   status: DonationStatus;
+  visibilityScope: DonationVisibilityScope;
+  visibilityRules: DonationVisibilityRule[];
   donatedItems: DonationItem[];
 }
 

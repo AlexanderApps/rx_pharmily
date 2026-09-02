@@ -85,10 +85,11 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View className="w-full">
       {items.length > 0 && (
         <TouchableOpacity
-          style={[styles.addInlineButton, { backgroundColor: colors.text }]}
+          className="flex-row items-center self-end gap-1.5 px-3 py-2 rounded-md mb-3"
+          style={{ backgroundColor: colors.text }}
           onPress={openAddModal}
         >
           <MaterialCommunityIcons
@@ -97,10 +98,8 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
             color={colors.backgroundSecondary}
           />
           <Text
-            style={[
-              styles.addInlineButtonText,
-              { color: colors.backgroundSecondary },
-            ]}
+            className="text-[13px] font-semibold"
+            style={{ color: colors.backgroundSecondary }}
           >
             Add Item
           </Text>
@@ -108,34 +107,34 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
       )}
 
       {error && (
-        <Text style={[styles.error, { color: colors.error }]}>{error}</Text>
+        <Text className="text-xs font-medium mb-2" style={{ color: colors.error }}>{error}</Text>
       )}
 
       {items.length === 0 ? (
         <View
-          style={[
-            styles.emptyState,
-            {
-              backgroundColor: colors.backgroundElement,
-              borderColor: colors.border,
-            },
-          ]}
+          className="items-center justify-center py-10 px-5 rounded-xl border border-dashed"
+          style={{
+            backgroundColor: colors.backgroundElement,
+            borderColor: colors.border,
+          }}
         >
           <MaterialCommunityIcons
             name="inbox-outline"
             size={48}
             color={colors.textSecondary}
           />
-          <Text style={[styles.emptyStateText, { color: colors.text }]}>
+          <Text className="text-base font-semibold mt-3" style={{ color: colors.text }}>
             No items added yet
           </Text>
           <Text
-            style={[styles.emptyStateSubtext, { color: colors.textSecondary }]}
+            className="text-[13px] mt-1 mb-4 text-center"
+            style={{ color: colors.textSecondary }}
           >
             Add donated items to continue
           </Text>
           <TouchableOpacity
-            style={[styles.emptyStateButton, { backgroundColor: colors.text }]}
+            className="flex-row items-center gap-2 px-4 py-2.5 rounded-lg"
+            style={{ backgroundColor: colors.text }}
             onPress={openAddModal}
           >
             <MaterialCommunityIcons
@@ -144,10 +143,8 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
               color={colors.backgroundSecondary}
             />
             <Text
-              style={[
-                styles.emptyStateButtonText,
-                { color: colors.backgroundSecondary },
-              ]}
+              className="text-sm font-semibold"
+              style={{ color: colors.backgroundSecondary }}
             >
               Add First Item
             </Text>
@@ -157,25 +154,21 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.tableScroll}
+          className="w-full"
         >
           <View
-            style={[
-              styles.tableContainer,
-              {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
-              },
-            ]}
+            className="rounded-lg border overflow-hidden"
+            style={{
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+            }}
           >
             <View
-              style={[
-                styles.tableHeader,
-                {
-                  backgroundColor: colors.backgroundSecondary,
-                  borderBottomColor: colors.border,
-                },
-              ]}
+              className="flex-row border-b py-2.5"
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderBottomColor: colors.border,
+              }}
             >
               {[
                 "Product",
@@ -205,10 +198,8 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
               scrollEnabled={false}
               renderItem={({ item }) => (
                 <View
-                  style={[
-                    styles.tableRow,
-                    { borderBottomColor: colors.border },
-                  ]}
+                  className="flex-row items-center"
+                  style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, paddingVertical: 12 }}
                 >
                   <Text
                     style={[
@@ -254,10 +245,8 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
                     </Text>
                     {getExpiryLabel(item.expiryDate) && (
                       <Text
-                        style={[
-                          styles.expiryTag,
-                          { color: getExpiryColor(item.expiryDate, colors) },
-                        ]}
+                        className="text-[10px] font-bold"
+                        style={{ color: getExpiryColor(item.expiryDate, colors) }}
                       >
                         {getExpiryLabel(item.expiryDate)}
                       </Text>
@@ -265,14 +254,12 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
                   </View>
                   <View style={[styles.statusColumn, styles.cellCenter]}>
                     <View
-                      style={[
-                        styles.statusBadge,
-                        {
-                          backgroundColor: item.status
-                            ? colors.success + "20"
-                            : colors.error + "20",
-                        },
-                      ]}
+                      className="p-1 rounded-md"
+                      style={{
+                        backgroundColor: item.status
+                          ? colors.success + "20"
+                          : colors.error + "20",
+                      }}
                     >
                       <MaterialCommunityIcons
                         name={item.status ? "check-circle" : "close-circle"}
@@ -283,14 +270,12 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
                   </View>
                   <View style={[styles.activeColumn, styles.cellCenter]}>
                     <View
-                      style={[
-                        styles.activeBadge,
-                        {
-                          backgroundColor: item.isActive
-                            ? colors.success + "20"
-                            : colors.error + "20",
-                        },
-                      ]}
+                      className="p-1 rounded-md"
+                      style={{
+                        backgroundColor: item.isActive
+                          ? colors.success + "20"
+                          : colors.error + "20",
+                      }}
                     >
                       <MaterialCommunityIcons
                         name={item.isActive ? "check" : "close"}
@@ -302,7 +287,7 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
                   <View style={[styles.actionColumn, styles.rowActions]}>
                     <TouchableOpacity
                       onPress={() => handleEditItem(item)}
-                      style={styles.actionIconButton}
+                      className="p-1.5"
                     >
                       <MaterialCommunityIcons
                         name="pencil-outline"
@@ -312,7 +297,7 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => handleDeleteItem(item.id)}
-                      style={styles.actionIconButton}
+                      className="p-1.5"
                     >
                       <MaterialCommunityIcons
                         name="trash-can-outline"
@@ -340,58 +325,11 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
   );
 };
 
+// Only the column widths/cell base styles remain here — the header row
+// looks these up dynamically via a computed key (styles[`${h}Column`]),
+// which a className string can't represent, so they stay as StyleSheet
+// objects rather than being converted.
 const styles = StyleSheet.create({
-  container: { width: "100%" },
-  addInlineButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-end",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginBottom: 12,
-  },
-  addInlineButtonText: { fontSize: 13, fontWeight: "600" },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderStyle: "dashed",
-  },
-  emptyStateText: { fontSize: 16, fontWeight: "600", marginTop: 12 },
-  emptyStateSubtext: {
-    fontSize: 13,
-    marginTop: 4,
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  emptyStateButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  emptyStateButtonText: { fontSize: 14, fontWeight: "600" },
-  error: { fontSize: 12, fontWeight: "500", marginBottom: 8 },
-  tableScroll: { width: "100%" },
-  tableContainer: { borderRadius: 8, borderWidth: 1, overflow: "hidden" },
-  tableHeader: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    paddingVertical: 10,
-  },
-  tableRow: {
-    flexDirection: "row",
-    borderBottomWidth: 0.5,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
   cellText: { fontSize: 13, paddingHorizontal: 10 },
   headerCell: { fontWeight: "600" },
   bodyCell: { fontWeight: "400" },
@@ -400,19 +338,15 @@ const styles = StyleSheet.create({
   qtyColumn: { width: 60 },
   batchColumn: { width: 90 },
   expiryColumn: { width: 100, paddingHorizontal: 10, gap: 2 },
-  expiryTag: { fontSize: 10, fontWeight: "700" },
   statusColumn: { width: 70 },
   activeColumn: { width: 70 },
   actionColumn: { width: 80 },
-  statusBadge: { padding: 4, borderRadius: 6 },
-  activeBadge: { padding: 4, borderRadius: 6 },
   rowActions: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
   },
-  actionIconButton: { padding: 6 },
 });
 
 export default DonatedItemsTable;

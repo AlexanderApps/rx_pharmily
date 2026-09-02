@@ -1,9 +1,10 @@
 import React from "react";
-import { StyleSheet, Text, View, Pressable } from "react-native";
+import { Text, View, Pressable } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { format } from "timeago.js";
 import { Job } from "@/features/rxjobs/types/rxjobs.types";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { noSelectStyle } from "@/shared/constants/text-selection";
 
 interface JobRowProps {
   item: Job;
@@ -18,41 +19,39 @@ export const JobRow = ({ item, isLastItem, onPress }: JobRowProps) => {
   return (
     <Pressable
       onPress={() => onPress?.(item)}
-      style={[
-        styles.row,
-        !isLastItem && {
-          borderBottomWidth: 0.5,
-          borderBottomColor: colors.border,
-        },
-      ]}
+      className={`p-4 active:opacity-70 ${onPress ? "cursor-pointer hover:opacity-90" : ""}`}
+      style={!isLastItem ? { borderBottomWidth: 0.5, borderBottomColor: colors.border } : undefined}
     >
-      <View style={styles.inner}>
+      <View className="flex-row items-start">
         <View
-          style={[styles.logo, { backgroundColor: colors.backgroundElement }]}
+          className="w-12 h-12 rounded-xl justify-center items-center"
+          style={{ backgroundColor: colors.backgroundElement }}
         >
-          <Text style={[styles.logoText, { color: colors.text }]}>
+          <Text className="text-[13px] font-bold" style={{ color: colors.text, ...noSelectStyle }}>
             {item.companyLogo}
           </Text>
         </View>
 
-        <View style={styles.meta}>
-          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+        <View className="flex-1 ml-3 gap-0.5">
+          <Text className="text-[15px] font-semibold" style={{ color: colors.text }} numberOfLines={1}>
             {item.title}
           </Text>
           <Text
-            style={[styles.company, { color: colors.textSecondary }]}
+            className="text-[13px]"
+            style={{ color: colors.textSecondary }}
             numberOfLines={1}
           >
             {item.companyName}
           </Text>
-          <View style={styles.locationRow}>
+          <View className="flex-row items-center gap-1 mt-1">
             <MaterialCommunityIcons
               name="map-marker-outline"
               size={14}
               color={colors.textSecondary}
             />
             <Text
-              style={[styles.locationText, { color: colors.textSecondary }]}
+              className="text-[13px]"
+              style={{ color: colors.textSecondary }}
               numberOfLines={1}
             >
               {item.location}
@@ -60,27 +59,23 @@ export const JobRow = ({ item, isLastItem, onPress }: JobRowProps) => {
           </View>
         </View>
 
-        <View style={styles.statusBlock}>
+        <View className="items-end justify-between min-h-12">
           <View
-            style={[
-              styles.badge,
-              {
-                backgroundColor: isImmediate
-                  ? colors.error + "20"
-                  : colors.info + "20",
-              },
-            ]}
+            className="px-2.5 py-1 rounded-full"
+            style={{
+              backgroundColor: isImmediate
+                ? colors.error + "20"
+                : colors.info + "20",
+            }}
           >
             <Text
-              style={[
-                styles.badgeText,
-                { color: isImmediate ? colors.error : colors.info },
-              ]}
+              className="text-xs font-medium"
+              style={{ color: isImmediate ? colors.error : colors.info, ...noSelectStyle }}
             >
               {item.urgency}
             </Text>
           </View>
-          <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>
+          <Text className="text-xs" style={{ color: colors.textSecondary, ...noSelectStyle }}>
             {format(item.createdAt)}
           </Text>
         </View>
@@ -89,24 +84,3 @@ export const JobRow = ({ item, isLastItem, onPress }: JobRowProps) => {
   );
 };
 
-const styles = StyleSheet.create({
-  row: { padding: 16 },
-  inner: { flexDirection: "row", alignItems: "flex-start" },
-  logo: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  logoText: { fontSize: 13, fontWeight: "700" },
-  meta: { flex: 1, marginLeft: 12, gap: 2 },
-  title: { fontSize: 15, fontWeight: "600" },
-  company: { fontSize: 13 },
-  locationRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
-  locationText: { fontSize: 13 },
-  statusBlock: { alignItems: "flex-end", justifyContent: "space-between", minHeight: 48 },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
-  badgeText: { fontSize: 12, fontWeight: "500" },
-  timeAgo: { fontSize: 12 },
-});

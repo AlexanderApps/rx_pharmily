@@ -1,11 +1,5 @@
 import React, { useMemo, useRef } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  Animated,
-} from "react-native";
+import { View, Text, Pressable, Animated, Platform} from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,8 +15,10 @@ import {
   convertToCardData,
   useDonationStore,
 } from "@/features/donations/hooks/use-donation-data";
+import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
 function daysUntil(date: Date) {
   return Math.ceil((new Date(date).getTime() - Date.now()) / DAY_MS);
 }
@@ -34,7 +30,6 @@ export default function DonationsScreen() {
   // Animated value to track vertical scroll depth
   // Fades in the header search icon after scrolling past the static search box (~90px)
   const scrollY = useRef(new Animated.Value(0)).current;
-
   const headerSearchOpacity = scrollY.interpolate({
     inputRange: [60, 120],
     outputRange: [0, 1],
@@ -46,75 +41,97 @@ export default function DonationsScreen() {
       [...donations]
         .sort(
           (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         )
         .map(convertToCardData),
-    [donations],
+    [donations]
   );
 
+  // "Overview" and "My Active Donations" are the current user's own
+  // donations — createdBy === user.id, the same comparison
+  // convertToCardData already uses for isOwner — not "any donation my
+  // facility posted", which would also count a colleague's donations.
+  const myDonations = useMemo(() => {
+    const userId = useProfileStore.getState().user.id;
+    return donations.filter((d) => d.createdBy === userId);
+  }, [donations]);
+
   const openCount = useMemo(
-    () => donations.filter((d) => d.status === "opened").length,
-    [donations],
+    () => myDonations.filter((d) => d.status === "opened").length,
+    [myDonations]
   );
 
   const expiringSoonCount = useMemo(
     () =>
-      donations.reduce((count, d) => {
+      myDonations.reduce((count, d) => {
         const soon = d.donatedItems.filter((item) => {
           const days = daysUntil(item.expiryDate);
           return days >= 0 && days <= 30;
         }).length;
         return count + soon;
       }, 0),
-    [donations],
+    [myDonations]
   );
+
+  // "My Active Donations" below: the current user's own most-recently-
+  // created donations, excluding only ones that are settled (closed) —
+  // donationCards is already sorted most-recent-first globally, so
+  // filtering it down preserves that order.
+  const myRecentDonations = useMemo(() => {
+    const myIds = new Set(myDonations.map((d) => d.id));
+    return donationCards
+      .filter((d) => myIds.has(d.id) && d.status !== "closed")
+      .slice(0, 3);
+  }, [donationCards, myDonations]);
 
   const openDonationDetails = (id: string, isOwner: boolean) => {
     router.push({
-      pathname: isOwner ? "/donations/donation-details" : "/donations/donation-market-details",
+      pathname: isOwner
+        ? "/donations/donation-details"
+        : "/donations/donation-market-details",
       params: { id },
     });
   };
 
   return (
-    <ThemedView style={styles.flex1}>
-      <SafeAreaView style={styles.flex1} edges={["top", "left", "right"]}>
+    <ThemedView className="flex-1">
+      <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
         {/* Sticky Custom Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerLeftGroup}>
+        <View
+          className="px-4 pt-3 pb-3 border-b-[0.5px]"
+          style={{ borderBottomColor: colors.border }}
+        >
+          <View className="flex-row justify-between items-center">
+            <View className="flex-row items-center flex-1">
               {/* Backward Stack Navigation */}
-              <Pressable
-                onPress={() => router.back()}
-                style={styles.backButton}
-              >
+              {Platform.OS !== "web" && (
+              <Pressable onPress={() => router.back()} className="mr-3 p-1">
                 <Ionicons name="arrow-back" size={24} color={colors.text} />
               </Pressable>
-
+              )}
               <View>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>
+                <Text
+                  className="text-2xl font-bold"
+                  style={{ color: colors.text }}
+                >
                   Donations
                 </Text>
                 <Text
-                  style={[
-                    styles.headerSubtitle,
-                    { color: colors.textSecondary },
-                  ]}
+                  className="text-xs mt-0.5"
+                  style={{ color: colors.textSecondary }}
                 >
                   Get and donate medications
                 </Text>
               </View>
             </View>
 
-            <View style={styles.headerActions}>
+            <View className="flex-row items-center gap-2">
               {/* Dynamic Header Search Button (visible only when scrolled down) */}
               <Animated.View style={{ opacity: headerSearchOpacity }}>
                 <Pressable
                   onPress={() => router.push("/donations/search-donations")}
-                  style={[
-                    styles.actionIconBtn,
-                    { backgroundColor: colors.backgroundSecondary },
-                  ]}
+                  className="w-10 h-10 rounded-xl justify-center items-center"
+                  style={{ backgroundColor: colors.backgroundSecondary }}
                 >
                   <Ionicons
                     name="search-outline"
@@ -123,6 +140,18 @@ export default function DonationsScreen() {
                   />
                 </Pressable>
               </Animated.View>
+
+              {/* Create — web only; native keeps the floating action
+                  button below instead. */}
+              {Platform.OS === "web" && (
+                <Pressable
+                  onPress={() => router.push("/donations/add-donation")}
+                  className="w-10 h-10 rounded-xl justify-center items-center cursor-pointer hover:opacity-90"
+                  style={{ backgroundColor: colors.primary }}
+                >
+                  <Ionicons name="add" size={22} color={colors.background} />
+                </Pressable>
+              )}
             </View>
           </View>
         </View>
@@ -130,25 +159,22 @@ export default function DonationsScreen() {
         {/* Scrollable Main Area mapped to Animated Tracking */}
         <Animated.ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerClassName="pb-[120px]"
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: true },
+            { useNativeDriver: true }
           )}
           scrollEventThrottle={16}
         >
           {/* Main Search Button (Static Layout Placement) */}
-          <View style={styles.sectionPadding}>
+          <View className="px-5 mt-6">
             <Pressable
               onPress={() => router.push("/donations/search-donations")}
-              style={({ pressed }) => [
-                styles.searchBox,
-                {
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: colors.border,
-                  opacity: pressed ? 0.7 : 1,
-                },
-              ]}
+              className="flex-row items-center rounded-2xl border px-4 py-3 active:opacity-70"
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+              }}
             >
               <Ionicons
                 name="search-outline"
@@ -156,7 +182,8 @@ export default function DonationsScreen() {
                 color={colors.textSecondary}
               />
               <Text
-                style={[styles.searchText, { color: colors.textSecondary }]}
+                className="flex-1 ml-3 text-base"
+                style={{ color: colors.textSecondary }}
               >
                 Search donations...
               </Text>
@@ -164,14 +191,16 @@ export default function DonationsScreen() {
           </View>
 
           {/* Stats Overview */}
-          <View style={styles.sectionPadding}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          <View className="px-5 mt-6">
+            <Text
+              className="text-lg font-semibold mb-3"
+              style={{ color: colors.text }}
+            >
               Overview
             </Text>
-
-            <View style={styles.statsRow}>
+            <View className="flex-row gap-3">
               <StatCard
-                number={`${donations.length}`}
+                number={`${myDonations.length}`}
                 label="Total Donations"
                 type="info"
                 colors={colors}
@@ -199,19 +228,21 @@ export default function DonationsScreen() {
             title="My Active Donations"
             backgroundColor={colors.backgroundSecondary}
             textColor={colors.text}
-            onViewAllPress={() => router.push("/donations/list-donations")}
+            onViewAllPress={() =>
+              router.push({
+                pathname: "/donations/list-donations",
+                params: { mine: "true" },
+              })
+            }
           >
-            {donationCards
-              .filter((d) => d.status === "opened")
-              .slice(0, 3)
-              .map((item, index, slicedArray) => (
-                <DonationRow
-                  key={item.id}
-                  item={item}
-                  isLastItem={index === slicedArray.length - 1}
-                  onPress={() => openDonationDetails(item.id, item.isOwner)}
-                />
-              ))}
+            {myRecentDonations.map((item, index, slicedArray) => (
+              <DonationRow
+                key={item.id}
+                item={item}
+                isLastItem={index === slicedArray.length - 1}
+                onPress={() => openDonationDetails(item.id, item.isOwner)}
+              />
+            ))}
           </SectionListContainer>
 
           {/* Recent Donations */}
@@ -220,21 +251,27 @@ export default function DonationsScreen() {
             textColor={colors.text}
             onViewAllPress={() => router.push("/donations/list-donations")}
           >
-            {donationCards.map((item) => (
-              <DonationHsCard
-                key={item.id}
-                item={item}
-                onPress={() => openDonationDetails(item.id, item.isOwner)}
-              />
-            ))}
+            {donationCards
+              .filter((item) => item.status === "opened")
+              .slice(0, 10)
+              .map((item) => (
+                <DonationHsCard
+                  key={item.id}
+                  item={item}
+                  onPress={() => openDonationDetails(item.id, item.isOwner)}
+                />
+              ))}
           </HorizontalScrollContainer>
 
           {/* Quick Actions */}
-          <View style={styles.sectionPadding}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          <View className="px-5 mt-6">
+            <Text
+              className="text-lg font-semibold mb-3"
+              style={{ color: colors.text }}
+            >
               Quick Actions
             </Text>
-            <View style={styles.statsRow}>
+            <View className="flex-row gap-3">
               <ActionButton
                 icon={
                   <MaterialCommunityIcons
@@ -275,112 +312,25 @@ export default function DonationsScreen() {
           </View>
         </Animated.ScrollView>
 
-        {/* Floating Action Button */}
+        {/* Floating Action Button — native only; web uses the header
+            Create button instead. */}
+        {Platform.OS !== "web" && (
         <Pressable
           onPress={() => router.push("/donations/add-donation")}
-          style={({ pressed }) => [
-            styles.fab,
-            { backgroundColor: colors.primary },
-            pressed && { opacity: 0.9 },
-          ]}
+          className="absolute right-6 bottom-8 w-16 h-16 rounded-full justify-center items-center shadow-lg active:opacity-90 cursor-pointer hover:opacity-90"
+          style={{
+            backgroundColor: colors.primary,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 8,
+          }}
         >
-          <Ionicons
-            name="add"
-            size={30}
-            color={colors.background}
-          />
+          <Ionicons name="add" size={30} color={colors.background} />
         </Pressable>
+        )}
       </SafeAreaView>
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex1: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 120,
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 0.5,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  headerLeftGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  backButton: {
-    marginRight: 12,
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  actionIconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sectionPadding: {
-    paddingHorizontal: 20,
-    marginTop: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  searchText: {
-    flex: 1,
-    marginLeft: 12,
-    fontSize: 16,
-  },
-  statsRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  fab: {
-    position: "absolute",
-    right: 24,
-    bottom: 32,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-});

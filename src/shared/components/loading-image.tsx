@@ -72,7 +72,7 @@ const LoadingImage: React.FC<LoadingImageProps> = ({
         <Pressable
           onPress={() => setExpanded(true)}
           hitSlop={6}
-          style={styles.expandButton}
+          className="absolute bottom-1.5 right-1.5 w-[26px] h-[26px] rounded-full items-center justify-center bg-[rgba(0,0,0,0.45)]"
         >
           <MaterialCommunityIcons name="arrow-expand" size={14} color="#fff" />
         </Pressable>
@@ -91,16 +91,3 @@ const LoadingImage: React.FC<LoadingImageProps> = ({
 
 export default LoadingImage;
 
-const styles = StyleSheet.create({
-  expandButton: {
-    position: "absolute",
-    bottom: 6,
-    right: 6,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.45)",
-  },
-});

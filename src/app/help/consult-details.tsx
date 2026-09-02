@@ -5,7 +5,6 @@ import {
   TextInput,
   ScrollView,
   Pressable,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -15,27 +14,47 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { format } from "timeago.js";
 import { useTheme } from "@/shared/hooks/use-theme";
+import ScreenHeader from "@/shared/components/screen-header";
 import { useHelpStore } from "@/features/help/hooks/use-help-data";
 import { toast } from "@/shared/hooks/use-toast";
 import { confirm } from "@/shared/hooks/use-confirm";
 import SubmitButton from "@/shared/components/submit-button";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
+import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
+import { isAdminRole } from "@/features/auth/types/auth.types";
 
 const fmtDate = (d?: Date) =>
-  d ? new Date(d).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" }) : "-";
+  d
+    ? new Date(d).toLocaleDateString(undefined, {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "-";
 
 export default function ConsultDetailsScreen() {
   const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
+  // Matches the DB's own restriction — consult_responses' insert policy
+  // already requires is_admin() (covering both admin and superadmin,
+  // same as every other admin gate in this app). Without this check the
+  // request's own creator would see a "Respond as consultant" form they
+  // can't actually use — RLS would silently reject the submission
+  // rather than the UI never offering it.
+  const isAdmin = useAuthStore((state) => isAdminRole(state.profile?.accountRole));
 
   const consultRequests = useHelpStore((state) => state.consultRequests);
-  const isLoadingConsultRequests = useHelpStore((state) => state.isLoadingConsultRequests);
+  const isLoadingConsultRequests = useHelpStore(
+    (state) => state.isLoadingConsultRequests,
+  );
   const fetchConsultRequests = useHelpStore((state) => state.fetchConsultRequests);
   const fetchConsultResponses = useHelpStore((state) => state.fetchConsultResponses);
   const getConsultResponses = useHelpStore((state) => state.getConsultResponses);
   const cancelConsultRequest = useHelpStore((state) => state.cancelConsultRequest);
   const respondToConsult = useHelpStore((state) => state.respondToConsult);
-  const completeConsultRequest = useHelpStore((state) => state.completeConsultRequest);
+  const completeConsultRequest = useHelpStore(
+    (state) => state.completeConsultRequest,
+  );
 
   const [consultantName, setConsultantName] = useState("");
   const [replyMessage, setReplyMessage] = useState("");
@@ -46,20 +65,28 @@ export default function ConsultDetailsScreen() {
     fetchConsultResponses(id);
   }, [id]);
 
-  const request = useMemo(() => consultRequests.find((c) => c.id === id), [consultRequests, id]);
-  const responses = useMemo(() => (id ? getConsultResponses(id) : []), [id, getConsultResponses, consultRequests]);
+  const request = useMemo(
+    () => consultRequests.find((c) => c.id === id),
+    [consultRequests, id],
+  );
+  const responses = useMemo(
+    () => (id ? getConsultResponses(id) : []),
+    [id, getConsultResponses, consultRequests],
+  );
 
   if (!request) {
     if (isLoadingConsultRequests) {
       return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
           <DetailSkeleton rows={4} />
         </SafeAreaView>
       );
     }
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <Text style={{ color: colors.text, padding: 16 }}>No consult request found for id: {id}</Text>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <Text className="p-4" style={{ color: colors.text }}>
+          No consult request found for id: {id}
+        </Text>
       </SafeAreaView>
     );
   }
@@ -76,7 +103,9 @@ export default function ConsultDetailsScreen() {
     });
     if (!confirmed) return;
     const ok = await cancelConsultRequest(request.id);
-    toast[ok ? "success" : "error"](ok ? "Request cancelled." : "Couldn't cancel the request.");
+    toast[ok ? "success" : "error"](
+      ok ? "Request cancelled." : "Couldn't cancel the request.",
+    );
   };
 
   const handleSendReply = async () => {
@@ -101,176 +130,208 @@ export default function ConsultDetailsScreen() {
     });
     if (!confirmed) return;
     const ok = await completeConsultRequest(request.id);
-    toast[ok ? "success" : "error"](ok ? "Marked as completed." : "Couldn't update the request.");
+    toast[ok ? "success" : "error"](
+      ok ? "Marked as completed." : "Couldn't update the request.",
+    );
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={() => router.back()} style={styles.back}>
-            <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
-              {request.subject}
-            </Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{request.code}</Text>
-          </View>
-        </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+      >
+        {/* Header */}
+        <ScreenHeader title={request.subject} subtitle={request.code} />
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={[styles.card, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-            <View style={styles.row}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Topic</Text>
-              <Text style={[styles.value, { color: colors.text }]}>{request.category}</Text>
+        <ScrollView
+          contentContainerClassName="p-4 gap-3.5"
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Info card */}
+          <View
+            className="rounded-[14px] border p-4 gap-2"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
+          >
+            <View className="flex-row justify-between py-0.5">
+              <Text className="text-xs" style={{ color: colors.textSecondary }}>
+                Topic
+              </Text>
+              <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
+                {request.category}
+              </Text>
             </View>
-            <View style={styles.row}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Status</Text>
-              <Text style={[styles.value, { color: colors.text, textTransform: "capitalize" }]}>
+            <View className="flex-row justify-between py-0.5">
+              <Text className="text-xs" style={{ color: colors.textSecondary }}>
+                Status
+              </Text>
+              <Text
+                className="text-[13px] font-medium capitalize"
+                style={{ color: colors.text }}
+              >
                 {request.status}
               </Text>
             </View>
-            <View style={styles.row}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Format</Text>
-              <Text style={[styles.value, { color: colors.text, textTransform: "capitalize" }]}>
+            <View className="flex-row justify-between py-0.5">
+              <Text className="text-xs" style={{ color: colors.textSecondary }}>
+                Format
+              </Text>
+              <Text
+                className="text-[13px] font-medium capitalize"
+                style={{ color: colors.text }}
+              >
                 {request.preferredFormat.replace("_", " ")}
               </Text>
             </View>
             {request.consultantName && (
-              <View style={styles.row}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>Consultant</Text>
-                <Text style={[styles.value, { color: colors.text }]}>{request.consultantName}</Text>
+              <View className="flex-row justify-between py-0.5">
+                <Text className="text-xs" style={{ color: colors.textSecondary }}>
+                  Consultant
+                </Text>
+                <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
+                  {request.consultantName}
+                </Text>
               </View>
             )}
-            <View style={styles.row}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Submitted</Text>
-              <Text style={[styles.value, { color: colors.text }]}>{fmtDate(request.createdAt)}</Text>
+            <View className="flex-row justify-between py-0.5">
+              <Text className="text-xs" style={{ color: colors.textSecondary }}>
+                Submitted
+              </Text>
+              <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
+                {fmtDate(request.createdAt)}
+              </Text>
             </View>
           </View>
 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Details</Text>
-          <Text style={[styles.description, { color: colors.textSecondary }]}>{request.description}</Text>
+          <Text className="text-sm font-bold" style={{ color: colors.text }}>
+            Details
+          </Text>
+          <Text className="text-sm leading-5" style={{ color: colors.textSecondary }}>
+            {request.description}
+          </Text>
 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Responses ({responses.length})</Text>
+          <Text className="text-sm font-bold" style={{ color: colors.text }}>
+            Responses ({responses.length})
+          </Text>
+
           {responses.length === 0 ? (
-            <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+            <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
               No response yet — a consultant will follow up soon.
             </Text>
           ) : (
-            <View style={{ gap: 10 }}>
+            <View className="gap-2.5">
               {responses.map((response) => (
                 <View
                   key={response.id}
-                  style={[styles.responseCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                  className="rounded-xl border p-3 gap-1.5"
+                  style={{
+                    backgroundColor: colors.backgroundSecondary,
+                    borderColor: colors.border,
+                  }}
                 >
-                  <View style={styles.responseHeader}>
-                    <Text style={[styles.responseAuthor, { color: colors.text }]}>{response.consultantName}</Text>
-                    <Text style={[styles.responseTime, { color: colors.textSecondary }]}>
+                  <View className="flex-row justify-between items-center">
+                    <Text
+                      className="text-[13px] font-semibold"
+                      style={{ color: colors.text }}
+                    >
+                      {response.consultantName}
+                    </Text>
+                    <Text
+                      className="text-[11px]"
+                      style={{ color: colors.textSecondary }}
+                    >
                       {format(response.createdAt)}
                     </Text>
                   </View>
-                  <Text style={[styles.responseMessage, { color: colors.textSecondary }]}>{response.message}</Text>
+                  <Text
+                    className="text-[13px] leading-[19px]"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    {response.message}
+                  </Text>
                 </View>
               ))}
             </View>
           )}
 
-          {isOpen && (
+          {isOpen && isAdmin && (
             <>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Respond as consultant</Text>
+              <Text className="text-sm font-bold" style={{ color: colors.text }}>
+                Respond as consultant
+              </Text>
               <TextInput
                 value={consultantName}
                 onChangeText={setConsultantName}
                 placeholder="Your name, e.g. Dr. Efua Owusu, PharmD"
                 placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.input,
-                  { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-                ]}
+                className="border rounded-lg px-3 py-2.5 text-sm"
+                style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.border,
+                  color: colors.text,
+                }}
               />
               <TextInput
                 value={replyMessage}
                 onChangeText={setReplyMessage}
                 placeholder="Write your reply..."
                 placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.input,
-                  styles.textArea,
-                  { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-                ]}
+                className="border rounded-lg px-3 py-2.5 text-sm min-h-20"
+                style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.border,
+                  color: colors.text,
+                  textAlignVertical: "top",
+                }}
                 multiline
-                textAlignVertical="top"
               />
-              <SubmitButton label="Send Reply" onPress={handleSendReply} icon="send-outline" />
-
-              <View style={styles.actionsRow}>
+              <SubmitButton
+                label="Send Reply"
+                onPress={handleSendReply}
+                icon="send-outline"
+              />
+              <View className="flex-row gap-2 mt-1">
                 <Pressable
                   onPress={handleComplete}
-                  style={[styles.secondaryButton, { backgroundColor: colors.success + "18" }]}
+                  className="flex-1 flex-row items-center justify-center gap-1.5 py-2.5 rounded-[10px]"
+                  style={{ backgroundColor: colors.success + "18" }}
                 >
-                  <MaterialCommunityIcons name="check-circle-outline" size={15} color={colors.success} />
-                  <Text style={[styles.secondaryButtonText, { color: colors.success }]}>Mark Completed</Text>
+                  <MaterialCommunityIcons
+                    name="check-circle-outline"
+                    size={15}
+                    color={colors.success}
+                  />
+                  <Text
+                    className="text-xs font-bold"
+                    style={{ color: colors.success }}
+                  >
+                    Mark Completed
+                  </Text>
                 </Pressable>
                 <Pressable
                   onPress={handleCancel}
-                  style={[styles.secondaryButton, { backgroundColor: colors.error + "18" }]}
+                  className="flex-1 flex-row items-center justify-center gap-1.5 py-2.5 rounded-[10px]"
+                  style={{ backgroundColor: colors.error + "18" }}
                 >
-                  <MaterialCommunityIcons name="close-circle-outline" size={15} color={colors.error} />
-                  <Text style={[styles.secondaryButtonText, { color: colors.error }]}>Cancel Request</Text>
+                  <MaterialCommunityIcons
+                    name="close-circle-outline"
+                    size={15}
+                    color={colors.error}
+                  />
+                  <Text className="text-xs font-bold" style={{ color: colors.error }}>
+                    Cancel Request
+                  </Text>
                 </Pressable>
               </View>
             </>
           )}
 
-          <View style={{ height: 24 }} />
+          <View className="h-6" />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: 2 },
-  content: { padding: 16, gap: 14 },
-  card: { borderRadius: 14, borderWidth: 1, padding: 16, gap: 8 },
-  row: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
-  label: { fontSize: 12 },
-  value: { fontSize: 13, fontWeight: "500" },
-  sectionTitle: { fontSize: 14, fontWeight: "700" },
-  description: { fontSize: 14, lineHeight: 20 },
-  responseCard: { borderRadius: 12, borderWidth: 1, padding: 12, gap: 6 },
-  responseHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  responseAuthor: { fontSize: 13, fontWeight: "600" },
-  responseTime: { fontSize: 11 },
-  responseMessage: { fontSize: 13, lineHeight: 19 },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    fontSize: 14,
-  },
-  textArea: { minHeight: 80 },
-  actionsRow: { flexDirection: "row", gap: 8, marginTop: 4 },
-  secondaryButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 11,
-    borderRadius: 10,
-  },
-  secondaryButtonText: { fontSize: 12, fontWeight: "700" },
-});

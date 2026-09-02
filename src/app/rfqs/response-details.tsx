@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import ScreenHeader from "@/shared/components/screen-header";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
 import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
@@ -27,7 +28,7 @@ const fmtDate = (d?: Date) =>
     : "-";
 
 const Divider: React.FC<{ color: string }> = ({ color }) => (
-  <View style={[styles.divider, { backgroundColor: color }]} />
+  <View className="w-full" style={{ height: StyleSheet.hairlineWidth, backgroundColor: color }} />
 );
 
 const ProgressBar: React.FC<{
@@ -99,52 +100,47 @@ const LineItemCard: React.FC<{
 
   return (
     <View
-      style={[
-        itemStyles.card,
-        {
-          backgroundColor: colors.backgroundSecondary,
-          borderColor: colors.border,
-          opacity: status === "unfulfilled" ? 0.75 : 1,
-        },
-      ]}
+      className="rounded-xl border p-3.5 gap-2.5"
+      style={{
+        backgroundColor: colors.backgroundSecondary,
+        borderColor: colors.border,
+        opacity: status === "unfulfilled" ? 0.75 : 1,
+      }}
     >
-      <View style={itemStyles.headerRow}>
+      <View className="flex-row items-center justify-between gap-2">
         <Text
-          style={[itemStyles.productName, { color: colors.text }]}
+          className="text-[15px] font-semibold flex-1"
+          style={{ color: colors.text }}
           numberOfLines={1}
         >
           {productName}
         </Text>
-        <View style={itemStyles.badgeGroup}>
+        <View className="flex-row gap-1.5">
           {responseItem?.offeredAlternative && (
             <View
-              style={[
-                itemStyles.badge,
-                { backgroundColor: colors.info + "18" },
-              ]}
+              className="flex-row items-center gap-1 px-[7px] py-[3px] rounded-md"
+              style={{ backgroundColor: colors.info + "18" }}
             >
               <MaterialCommunityIcons
                 name="swap-horizontal"
                 size={12}
                 color={colors.info}
               />
-              <Text style={[itemStyles.badgeText, { color: colors.info }]}>
+              <Text className="text-[10px] font-bold uppercase" style={{ color: colors.info }}>
                 Alternative
               </Text>
             </View>
           )}
           <View
-            style={[
-              itemStyles.badge,
-              { backgroundColor: statusColor + "18" },
-            ]}
+            className="flex-row items-center gap-1 px-[7px] py-[3px] rounded-md"
+            style={{ backgroundColor: statusColor + "18" }}
           >
             <MaterialCommunityIcons
               name={statusMeta.icon as any}
               size={12}
               color={statusColor}
             />
-            <Text style={[itemStyles.badgeText, { color: statusColor }]}>
+            <Text className="text-[10px] font-bold uppercase" style={{ color: statusColor }}>
               {statusMeta.label}
             </Text>
           </View>
@@ -154,10 +150,8 @@ const LineItemCard: React.FC<{
       {responseItem?.offeredAlternative &&
         responseItem.alternativeProductDetails && (
           <View
-            style={[
-              itemStyles.altBox,
-              { backgroundColor: colors.backgroundElement },
-            ]}
+            className="flex-row items-start p-[9px] rounded-lg gap-1.5"
+            style={{ backgroundColor: colors.backgroundElement }}
           >
             <MaterialCommunityIcons
               name="information-outline"
@@ -165,7 +159,8 @@ const LineItemCard: React.FC<{
               color={colors.textSecondary}
             />
             <Text
-              style={[itemStyles.altText, { color: colors.textSecondary }]}
+              className="text-xs flex-1 italic leading-4"
+              style={{ color: colors.textSecondary }}
               numberOfLines={2}
             >
               {responseItem.alternativeProductDetails}
@@ -173,11 +168,11 @@ const LineItemCard: React.FC<{
           </View>
         )}
 
-      <View style={itemStyles.qtyRow}>
-        <Text style={[itemStyles.qtyLabel, { color: colors.textSecondary }]}>
+      <View className="flex-row justify-between items-center">
+        <Text className="text-xs" style={{ color: colors.textSecondary }}>
           Qty offered
         </Text>
-        <Text style={[itemStyles.qtyValue, { color: colors.text }]}>
+        <Text className="text-[13px] font-semibold" style={{ color: colors.text }}>
           {offeredQty} / {requestedQty} {rfqItem.uom}
         </Text>
       </View>
@@ -188,31 +183,34 @@ const LineItemCard: React.FC<{
       />
 
       {responseItem ? (
-        <View style={itemStyles.grid}>
-          <View style={itemStyles.gridCol}>
+        <View className="flex-row justify-between items-center">
+          <View className="flex-col">
             <Text
-              style={[itemStyles.metaLabel, { color: colors.textSecondary }]}
+              className="text-[11px] mb-0.5"
+              style={{ color: colors.textSecondary }}
             >
               Rate
             </Text>
-            <Text style={[itemStyles.metaValue, { color: colors.text }]}>
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
               {currency} {formatAmount(responseItem.rate)}
             </Text>
           </View>
-          <View style={[itemStyles.gridCol, itemStyles.alignRight]}>
+          <View className="flex-col items-end">
             <Text
-              style={[itemStyles.metaLabel, { color: colors.textSecondary }]}
+              className="text-[11px] mb-0.5"
+              style={{ color: colors.textSecondary }}
             >
               Total Amount
             </Text>
-            <Text style={[itemStyles.totalAmount, { color: colors.text }]}>
+            <Text className="text-sm font-bold" style={{ color: colors.text }}>
               {currency} {formatAmount(responseItem.amount)}
             </Text>
           </View>
         </View>
       ) : (
         <Text
-          style={[itemStyles.noResponseText, { color: colors.textSecondary }]}
+          className="text-xs italic"
+          style={{ color: colors.textSecondary }}
         >
           The vendor did not include this item in their quote.
         </Text>
@@ -220,7 +218,8 @@ const LineItemCard: React.FC<{
 
       {!!(responseItem?.comment && responseItem.comment.trim().length > 0) && (
         <View
-          style={[itemStyles.commentSection, { borderTopColor: colors.border }]}
+          className="flex-row items-start gap-1.5 pt-2"
+          style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
         >
           <MaterialCommunityIcons
             name="comment-text-outline"
@@ -228,7 +227,8 @@ const LineItemCard: React.FC<{
             color={colors.textSecondary}
           />
           <Text
-            style={[itemStyles.commentText, { color: colors.textSecondary }]}
+            className="text-xs flex-1 leading-4"
+            style={{ color: colors.textSecondary }}
             numberOfLines={2}
           >
             {responseItem.comment}
@@ -370,105 +370,95 @@ export default function ResponseDetailsScreen() {
     <SafeAreaView
       style={{ flex: 1, backgroundColor: colors.background }}
     >
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <MaterialCommunityIcons
-            name="arrow-left"
-            size={22}
-            color={colors.text}
-          />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            {response.vendorFacility}
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Response to {rfq?.code ?? response.rfqId}
-          </Text>
-        </View>
-        {isAwarded && (
-          <View
-            style={[styles.awardBadge, { backgroundColor: colors.success + "18" }]}
-          >
-            <MaterialCommunityIcons
-              name="trophy-outline"
-              size={14}
-              color={colors.success}
-            />
-            <Text style={[styles.awardBadgeText, { color: colors.success }]}>
-              Awarded
-            </Text>
-          </View>
-        )}
-        {rfq && (
-          <PrintButton
-            variant="icon"
-            fileName={`Quote-${rfq.code}-${response.vendorFacility}`}
-            getHtml={() =>
-              buildRfqQuoteHtml(
-                rfq,
-                response,
-                facilities.find((f) => f.id === rfq.facilityId),
-                products,
-              )
-            }
-          />
-        )}
-      </View>
+      <ScreenHeader
+        title={response.vendorFacility}
+        subtitle={`Response to ${rfq?.code ?? response.rfqId}`}
+        actions={
+          <>
+            {isAwarded && (
+              <View
+                className="flex-row items-center gap-1 px-2 py-1 rounded-lg"
+                style={{ backgroundColor: colors.success + "18" }}
+              >
+                <MaterialCommunityIcons
+                  name="trophy-outline"
+                  size={14}
+                  color={colors.success}
+                />
+                <Text className="text-[11px] font-bold" style={{ color: colors.success }}>
+                  Awarded
+                </Text>
+              </View>
+            )}
+            {rfq && (
+              <PrintButton
+                variant="icon"
+                fileName={`Quote-${rfq.code}-${response.vendorFacility}`}
+                getHtml={() =>
+                  buildRfqQuoteHtml(
+                    rfq,
+                    response,
+                    facilities.find((f) => f.id === rfq.facilityId),
+                    products,
+                  )
+                }
+              />
+            )}
+          </>
+        }
+      />
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
         <View
-          style={[
-            styles.card,
-            { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-          ]}
+          className="rounded-[14px] border p-4 gap-2"
+          style={{ backgroundColor: colors.backgroundSecondary, borderColor: colors.border }}
         >
-          <View style={styles.row}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>
+          <View className="flex-row justify-between py-[3px]">
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>
               Submitted
             </Text>
-            <Text style={[styles.value, { color: colors.text }]}>
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
               {fmtDate(response.submittedAt)}
             </Text>
           </View>
-          <View style={styles.row}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>
+          <View className="flex-row justify-between py-[3px]">
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>
               Quote valid until
             </Text>
-            <Text style={[styles.value, { color: colors.text }]}>
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
               {fmtDate(response.quoteValidUntil)}
             </Text>
           </View>
-          <View style={styles.row}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>
+          <View className="flex-row justify-between py-[3px]">
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>
               Estimated delivery
             </Text>
-            <Text style={[styles.value, { color: colors.text }]}>
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
               {fmtDate(response.estimatedDeliveryDate)}
             </Text>
           </View>
-          <View style={styles.row}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>
+          <View className="flex-row justify-between py-[3px]">
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>
               Incoterms
             </Text>
-            <Text style={[styles.value, { color: colors.text }]}>
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
               {response.incoterms || "-"}
             </Text>
           </View>
-          <View style={styles.row}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>
+          <View className="flex-row justify-between py-[3px]">
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>
               Payment terms
             </Text>
-            <Text style={[styles.value, { color: colors.text }]}>
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
               {response.paymentTerms || "-"}
             </Text>
           </View>
           {response.vendorComment ? (
-            <View style={styles.row}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>
+            <View className="flex-row justify-between py-[3px]">
+              <Text className="text-xs" style={{ color: colors.textSecondary }}>
                 Comment
               </Text>
-              <Text style={[styles.value, { color: colors.text, flex: 1, textAlign: "right" }]}>
+              <Text className="text-[13px] font-medium flex-1 text-right" style={{ color: colors.text }}>
                 {response.vendorComment}
               </Text>
             </View>
@@ -477,20 +467,18 @@ export default function ResponseDetailsScreen() {
 
         {/* Fulfilment Overview */}
         <View
-          style={[
-            styles.card,
-            {
-              backgroundColor: colors.backgroundSecondary,
-              borderColor: colors.border,
-            },
-          ]}
+          className="rounded-[14px] border p-4 gap-2"
+          style={{
+            backgroundColor: colors.backgroundSecondary,
+            borderColor: colors.border,
+          }}
         >
-          <Text style={[styles.cardTitle, { color: colors.text }]}>
+          <Text className="text-sm font-bold mb-0.5" style={{ color: colors.text }}>
             Fulfilment Overview
           </Text>
-          <View style={styles.gaugeRow}>
+          <View className="flex-row items-center justify-around py-1">
             {/* VFR */}
-            <View style={styles.gaugeItem}>
+            <View className="items-center gap-1.5 flex-1">
               <ArcGaugeNew
                 pct={stats.vfrPct}
                 size={90}
@@ -503,22 +491,21 @@ export default function ResponseDetailsScreen() {
                 subtextColor={colors.textSecondary}
               />
               <Text
-                style={[styles.gaugeLabel, { color: colors.textSecondary }]}
+                className="text-xs font-medium text-center"
+                style={{ color: colors.textSecondary }}
               >
                 Item Fulfilment
               </Text>
-              <Text style={[styles.gaugeSub, { color: colors.text }]}>
+              <Text className="text-[11px] font-normal text-center" style={{ color: colors.text }}>
                 {stats.respondedCount} / {stats.totalRfqItems} items
               </Text>
             </View>
             <View
-              style={[
-                styles.gaugeDivider,
-                { backgroundColor: colors.border },
-              ]}
+              className="w-px h-20 mx-2"
+              style={{ backgroundColor: colors.border }}
             />
             {/* Volume */}
-            <View style={styles.gaugeItem}>
+            <View className="items-center gap-1.5 flex-1">
               <ArcGaugeNew
                 pct={stats.volPct}
                 size={90}
@@ -531,11 +518,12 @@ export default function ResponseDetailsScreen() {
                 subtextColor={colors.textSecondary}
               />
               <Text
-                style={[styles.gaugeLabel, { color: colors.textSecondary }]}
+                className="text-xs font-medium text-center"
+                style={{ color: colors.textSecondary }}
               >
                 Volume Fulfilment
               </Text>
-              <Text style={[styles.gaugeSub, { color: colors.text }]}>
+              <Text className="text-[11px] font-normal text-center" style={{ color: colors.text }}>
                 {stats.totalOfferedQty} / {stats.totalRequestedQty} units
               </Text>
             </View>
@@ -545,12 +533,10 @@ export default function ResponseDetailsScreen() {
           {stats.altCount > 0 && (
             <>
               <Divider color={colors.border} />
-              <View style={styles.altRow}>
+              <View className="flex-row items-center gap-2.5 py-0.5">
                 <View
-                  style={[
-                    styles.altIcon,
-                    { backgroundColor: colors.warning + "18" },
-                  ]}
+                  className="w-7 h-7 rounded-[7px] items-center justify-center"
+                  style={{ backgroundColor: colors.warning + "18" }}
                 >
                   <MaterialCommunityIcons
                     name="swap-horizontal"
@@ -558,11 +544,11 @@ export default function ResponseDetailsScreen() {
                     color={colors.warning}
                   />
                 </View>
-                <Text style={[styles.altText, { color: colors.textSecondary }]}>
+                <Text className="flex-1 text-[13px]" style={{ color: colors.textSecondary }}>
                   {stats.altCount} alternative
                   {stats.altCount > 1 ? "s" : ""} offered
                 </Text>
-                <Text style={[styles.altPct, { color: colors.warning }]}>
+                <Text className="text-xs font-semibold" style={{ color: colors.warning }}>
                   {stats.respondedCount > 0
                     ? Math.round((stats.altCount / stats.respondedCount) * 100)
                     : 0}
@@ -574,31 +560,27 @@ export default function ResponseDetailsScreen() {
         </View>
 
         {/* Items — one card per requested line, flagged if partial / missing / alternative */}
-        <View style={styles.itemsHeaderRow}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        <View className="flex-row items-center justify-between flex-wrap gap-1.5">
+          <Text className="text-sm font-bold" style={{ color: colors.text }}>
             Items ({lineItems.length})
           </Text>
-          <View style={styles.itemsHeaderBadges}>
+          <View className="flex-row gap-1.5">
             {stats.partialCount > 0 && (
               <View
-                style={[
-                  styles.miniBadge,
-                  { backgroundColor: colors.warning + "18" },
-                ]}
+                className="px-2 py-[3px] rounded-md"
+                style={{ backgroundColor: colors.warning + "18" }}
               >
-                <Text style={[styles.miniBadgeText, { color: colors.warning }]}>
+                <Text className="text-[11px] font-bold" style={{ color: colors.warning }}>
                   {stats.partialCount} partial
                 </Text>
               </View>
             )}
             {stats.unfulfilledCount > 0 && (
               <View
-                style={[
-                  styles.miniBadge,
-                  { backgroundColor: colors.error + "18" },
-                ]}
+                className="px-2 py-[3px] rounded-md"
+                style={{ backgroundColor: colors.error + "18" }}
               >
-                <Text style={[styles.miniBadgeText, { color: colors.error }]}>
+                <Text className="text-[11px] font-bold" style={{ color: colors.error }}>
                   {stats.unfulfilledCount} not quoted
                 </Text>
               </View>
@@ -617,44 +599,39 @@ export default function ResponseDetailsScreen() {
         </View>
 
         <View
-          style={[
-            styles.card,
-            { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-          ]}
+          className="rounded-[14px] border p-4 gap-2"
+          style={{ backgroundColor: colors.backgroundSecondary, borderColor: colors.border }}
         >
-          <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 4 }]}>
+          <Text className="text-sm font-bold" style={{ color: colors.text, marginBottom: 4 }}>
             Cost summary
           </Text>
-          <View style={styles.row}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>
+          <View className="flex-row justify-between py-[3px]">
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>
               Items subtotal
             </Text>
-            <Text style={[styles.value, { color: colors.text }]}>
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
               {response.currency} {formatAmount(response.totalItemsAmount)}
             </Text>
           </View>
           {response.additionalCosts.map((cost) => (
-            <View style={styles.row} key={cost.id}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>
+            <View className="flex-row justify-between py-[3px]" key={cost.id}>
+              <Text className="text-xs" style={{ color: colors.textSecondary }}>
                 {cost.description}
                 {!cost.isRequired ? " (optional)" : ""}
               </Text>
-              <Text style={[styles.value, { color: colors.text }]}>
+              <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
                 {response.currency} {formatAmount(cost.amount)}
               </Text>
             </View>
           ))}
           <View
-            style={[
-              styles.row,
-              styles.totalRow,
-              { borderTopColor: colors.border },
-            ]}
+            className="flex-row justify-between py-[3px] mt-1.5 pt-2.5"
+            style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
           >
-            <Text style={[styles.totalLabel, { color: colors.text }]}>
+            <Text className="text-sm font-bold" style={{ color: colors.text }}>
               Grand total
             </Text>
-            <Text style={[styles.totalValue, { color: colors.text }]}>
+            <Text className="text-[15px] font-extrabold" style={{ color: colors.text }}>
               {response.currency} {formatAmount(response.grandTotal)}
             </Text>
           </View>
@@ -665,142 +642,3 @@ export default function ResponseDetailsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: 2 },
-  awardBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  awardBadgeText: { fontSize: 11, fontWeight: "700" },
-  content: { padding: 16, gap: 14 },
-  card: { borderRadius: 14, borderWidth: 1, padding: 16, gap: 8 },
-  row: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
-  label: { fontSize: 12 },
-  value: { fontSize: 13, fontWeight: "500" },
-  sectionTitle: { fontSize: 14, fontWeight: "700" },
-  totalRow: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: 6, paddingTop: 10 },
-  totalLabel: { fontSize: 14, fontWeight: "700" },
-  totalValue: { fontSize: 15, fontWeight: "800" },
-
-  // Fulfilment overview
-  cardTitle: { fontSize: 14, fontWeight: "700", marginBottom: 2 },
-  gaugeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-    paddingVertical: 4,
-  },
-  gaugeItem: { alignItems: "center", gap: 6, flex: 1 },
-  gaugeLabel: { fontSize: 12, fontWeight: "500", textAlign: "center" },
-  gaugeSub: { fontSize: 11, fontWeight: "400", textAlign: "center" },
-  gaugeDivider: { width: 1, height: 80, marginHorizontal: 8 },
-  divider: { height: StyleSheet.hairlineWidth, width: "100%" },
-  altRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 2,
-  },
-  altIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 7,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  altText: { flex: 1, fontSize: 13 },
-  altPct: { fontSize: 12, fontWeight: "600" },
-
-  // Items section header
-  itemsHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  itemsHeaderBadges: { flexDirection: "row", gap: 6 },
-  miniBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  miniBadgeText: { fontSize: 11, fontWeight: "700" },
-});
-
-// ─── per-line-item card styles ─────────────────────────────────────────────
-
-const itemStyles = StyleSheet.create({
-  card: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 14,
-    gap: 10,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  productName: { fontSize: 15, fontWeight: "600", flex: 1 },
-  badgeGroup: { flexDirection: "row", gap: 6 },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  badgeText: { fontSize: 10, fontWeight: "700", textTransform: "uppercase" },
-  altBox: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    padding: 9,
-    borderRadius: 8,
-    gap: 6,
-  },
-  altText: { fontSize: 12, flex: 1, fontStyle: "italic", lineHeight: 16 },
-  qtyRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  qtyLabel: { fontSize: 12 },
-  qtyValue: { fontSize: 13, fontWeight: "600" },
-  grid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  gridCol: { flexDirection: "column" },
-  alignRight: { alignItems: "flex-end" },
-  metaLabel: { fontSize: 11, marginBottom: 2 },
-  metaValue: { fontSize: 13, fontWeight: "500" },
-  totalAmount: { fontSize: 14, fontWeight: "700" },
-  noResponseText: { fontSize: 12, fontStyle: "italic" },
-  commentSection: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 8,
-    gap: 6,
-  },
-  commentText: { fontSize: 12, flex: 1, lineHeight: 16 },
-});

@@ -45,6 +45,10 @@ const RxRfqResponseItemsTable: React.FC<RxRfqResponseItemsTableProps> = ({
   const [editingItem, setEditingItem] = useState<RxRfqResponseItem | null>(
     null,
   );
+  // Column widths/alignment are stored as data here (used by the dynamic
+  // header render below via columns.map), so they stay as plain style
+  // objects rather than className — a runtime data array of style values
+  // isn't something className can represent the same way.
   const columns = [
     { label: "Product", style: styles.productCol, align: "left" },
     { label: "Qty", style: styles.qtyCol, align: "center" },
@@ -103,40 +107,40 @@ const RxRfqResponseItemsTable: React.FC<RxRfqResponseItemsTableProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View className="w-full">
       {error && (
-        <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+        <Text className="text-xs font-medium mb-2" style={{ color: colors.error }}>{error}</Text>
       )}
 
       {/* Pending RFQ items — tap to respond */}
       {pendingRfqItems.length > 0 && (
-        <View style={styles.pendingSection}>
-          <Text style={[styles.pendingTitle, { color: colors.textSecondary }]}>
+        <View className="gap-2 mb-5">
+          <Text className="text-xs font-medium uppercase tracking-[0.5px]" style={{ color: colors.textSecondary }}>
             Awaiting response · {pendingRfqItems.length} item
             {pendingRfqItems.length > 1 ? "s" : ""}
           </Text>
           {pendingRfqItems.map((rfqItem) => (
             <TouchableOpacity
               key={rfqItem.id}
-              style={[
-                styles.pendingRow,
-                {
-                  backgroundColor: colors.backgroundElement,
-                  borderColor: colors.border,
-                },
-              ]}
+              className="flex-row items-center justify-between px-3.5 py-3 rounded-[10px] border gap-3"
+              style={{
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
+              }}
               onPress={() => openAddModal(rfqItem)}
               activeOpacity={0.7}
             >
-              <View style={styles.pendingRowLeft}>
+              <View className="flex-1 gap-0.5">
                 <Text
-                  style={[styles.pendingProduct, { color: colors.text }]}
+                  className="text-sm font-medium"
+                  style={{ color: colors.text }}
                   numberOfLines={1}
                 >
                   {getProductName(rfqItem.productId)}
                 </Text>
                 <Text
-                  style={[styles.pendingMeta, { color: colors.textSecondary }]}
+                  className="text-xs"
+                  style={{ color: colors.textSecondary }}
                 >
                   Qty {rfqItem.quantity}
                   {rfqItem.uom ? ` · ${rfqItem.uom}` : ""}
@@ -144,7 +148,8 @@ const RxRfqResponseItemsTable: React.FC<RxRfqResponseItemsTableProps> = ({
                 </Text>
               </View>
               <View
-                style={[styles.respondBadge, { backgroundColor: colors.text }]}
+                className="flex-row items-center gap-1 px-2.5 py-1.5 rounded-lg"
+                style={{ backgroundColor: colors.text }}
               >
                 <MaterialCommunityIcons
                   name="plus"
@@ -152,10 +157,8 @@ const RxRfqResponseItemsTable: React.FC<RxRfqResponseItemsTableProps> = ({
                   color={colors.backgroundSecondary}
                 />
                 <Text
-                  style={[
-                    styles.respondBadgeText,
-                    { color: colors.backgroundSecondary },
-                  ]}
+                  className="text-xs font-semibold"
+                  style={{ color: colors.backgroundSecondary }}
                 >
                   Respond
                 </Text>
@@ -169,66 +172,30 @@ const RxRfqResponseItemsTable: React.FC<RxRfqResponseItemsTableProps> = ({
       {items.length > 0 && (
         <>
           <Text
-            style={[styles.respondedTitle, { color: colors.textSecondary }]}
+            className="text-xs font-medium uppercase tracking-[0.5px] mb-2"
+            style={{ color: colors.textSecondary }}
           >
             Quoted · {items.length} item{items.length > 1 ? "s" : ""}
           </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={styles.tableScroll}
+            className="w-full"
           >
             <View
-              style={[
-                styles.tableContainer,
-                {
-                  backgroundColor: colors.backgroundElement,
-                  borderColor: colors.border,
-                },
-              ]}
+              className="border rounded-[10px] overflow-hidden"
+              style={{
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
+              }}
             >
               {/* Table header */}
-              {/*<View
-                style={[
-                  styles.tableHeader,
-                  {
-                    backgroundColor: colors.backgroundSecondary,
-                    borderBottomColor: colors.border,
-                  },
-                ]}
-              >
-                {(
-                  [
-                    ["Product", styles.productCol],
-                    ["Qty", styles.qtyCol],
-                    ["Rate", styles.rateCol],
-                    ["Amount", styles.amountCol],
-                    ["Alt", styles.altCol],
-                    ["Cmt", styles.cmtCol],
-                    ["", styles.actionsCol],
-                  ] as [string, object][]
-                ).map(([label, colStyle]) => (
-                  <Text
-                    key={label}
-                    style={[
-                      styles.headerCell,
-                      colStyle,
-                      { color: colors.text },
-                    ]}
-                  >
-                    {label}
-                  </Text>
-                ))}
-              </View>*/}
-
               <View
-                style={[
-                  styles.tableHeader,
-                  {
-                    backgroundColor: colors.backgroundSecondary,
-                    borderBottomColor: colors.border,
-                  },
-                ]}
+                className="flex-row items-center border-b py-3"
+                style={{
+                  backgroundColor: colors.backgroundSecondary,
+                  borderBottomColor: colors.border,
+                }}
               >
                 {columns.map((column) => (
                   <Text
@@ -253,10 +220,8 @@ const RxRfqResponseItemsTable: React.FC<RxRfqResponseItemsTableProps> = ({
                 scrollEnabled={false}
                 renderItem={({ item }) => (
                   <View
-                    style={[
-                      styles.tableRow,
-                      { borderBottomColor: colors.border },
-                    ]}
+                    className="flex-row items-center min-h-[52px]"
+                    style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
                   >
                     <Text
                       style={[
@@ -307,14 +272,12 @@ const RxRfqResponseItemsTable: React.FC<RxRfqResponseItemsTableProps> = ({
 
                     <View style={[styles.altCol, styles.cellCenter]}>
                       <View
-                        style={[
-                          styles.altBadge,
-                          {
-                            backgroundColor: item.offeredAlternative
-                              ? colors.warning + "20"
-                              : colors.success + "20",
-                          },
-                        ]}
+                        className="p-1 rounded-md"
+                        style={{
+                          backgroundColor: item.offeredAlternative
+                            ? colors.warning + "20"
+                            : colors.success + "20",
+                        }}
                       >
                         <MaterialCommunityIcons
                           name={
@@ -343,9 +306,9 @@ const RxRfqResponseItemsTable: React.FC<RxRfqResponseItemsTableProps> = ({
                       {item.comment?.trim() ? "..." : "-"}
                     </Text>
 
-                    <View style={[styles.actionsCol, styles.rowActions]}>
+                    <View style={styles.actionsCol} className="flex-row items-center justify-center gap-0.5">
                       <TouchableOpacity
-                        style={styles.actionIconButton}
+                        className="p-1 mx-1"
                         onPress={() => openEditModal(item)}
                       >
                         <MaterialCommunityIcons
@@ -356,7 +319,7 @@ const RxRfqResponseItemsTable: React.FC<RxRfqResponseItemsTableProps> = ({
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        style={styles.actionIconButton}
+                        className="p-1 mx-1"
                         onPress={() => handleDelete(item.id)}
                       >
                         <MaterialCommunityIcons
@@ -372,20 +335,19 @@ const RxRfqResponseItemsTable: React.FC<RxRfqResponseItemsTableProps> = ({
 
               {/* Grand total row */}
               <View
-                style={[
-                  styles.totalRow,
-                  {
-                    borderTopColor: colors.border,
-                    backgroundColor: colors.backgroundSecondary,
-                  },
-                ]}
+                className="flex-row justify-between items-center px-3 py-2.5 border-t"
+                style={{
+                  borderTopColor: colors.border,
+                  backgroundColor: colors.backgroundSecondary,
+                }}
               >
                 <Text
-                  style={[styles.totalLabel, { color: colors.textSecondary }]}
+                  className="text-xs font-medium"
+                  style={{ color: colors.textSecondary }}
                 >
                   Total ({currency})
                 </Text>
-                <Text style={[styles.totalValue, { color: colors.text }]}>
+                <Text className="text-sm font-semibold pr-1.5" style={{ color: colors.text }}>
                   {grandTotal.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
@@ -400,23 +362,21 @@ const RxRfqResponseItemsTable: React.FC<RxRfqResponseItemsTableProps> = ({
       {/* Empty state — only shown when nothing is responded yet */}
       {items.length === 0 && pendingRfqItems.length === 0 && (
         <View
-          style={[
-            styles.emptyState,
-            {
-              backgroundColor: colors.backgroundElement,
-              borderColor: colors.border,
-            },
-          ]}
+          className="items-center justify-center py-10 px-5 rounded-xl border border-dashed"
+          style={{
+            backgroundColor: colors.backgroundElement,
+            borderColor: colors.border,
+          }}
         >
           <MaterialCommunityIcons
             name="inbox-outline"
             size={48}
             color={colors.textSecondary}
           />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>
+          <Text className="text-base font-semibold mt-3" style={{ color: colors.text }}>
             No items to respond to
           </Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+          <Text className="text-[13px] mt-1 text-center" style={{ color: colors.textSecondary }}>
             The RFQ has no line items yet.
           </Text>
         </View>
@@ -438,67 +398,17 @@ const RxRfqResponseItemsTable: React.FC<RxRfqResponseItemsTableProps> = ({
         initialData={editingItem}
         isEditing={!!editingItem}
         facilityId={facilityId}
+        currency={currency}
       />
     </View>
   );
 };
 
+// Only the column widths/alignment/text styles remain here — these are
+// referenced dynamically via the columns array above (columns.map), which
+// a data-driven className string can't cleanly express, so they stay as
+// StyleSheet objects rather than being converted.
 const styles = StyleSheet.create({
-  container: { width: "100%" },
-  errorText: { fontSize: 12, fontWeight: "500", marginBottom: 8 },
-
-  pendingSection: { gap: 8, marginBottom: 20 },
-  pendingTitle: {
-    fontSize: 12,
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  pendingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    gap: 12,
-  },
-  pendingRowLeft: { flex: 1, gap: 2 },
-  pendingProduct: { fontSize: 14, fontWeight: "500" },
-  pendingMeta: { fontSize: 12 },
-  respondBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  respondBadgeText: { fontSize: 12, fontWeight: "600" },
-
-  respondedTitle: {
-    fontSize: 12,
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  tableScroll: { width: "100%" },
-  tableContainer: { borderWidth: 1, borderRadius: 10, overflow: "hidden" },
-  // tableHeader: {
-  //   flexDirection: "row",
-  //   borderBottomWidth: 1,
-  //   paddingVertical: 10,
-  // },
-  // tableRow: {
-  //   flexDirection: "row",
-  //   alignItems: "center",
-  //   borderBottomWidth: StyleSheet.hairlineWidth,
-  //   minHeight: 48,
-  // },
-  // headerCell: { fontSize: 12, fontWeight: "600", paddingHorizontal: 6 },
-  // bodyCell: { fontSize: 12, fontWeight: "400", paddingHorizontal: 6 },
   cellCenter: { alignItems: "center", justifyContent: "center" },
 
   productCol: { width: 180 },
@@ -509,37 +419,6 @@ const styles = StyleSheet.create({
   cmtCol: { width: 40 },
   actionsCol: { width: 70 },
 
-  rowActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 2,
-  },
-  actionIconButton: { padding: 4, marginHorizontal: 4 },
-  altBadge: { padding: 4, borderRadius: 6 },
-
-  totalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderTopWidth: 1,
-  },
-  totalLabel: { fontSize: 12, fontWeight: "500" },
-  totalValue: { fontSize: 14, fontWeight: "600", paddingRight: 6 },
-
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderStyle: "dashed",
-  },
-  emptyTitle: { fontSize: 16, fontWeight: "600", marginTop: 12 },
-  emptySubtitle: { fontSize: 13, marginTop: 4, textAlign: "center" },
   centerText: {
     textAlign: "center",
   },
@@ -557,20 +436,6 @@ const styles = StyleSheet.create({
   bodyCell: {
     fontSize: 12,
     paddingHorizontal: 6,
-  },
-
-  tableHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 1,
-    paddingVertical: 12,
-  },
-
-  tableRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    minHeight: 52,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
 });
 

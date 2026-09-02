@@ -1,9 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet, TextInput, Modal } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  TextInput,
+  Modal,
+} from "react-native";
 import { router, Redirect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import ScreenHeader from "@/shared/components/screen-header";
 import { confirm } from "@/shared/hooks/use-confirm";
 import { toast } from "@/shared/hooks/use-toast";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
@@ -12,6 +20,7 @@ import { isAdminRole } from "@/features/auth/types/auth.types";
 import { KycEntityType } from "@/features/profile/types/profile.types";
 import KycStatusBadge from "@/features/profile/components/kyc-status-badge";
 import DocumentViewerModal from "@/features/profile/components/document-viewer-modal";
+import StatusFilterTabs from "@/shared/components/status-filter-tabs";
 
 export default function KycReviewScreen() {
   const { colors } = useTheme();
@@ -21,7 +30,9 @@ export default function KycReviewScreen() {
   const facilities = useProfileStore((state) => state.facilities);
   const organizations = useProfileStore((state) => state.organizations);
   const usersForKycReview = useProfileStore((state) => state.usersForKycReview);
-  const fetchUsersForKycReview = useProfileStore((state) => state.fetchUsersForKycReview);
+  const fetchUsersForKycReview = useProfileStore(
+    (state) => state.fetchUsersForKycReview,
+  );
   const approveKyc = useProfileStore((state) => state.approveKyc);
   const rejectKyc = useProfileStore((state) => state.rejectKyc);
   const fetchKycDocuments = useProfileStore((state) => state.fetchKycDocuments);
@@ -37,13 +48,25 @@ export default function KycReviewScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id, facilities.length, organizations.length]);
 
-  const [rejectTarget, setRejectTarget] = useState<{ type: KycEntityType; id: string } | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<{
+    type: KycEntityType;
+    id: string;
+  } | null>(null);
   const [reasonText, setReasonText] = useState("");
   const [viewingPath, setViewingPath] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<
+    "pending" | "verified" | "rejected" | "unverified" | "all"
+  >("pending");
 
   const entries = useMemo(
     () => [
-      { type: "user" as KycEntityType, id: user.id, label: user.fullName, sub: "User", kyc: user.kyc },
+      {
+        type: "user" as KycEntityType,
+        id: user.id,
+        label: user.fullName,
+        sub: "User",
+        kyc: user.kyc,
+      },
       ...usersForKycReview.map((u) => ({
         type: "user" as KycEntityType,
         id: u.id,
@@ -74,8 +97,23 @@ export default function KycReviewScreen() {
   }
 
   const pendingCount = entries.filter((e) => e.kyc.status === "pending").length;
+  const verifiedCount = entries.filter((e) => e.kyc.status === "verified").length;
+  const rejectedCount = entries.filter((e) => e.kyc.status === "rejected").length;
+  const unverifiedCount = entries.filter((e) => e.kyc.status === "unverified").length;
 
-  const handleApprove = async (type: KycEntityType, id: string, label: string) => {
+  const filteredEntries = useMemo(
+    () =>
+      statusFilter === "all"
+        ? entries
+        : entries.filter((e) => e.kyc.status === statusFilter),
+    [entries, statusFilter],
+  );
+
+  const handleApprove = async (
+    type: KycEntityType,
+    id: string,
+    label: string,
+  ) => {
     const confirmed = await confirm({
       title: "Approve verification?",
       message: `${label} will be marked as verified.`,
@@ -100,86 +138,156 @@ export default function KycReviewScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>KYC Review</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {pendingCount} awaiting review
-          </Text>
-        </View>
-      </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Header */}
+      <ScreenHeader title="KYC Review" subtitle={`${pendingCount} awaiting review`} />
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {entries.map((entry) => (
-          <View
-            key={`${entry.type}-${entry.id}`}
-            style={[styles.card, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-          >
-            <View style={styles.topRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.entryLabel, { color: colors.text }]}>{entry.label}</Text>
-                <Text style={[styles.entrySub, { color: colors.textSecondary }]}>{entry.sub}</Text>
-              </View>
-              <KycStatusBadge status={entry.kyc.status} compact />
-            </View>
+      <StatusFilterTabs
+        options={[
+          { key: "pending", label: "Pending", count: pendingCount },
+          { key: "verified", label: "Verified", count: verifiedCount },
+          { key: "rejected", label: "Rejected", count: rejectedCount },
+          { key: "unverified", label: "Unverified", count: unverifiedCount },
+          { key: "all", label: "All", count: entries.length },
+        ]}
+        selected={statusFilter}
+        onSelect={(key) => setStatusFilter(key as typeof statusFilter)}
+      />
 
-            {entry.kyc.documents.length === 0 ? (
-              <Text style={[styles.docCount, { color: colors.textSecondary }]}>No documents submitted</Text>
-            ) : (
-              <View style={{ gap: 6 }}>
-                {entry.kyc.documents.map((doc) => (
-                  <Pressable
-                    key={doc.id}
-                    onPress={() => doc.imageUri && setViewingPath(doc.imageUri)}
-                    style={[styles.docRow, { backgroundColor: colors.backgroundElement }]}
-                  >
-                    <MaterialCommunityIcons name="file-document-outline" size={14} color={colors.textSecondary} />
-                    <Text style={[styles.docRowText, { color: colors.text }]} numberOfLines={1}>
-                      {doc.type} — {doc.fileName}
-                    </Text>
-                    {doc.imageUri && (
-                      <MaterialCommunityIcons name="eye-outline" size={14} color={colors.textSecondary} />
-                    )}
-                  </Pressable>
-                ))}
-              </View>
-            )}
-
-            {entry.kyc.status === "rejected" && entry.kyc.rejectionReason && (
-              <Text style={[styles.rejectionText, { color: colors.error }]}>{entry.kyc.rejectionReason}</Text>
-            )}
-
-            {entry.kyc.status === "pending" && (
-              <View style={styles.actionsRow}>
-                <Pressable
-                  onPress={() => handleApprove(entry.type, entry.id, entry.label)}
-                  style={[styles.actionButton, { backgroundColor: colors.success + "18" }]}
-                >
-                  <MaterialCommunityIcons name="check" size={14} color={colors.success} />
-                  <Text style={[styles.actionText, { color: colors.success }]}>Approve</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => openRejectPrompt(entry.type, entry.id)}
-                  style={[styles.actionButton, { backgroundColor: colors.error + "18" }]}
-                >
-                  <MaterialCommunityIcons name="close" size={14} color={colors.error} />
-                  <Text style={[styles.actionText, { color: colors.error }]}>Reject</Text>
-                </Pressable>
-              </View>
-            )}
+      <ScrollView contentContainerClassName="p-4 gap-2.5">
+        {filteredEntries.length === 0 ? (
+          <View className="items-center justify-center gap-2.5 pt-16">
+            <MaterialCommunityIcons
+              name="check-circle-outline"
+              size={32}
+              color={colors.textSecondary}
+            />
+            <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+              Nothing here.
+            </Text>
           </View>
-        ))}
+        ) : (
+          filteredEntries.map((entry) => (
+            <View
+              key={`${entry.type}-${entry.id}`}
+              className="rounded-[14px] border p-3.5 gap-1.5"
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+              }}
+            >
+              <View className="flex-row items-center gap-2.5">
+                <View className="flex-1">
+                  <Text className="text-sm font-bold" style={{ color: colors.text }}>
+                    {entry.label}
+                  </Text>
+                  <Text
+                    className="text-[11px] mt-0.5"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    {entry.sub}
+                  </Text>
+                </View>
+                <KycStatusBadge status={entry.kyc.status} compact />
+              </View>
+
+              {entry.kyc.documents.length === 0 ? (
+                <Text className="text-xs" style={{ color: colors.textSecondary }}>
+                  No documents submitted
+                </Text>
+              ) : (
+                <View className="gap-1.5">
+                  {entry.kyc.documents.map((doc) => (
+                    <Pressable
+                      key={doc.id}
+                      onPress={() => doc.imageUri && setViewingPath(doc.imageUri)}
+                      className="flex-row items-center gap-2 rounded-lg px-2.5 py-2"
+                      style={{ backgroundColor: colors.backgroundElement }}
+                    >
+                      <MaterialCommunityIcons
+                        name="file-document-outline"
+                        size={14}
+                        color={colors.textSecondary}
+                      />
+                      <Text
+                        className="text-xs flex-1"
+                        style={{ color: colors.text }}
+                        numberOfLines={1}
+                      >
+                        {doc.type} — {doc.fileName}
+                      </Text>
+                      {doc.imageUri && (
+                        <MaterialCommunityIcons
+                          name="eye-outline"
+                          size={14}
+                          color={colors.textSecondary}
+                        />
+                      )}
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+
+              {entry.kyc.status === "rejected" && entry.kyc.rejectionReason && (
+                <Text
+                  className="text-xs leading-[17px]"
+                  style={{ color: colors.error }}
+                >
+                  {entry.kyc.rejectionReason}
+                </Text>
+              )}
+
+              {entry.kyc.status === "pending" && (
+                <View className="flex-row gap-2 mt-1">
+                  <Pressable
+                    onPress={() => handleApprove(entry.type, entry.id, entry.label)}
+                    className="flex-row items-center gap-1.5 px-3 py-2 rounded-lg"
+                    style={{ backgroundColor: colors.success + "18" }}
+                  >
+                    <MaterialCommunityIcons
+                      name="check"
+                      size={14}
+                      color={colors.success}
+                    />
+                    <Text
+                      className="text-xs font-bold"
+                      style={{ color: colors.success }}
+                    >
+                      Approve
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => openRejectPrompt(entry.type, entry.id)}
+                    className="flex-row items-center gap-1.5 px-3 py-2 rounded-lg"
+                    style={{ backgroundColor: colors.error + "18" }}
+                  >
+                    <MaterialCommunityIcons
+                      name="close"
+                      size={14}
+                      color={colors.error}
+                    />
+                    <Text className="text-xs font-bold" style={{ color: colors.error }}>
+                      Reject
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          ))
+        )}
       </ScrollView>
 
+      {/* Reject modal */}
       <Modal visible={!!rejectTarget} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.backgroundSecondary }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Reject verification</Text>
-            <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
+        <View className="flex-1 bg-black/50 justify-center p-6">
+          <View
+            className="rounded-2xl p-[18px] gap-2.5"
+            style={{ backgroundColor: colors.backgroundSecondary }}
+          >
+            <Text className="text-base font-bold" style={{ color: colors.text }}>
+              Reject verification
+            </Text>
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>
               Let them know what needs to be fixed.
             </Text>
             <TextInput
@@ -187,33 +295,41 @@ export default function KycReviewScreen() {
               onChangeText={setReasonText}
               placeholder="Reason..."
               placeholderTextColor={colors.textSecondary}
-              style={[
-                styles.modalInput,
-                { backgroundColor: colors.backgroundElement, color: colors.text, borderColor: colors.border },
-              ]}
+              className="min-h-20 border rounded-[10px] p-3 text-sm"
+              style={{
+                backgroundColor: colors.backgroundElement,
+                color: colors.text,
+                borderColor: colors.border,
+                textAlignVertical: "top",
+              }}
               multiline
               autoFocus
             />
-            <View style={styles.modalActions}>
+            <View className="flex-row gap-2.5 mt-1">
               <Pressable
                 onPress={() => setRejectTarget(null)}
-                style={[styles.modalButton, { backgroundColor: colors.backgroundElement }]}
+                className="flex-1 py-2.5 rounded-[10px] items-center"
+                style={{ backgroundColor: colors.backgroundElement }}
               >
-                <Text style={[styles.modalButtonText, { color: colors.text }]}>Cancel</Text>
+                <Text className="text-sm font-semibold" style={{ color: colors.text }}>
+                  Cancel
+                </Text>
               </Pressable>
               <Pressable
                 onPress={confirmReject}
                 disabled={!reasonText.trim()}
-                style={[
-                  styles.modalButton,
-                  { backgroundColor: reasonText.trim() ? colors.error : colors.backgroundElement },
-                ]}
+                className="flex-1 py-2.5 rounded-[10px] items-center"
+                style={{
+                  backgroundColor: reasonText.trim()
+                    ? colors.error
+                    : colors.backgroundElement,
+                }}
               >
                 <Text
-                  style={[
-                    styles.modalButtonText,
-                    { color: reasonText.trim() ? "#fff" : colors.textSecondary },
-                  ]}
+                  className="text-sm font-semibold"
+                  style={{
+                    color: reasonText.trim() ? "#fff" : colors.textSecondary,
+                  }}
                 >
                   Confirm
                 </Text>
@@ -223,55 +339,10 @@ export default function KycReviewScreen() {
         </View>
       </Modal>
 
-      <DocumentViewerModal storagePath={viewingPath} onClose={() => setViewingPath(null)} />
+      <DocumentViewerModal
+        storagePath={viewingPath}
+        onClose={() => setViewingPath(null)}
+      />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: 1 },
-  content: { padding: 16, gap: 10 },
-  card: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 6 },
-  topRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  entryLabel: { fontSize: 14, fontWeight: "700" },
-  entrySub: { fontSize: 11, marginTop: 1 },
-  docCount: { fontSize: 12 },
-  docRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  docRowText: { fontSize: 12, flex: 1 },
-  rejectionText: { fontSize: 12, lineHeight: 17 },
-  actionsRow: { flexDirection: "row", gap: 8, marginTop: 4 },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  actionText: { fontSize: 12, fontWeight: "700" },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", padding: 24 },
-  modalCard: { borderRadius: 16, padding: 18, gap: 10 },
-  modalTitle: { fontSize: 16, fontWeight: "700" },
-  modalSubtitle: { fontSize: 12 },
-  modalInput: { minHeight: 80, borderWidth: 1, borderRadius: 10, padding: 12, fontSize: 14, textAlignVertical: "top" },
-  modalActions: { flexDirection: "row", gap: 10, marginTop: 4 },
-  modalButton: { flex: 1, paddingVertical: 11, borderRadius: 10, alignItems: "center" },
-  modalButtonText: { fontSize: 14, fontWeight: "600" },
-});

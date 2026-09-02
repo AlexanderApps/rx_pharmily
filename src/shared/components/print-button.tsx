@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pressable, Text, StyleSheet, ActivityIndicator } from "react-native";
+import { Pressable, Text, ActivityIndicator } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { printOrExportPdf } from "@/shared/utils/pdf";
@@ -39,12 +39,17 @@ const PrintButton: React.FC<PrintButtonProps> = ({
       <Pressable
         onPress={handlePress}
         disabled={loading}
-        style={[styles.iconButton, { backgroundColor: colors.backgroundSecondary }]}
+        className="w-[34px] h-[34px] rounded-[10px] items-center justify-center active:opacity-70"
+        style={{ backgroundColor: colors.backgroundSecondary }}
       >
         {loading ? (
           <ActivityIndicator size="small" color={colors.text} />
         ) : (
-          <MaterialCommunityIcons name="printer-outline" size={18} color={colors.text} />
+          <MaterialCommunityIcons
+            name="printer-outline"
+            size={18}
+            color={colors.text}
+          />
         )}
       </Pressable>
     );
@@ -54,17 +59,25 @@ const PrintButton: React.FC<PrintButtonProps> = ({
     <Pressable
       onPress={handlePress}
       disabled={loading}
-      style={[
-        styles.fullButton,
-        { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-      ]}
+      className="flex-row items-center justify-center gap-2 py-3 rounded-[10px] border active:opacity-70"
+      style={{
+        backgroundColor: colors.backgroundSecondary,
+        borderColor: colors.border,
+      }}
     >
       {loading ? (
         <ActivityIndicator size="small" color={colors.text} />
       ) : (
-        <MaterialCommunityIcons name="printer-outline" size={16} color={colors.text} />
+        <MaterialCommunityIcons
+          name="printer-outline"
+          size={16}
+          color={colors.text}
+        />
       )}
-      <Text style={[styles.fullButtonText, { color: colors.text }]}>
+      <Text
+        className="text-[13px] font-semibold"
+        style={{ color: colors.text }}
+      >
         {loading ? "Preparing..." : label}
       </Text>
     </Pressable>
@@ -72,23 +85,3 @@ const PrintButton: React.FC<PrintButtonProps> = ({
 };
 
 export default PrintButton;
-
-const styles = StyleSheet.create({
-  iconButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  fullButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  fullButtonText: { fontSize: 13, fontWeight: "600" },
-});

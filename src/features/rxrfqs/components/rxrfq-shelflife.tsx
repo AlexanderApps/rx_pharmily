@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  TextInput,
-  Switch,
-  Platform,
-} from "react-native";
+import { View, Text, TextInput } from "react-native";
 import { useTheme } from "@/shared/hooks/use-theme";
 import ModernSwitch from "@/shared/components/switch";
 
@@ -52,31 +45,28 @@ const ShelfLifeConfig: React.FC<ShelfLifeConfigProps> = ({
     value.minShelfLifeMonths === 0 ? "" : value.minShelfLifeMonths.toString();
 
   return (
-    <View style={styles.container}>
+    <View className="rounded-lg gap-4">
       {/* Row 1: Numeric Shelf Life Input Wrapper */}
-      <View style={styles.fieldRow}>
-        <View style={styles.labelContainer}>
-          <Text style={[styles.title, { color: colors.text }]}>
+      <View className="flex-row items-center justify-between gap-3">
+        <View className="flex-1">
+          <Text className="text-sm font-semibold" style={{ color: colors.text, fontFamily: "System" }}>
             Minimum Shelf Life
           </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary, fontFamily: "System" }}>
             Required remaining storage time
           </Text>
         </View>
 
         <View
-          style={[
-            styles.inputWrapper,
-            {
-              backgroundColor: isFocused
-                ? colors.backgroundSecondary
-                : colors.backgroundElement,
-              borderColor: colors.border,
-            },
-          ]}
+          className="flex-row items-center rounded-md border h-11 w-[90px] px-3"
+          style={{
+            backgroundColor: isFocused ? colors.backgroundSecondary : colors.backgroundElement,
+            borderColor: colors.border,
+          }}
         >
           <TextInput
-            style={[styles.input, { color: colors.text }]}
+            className="flex-1 text-sm font-medium text-right py-0"
+            style={{ color: colors.text, fontFamily: "System", minWidth: 0 }}
             value={displayValue}
             onChangeText={handleTextChange}
             placeholder="0"
@@ -86,19 +76,19 @@ const ShelfLifeConfig: React.FC<ShelfLifeConfigProps> = ({
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
           />
-          <Text style={[styles.suffix, { color: colors.textSecondary }]}>
+          <Text className="text-sm ml-1 font-medium" style={{ color: colors.textSecondary }}>
             mo
           </Text>
         </View>
       </View>
 
       {/* Row 2: Strict Enforcement Switch Row */}
-      <View style={[styles.fieldRow, styles.switchPadding]}>
-        <View style={styles.labelContainer}>
-          <Text style={[styles.title, { color: colors.text }]}>
+      <View className="flex-row items-center justify-between gap-3 py-1">
+        <View className="flex-1">
+          <Text className="text-sm font-semibold" style={{ color: colors.text, fontFamily: "System" }}>
             Strict Enforcement
           </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary, fontFamily: "System" }}>
             Reject items below minimum limit
           </Text>
         </View>
@@ -113,56 +103,5 @@ const ShelfLifeConfig: React.FC<ShelfLifeConfigProps> = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: 8,
-    gap: 16,
-  },
-  fieldRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  switchPadding: {
-    paddingVertical: 4,
-  },
-  labelContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily: "System",
-  },
-  subtitle: {
-    fontSize: 12,
-    marginTop: 2,
-    fontFamily: "System",
-  },
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 6,
-    borderWidth: 1,
-    height: 44,
-    width: 90,
-    paddingHorizontal: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "500",
-    fontFamily: "System",
-    textAlign: "right",
-    paddingVertical: 0, // Fix vertical alignment drift on Android
-  },
-  suffix: {
-    fontSize: 14,
-    marginLeft: 4,
-    fontWeight: "500",
-  },
-});
 
 export default ShelfLifeConfig;

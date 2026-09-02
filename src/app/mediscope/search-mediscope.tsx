@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { router } from "expo-router";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View, Platform} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -61,6 +61,7 @@ export default function SearchMediscope() {
           <ThemedView
             style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 }}
           >
+            {Platform.OS !== "web" && (
             <Pressable
               onPress={() => router.back()}
               style={{
@@ -74,6 +75,7 @@ export default function SearchMediscope() {
             >
               <Ionicons name="arrow-back" size={22} color={colors.text} />
             </Pressable>
+            )}
 
             <ThemedView style={{ flex: 1 }}>
               <Input

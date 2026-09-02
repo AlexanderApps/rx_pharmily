@@ -1,14 +1,8 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  StyleSheet,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import InlineEmptyNotice from "@/shared/components/inline-empty-notice";
 import { RxRfqVisibilityRuleType } from "@/features/rxrfqs/types/rxrfqs.types";
 import { BsFlatList as BottomSheetFlatList } from "@/shared/components/bs/bs-primitives";
 
@@ -60,16 +54,14 @@ export const RxRfqFacilitySearchList: React.FC<
     : data;
 
   return (
-    <View style={styles.container}>
+    <View className="gap-1 flex-1">
       {searchable && (
         <View
-          style={[
-            styles.searchBar,
-            {
-              backgroundColor: colors.border + "30",
-              borderColor: colors.border,
-            },
-          ]}
+          className="flex-row items-center border rounded-lg px-2.5 py-2 gap-2 mb-1"
+          style={{
+            backgroundColor: colors.border + "30",
+            borderColor: colors.border,
+          }}
         >
           <MaterialCommunityIcons
             name="magnify"
@@ -81,7 +73,8 @@ export const RxRfqFacilitySearchList: React.FC<
             onChangeText={setQuery}
             placeholder="Search facilities..."
             placeholderTextColor={colors.textSecondary}
-            style={[styles.searchInput, { color: colors.text }]}
+            className="flex-1 text-sm py-0"
+            style={{ color: colors.text }}
             autoCorrect={false}
             autoCapitalize="none"
           />
@@ -98,35 +91,32 @@ export const RxRfqFacilitySearchList: React.FC<
       )}
 
       {searchable && filtered.length === 0 && (
-        <View style={[styles.emptyBox, { borderColor: colors.border }]}>
-          <MaterialCommunityIcons
-            name="database-search-outline"
-            size={22}
-            color={colors.textSecondary + "80"}
+        <View className="my-1">
+          <InlineEmptyNotice
+            icon="database-search-outline"
+            iconSize={22}
+            message={`No facilities match "${query}"`}
           />
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            No facilities match "{query}"
-          </Text>
         </View>
       )}
 
       <BottomSheetFlatList
         data={filtered}
         keyExtractor={(item) => item}
-        style={[styles.list, { flex: 1, minHeight: 400, paddingBottom: 30 }]}
+        style={{ maxHeight: 200, marginVertical: 4, flex: 1, minHeight: 400, paddingBottom: 30 }}
         keyboardShouldPersistTaps="handled"
         renderItem={({ item }) => {
           const isSelected = selectedValues.includes(item);
           return (
             <TouchableOpacity
-              style={[
-                styles.row,
-                { borderBottomColor: colors.border },
-                isSelected && { backgroundColor: colors.primary + "10" },
-              ]}
+              className="flex-row justify-between items-center py-3 px-2 border-b-[0.5px]"
+              style={{
+                borderBottomColor: colors.border,
+                backgroundColor: isSelected ? colors.primary + "10" : "transparent",
+              }}
               onPress={() => onToggle(item)}
             >
-              <View style={styles.rowInfo}>
+              <View className="flex-row items-center gap-3">
                 <MaterialCommunityIcons
                   name={
                     isSelected ? "checkbox-marked" : "checkbox-blank-outline"
@@ -135,10 +125,8 @@ export const RxRfqFacilitySearchList: React.FC<
                   color={isSelected ? colors.primary : colors.textSecondary}
                 />
                 <Text
-                  style={[
-                    styles.rowText,
-                    { color: isSelected ? colors.primary : colors.text },
-                  ]}
+                  className="text-sm font-medium"
+                  style={{ color: isSelected ? colors.primary : colors.text }}
                 >
                   {item}
                 </Text>
@@ -151,44 +139,3 @@ export const RxRfqFacilitySearchList: React.FC<
   );
 };
 
-const styles = StyleSheet.create({
-  container: { gap: 4, flex: 1},
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 8,
-    marginBottom: 4,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    paddingVertical: 0,
-  },
-  emptyBox: {
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderRadius: 8,
-    padding: 16,
-    alignItems: "center",
-    gap: 6,
-    justifyContent: "center",
-    marginVertical: 4,
-  },
-  emptyText: { fontSize: 12, textAlign: "center" },
-  list: { maxHeight: 200, marginVertical: 4 },
-  listFlex: { maxHeight: undefined, flex: 1 },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderBottomWidth: 0.5,
-  },
-  rowInfo: { flexDirection: "row", alignItems: "center", gap: 12 },
-  rowText: { fontSize: 14, fontWeight: "500" },
-});

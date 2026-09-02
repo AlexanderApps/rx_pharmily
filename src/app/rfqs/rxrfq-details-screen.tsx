@@ -4,8 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
-} from "react-native";
+  TouchableOpacity, Platform} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
@@ -175,13 +174,15 @@ const RxRfqDetailsScreen: React.FC = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <View
-        style={[styles.root, { backgroundColor: colors.background }]}
+        className="flex-1"
+        style={{ backgroundColor: colors.background }}
       >
         {/* Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <View className="flex-row items-center px-3 py-3 border-b gap-1" style={{ borderBottomColor: colors.border }}>
+          {Platform.OS !== "web" && (
           <TouchableOpacity
             onPress={() => router.back()}
-            style={styles.headerIconButton}
+            className="p-1.5"
           >
             <MaterialCommunityIcons
               name="arrow-left"
@@ -189,16 +190,17 @@ const RxRfqDetailsScreen: React.FC = () => {
               color={colors.text}
             />
           </TouchableOpacity>
+          )}
 
-          <View style={styles.headerCenter}>
-            <Text style={[styles.headerCode, { color: colors.text }]}>
+          <View className="flex-1 items-center gap-1">
+            <Text className="text-[15px] font-bold" style={{ color: colors.text }}>
               {rfq.code}
             </Text>
             <RxRfqStatusBadge status={rfq.status} size="sm" />
           </View>
 
           {rfq.status === "draft" && (
-            <TouchableOpacity onPress={onEdit} style={styles.headerIconButton}>
+            <TouchableOpacity onPress={onEdit} className="p-1.5">
               <MaterialCommunityIcons
                 name="pencil-outline"
                 size={20}
@@ -222,7 +224,7 @@ const RxRfqDetailsScreen: React.FC = () => {
 
           <TouchableOpacity
             onPress={() => actionsSheetRef.current?.present()}
-            style={styles.headerIconButton}
+            className="p-1.5"
           >
             <MaterialCommunityIcons
               name="dots-vertical"
@@ -233,19 +235,17 @@ const RxRfqDetailsScreen: React.FC = () => {
         </View>
 
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={{ padding: 16, gap: 12 }}
           showsVerticalScrollIndicator={false}
         >
           {/* Flagged warning */}
           {rfq.isBanned && (
             <View
-              style={[
-                styles.bannedBanner,
-                {
-                  backgroundColor: colors.error + "12",
-                  borderColor: colors.error + "30",
-                },
-              ]}
+              className="flex-row items-start gap-2.5 rounded-xl border p-3"
+              style={{
+                backgroundColor: colors.error + "12",
+                borderColor: colors.error + "30",
+              }}
             >
               <MaterialCommunityIcons
                 name="shield-alert-outline"
@@ -253,12 +253,13 @@ const RxRfqDetailsScreen: React.FC = () => {
                 color={colors.error}
               />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.bannedTitle, { color: colors.error }]}>
+                <Text className="text-[13px] font-bold" style={{ color: colors.error }}>
                   This RFQ has been flagged
                 </Text>
                 {rfq.justificationNotes ? (
                   <Text
-                    style={[styles.bannedNote, { color: colors.textSecondary }]}
+                    className="text-xs mt-0.5"
+                    style={{ color: colors.textSecondary }}
                   >
                     {rfq.justificationNotes}
                   </Text>
@@ -270,13 +271,11 @@ const RxRfqDetailsScreen: React.FC = () => {
           {/* Award banner */}
           {rfq.status === "awarded" && (
             <View
-              style={[
-                styles.awardBanner,
-                {
-                  backgroundColor: colors.success + "12",
-                  borderColor: colors.success + "30",
-                },
-              ]}
+              className="flex-row items-center gap-2.5 rounded-xl border p-3"
+              style={{
+                backgroundColor: colors.success + "12",
+                borderColor: colors.success + "30",
+              }}
             >
               <MaterialCommunityIcons
                 name="trophy-outline"
@@ -284,11 +283,12 @@ const RxRfqDetailsScreen: React.FC = () => {
                 color={colors.success}
               />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.awardTitle, { color: colors.success }]}>
+                <Text className="text-[13px] font-bold" style={{ color: colors.success }}>
                   Vendor awarded
                 </Text>
                 <Text
-                  style={[styles.awardNote, { color: colors.textSecondary }]}
+                  className="text-xs mt-0.5"
+                  style={{ color: colors.textSecondary }}
                 >
                   {fmtDate(rfq.awardDate)}
                 </Text>
@@ -298,15 +298,13 @@ const RxRfqDetailsScreen: React.FC = () => {
 
           {/* Title card */}
           <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-              },
-            ]}
+            className="rounded-[14px] border p-4 gap-2.5"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
           >
-            <View style={styles.postedByRow}>
+            <View className="flex-row items-center gap-2.5 mb-1">
               <ClickableAvatar
                 entityType="facility"
                 entityId={rfq.facilityId}
@@ -316,31 +314,31 @@ const RxRfqDetailsScreen: React.FC = () => {
                 size={40}
               />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.postedByLabel, { color: colors.textSecondary }]}>Posted by</Text>
-                <Text style={[styles.facility, { color: colors.text }]}>
+                <Text className="text-[11px] font-semibold uppercase tracking-[0.4px]" style={{ color: colors.textSecondary }}>Posted by</Text>
+                <Text className="text-[17px] font-bold" style={{ color: colors.text }}>
                   {facilities.find((f) => f.id === rfq.facilityId)?.name ?? "Unknown facility"}
                 </Text>
               </View>
             </View>
             {rfq.description ? (
               <Text
-                style={[styles.description, { color: colors.textSecondary }]}
+                className="text-[13px] leading-[19px]"
+                style={{ color: colors.textSecondary }}
               >
                 {rfq.description}
               </Text>
             ) : null}
             {rfq.categories.length > 0 && (
-              <View style={styles.chipRow}>
+              <View className="flex-row flex-wrap gap-1.5 mt-0.5">
                 {rfq.categories.map((cat) => (
                   <View
                     key={cat}
-                    style={[
-                      styles.chip,
-                      { backgroundColor: colors.backgroundElement },
-                    ]}
+                    className="px-2.5 py-1 rounded-lg"
+                    style={{ backgroundColor: colors.backgroundElement }}
                   >
                     <Text
-                      style={[styles.chipText, { color: colors.textSecondary }]}
+                      className="text-xs font-medium"
+                      style={{ color: colors.textSecondary }}
                     >
                       {cat}
                     </Text>
@@ -351,88 +349,84 @@ const RxRfqDetailsScreen: React.FC = () => {
           </View>
 
           {/* Stats */}
-          <View style={styles.statsGrid}>
+          <View className="flex-row flex-wrap gap-2">
             <View
-              style={[
-                styles.statCard,
-                {
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: colors.border,
-                },
-              ]}
+              className="grow rounded-xl border p-2.5 items-center gap-1"
+              style={{
+                flexBasis: "23%",
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+              }}
             >
               <MaterialCommunityIcons
                 name="package-variant-closed"
                 size={18}
                 color={colors.textSecondary}
               />
-              <Text style={[styles.statValue, { color: colors.text }]}>
+              <Text className="text-sm font-bold" style={{ color: colors.text }}>
                 {rfq.productCount}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+              <Text className="text-[10px] text-center" style={{ color: colors.textSecondary }}>
                 Products
               </Text>
             </View>
             <View
-              style={[
-                styles.statCard,
-                {
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: colors.border,
-                },
-              ]}
+              className="grow rounded-xl border p-2.5 items-center gap-1"
+              style={{
+                flexBasis: "23%",
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+              }}
             >
               <MaterialCommunityIcons
                 name="email-outline"
                 size={18}
                 color={colors.textSecondary}
               />
-              <Text style={[styles.statValue, { color: colors.text }]}>
+              <Text className="text-sm font-bold" style={{ color: colors.text }}>
                 {rfq.responseCount}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+              <Text className="text-[10px] text-center" style={{ color: colors.textSecondary }}>
                 Responses
               </Text>
             </View>
             <View
-              style={[
-                styles.statCard,
-                {
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: colors.border,
-                },
-              ]}
+              className="grow rounded-xl border p-2.5 items-center gap-1"
+              style={{
+                flexBasis: "23%",
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+              }}
             >
               <MaterialCommunityIcons
                 name="cash-multiple"
                 size={18}
                 color={colors.textSecondary}
               />
-              <Text style={[styles.statValue, { color: colors.text }]}>
+              <Text className="text-sm font-bold" style={{ color: colors.text }}>
                 {rfq.currency}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+              <Text className="text-[10px] text-center" style={{ color: colors.textSecondary }}>
                 Currency
               </Text>
             </View>
             <View
-              style={[
-                styles.statCard,
-                {
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: colors.border,
-                },
-              ]}
+              className="grow rounded-xl border p-2.5 items-center gap-1"
+              style={{
+                flexBasis: "23%",
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+              }}
             >
               <MaterialCommunityIcons
                 name="truck-outline"
                 size={18}
                 color={colors.textSecondary}
               />
-              <Text style={[styles.statValue, { color: colors.text }]}>
+              <Text className="text-sm font-bold" style={{ color: colors.text }}>
                 {rfq.incoterms}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+              <Text className="text-[10px] text-center" style={{ color: colors.textSecondary }}>
                 Incoterms
               </Text>
             </View>
@@ -440,35 +434,35 @@ const RxRfqDetailsScreen: React.FC = () => {
 
           {/* Timeline */}
           <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-              },
-            ]}
+            className="rounded-[14px] border p-4 gap-2.5"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
           >
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
+            <Text className="text-sm font-bold" style={{ color: colors.text }}>
               Timeline
             </Text>
 
-            <View style={styles.timelineRow}>
+            <View className="flex-row justify-between items-center py-[3px]">
               <Text
-                style={[styles.timelineLabel, { color: colors.textSecondary }]}
+                className="text-xs"
+                style={{ color: colors.textSecondary }}
               >
                 Created
               </Text>
-              <Text style={[styles.timelineValue, { color: colors.text }]}>
+              <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
                 {fmtDateTime(rfq.createdAt)}
               </Text>
             </View>
-            <View style={styles.timelineRow}>
+            <View className="flex-row justify-between items-center py-[3px]">
               <Text
-                style={[styles.timelineLabel, { color: colors.textSecondary }]}
+                className="text-xs"
+                style={{ color: colors.textSecondary }}
               >
                 Published
               </Text>
-              <Text style={[styles.timelineValue, { color: colors.text }]}>
+              <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
                 {rfq.publishedAt
                   ? fmtDateTime(rfq.publishedAt)
                   : "Not yet published"}
@@ -476,23 +470,23 @@ const RxRfqDetailsScreen: React.FC = () => {
             </View>
 
             <View
-              style={[styles.deadlineRow, { borderTopColor: colors.border }]}
+              className="flex-row justify-between items-center pt-2.5 mt-1"
+              style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
             >
               <View style={{ flex: 1 }}>
                 <Text
-                  style={[
-                    styles.timelineLabel,
-                    { color: colors.textSecondary },
-                  ]}
+                  className="text-xs"
+                  style={{ color: colors.textSecondary }}
                 >
                   Submission deadline
                 </Text>
-                <Text style={[styles.timelineValue, { color: colors.text }]}>
+                <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
                   {fmtDateTime(rfq.submissionDeadline)}
                 </Text>
                 {rfq.status === "published" && (
                   <Text
-                    style={[styles.deadlineCountdown, { color: deadlineColor }]}
+                    className="text-[11px] font-semibold mt-0.5"
+                    style={{ color: deadlineColor }}
                   >
                     {daysToDeadline > 0
                       ? `${daysToDeadline} day${daysToDeadline > 1 ? "s" : ""} remaining`
@@ -502,13 +496,11 @@ const RxRfqDetailsScreen: React.FC = () => {
               </View>
               {(rfq.status === "published" || rfq.status === "expired") && (
                 <TouchableOpacity
-                  style={[
-                    styles.extendButton,
-                    {
-                      borderColor: colors.border,
-                      backgroundColor: colors.backgroundElement,
-                    },
-                  ]}
+                  className="flex-row items-center gap-1.5 px-3 py-[7px] rounded-lg border"
+                  style={{
+                    borderColor: colors.border,
+                    backgroundColor: colors.backgroundElement,
+                  }}
                   onPress={() => extendSheetRef.current?.present()}
                 >
                   <MaterialCommunityIcons
@@ -517,7 +509,8 @@ const RxRfqDetailsScreen: React.FC = () => {
                     color={colors.text}
                   />
                   <Text
-                    style={[styles.extendButtonText, { color: colors.text }]}
+                    className="text-xs font-semibold"
+                    style={{ color: colors.text }}
                   >
                     Extend
                   </Text>
@@ -525,13 +518,14 @@ const RxRfqDetailsScreen: React.FC = () => {
               )}
             </View>
 
-            <View style={styles.timelineRow}>
+            <View className="flex-row justify-between items-center py-[3px]">
               <Text
-                style={[styles.timelineLabel, { color: colors.textSecondary }]}
+                className="text-xs"
+                style={{ color: colors.textSecondary }}
               >
                 Expected delivery
               </Text>
-              <Text style={[styles.timelineValue, { color: colors.text }]}>
+              <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
                 {fmtDate(rfq.deliveryDate)}
               </Text>
             </View>
@@ -539,42 +533,37 @@ const RxRfqDetailsScreen: React.FC = () => {
 
           {/* Requirements & terms */}
           <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-              },
-            ]}
+            className="rounded-[14px] border p-4 gap-2.5"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
           >
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
+            <Text className="text-sm font-bold" style={{ color: colors.text }}>
               Requirements & Terms
             </Text>
 
-            <View style={styles.timelineRow}>
+            <View className="flex-row justify-between items-center py-[3px]">
               <Text
-                style={[styles.timelineLabel, { color: colors.textSecondary }]}
+                className="text-xs"
+                style={{ color: colors.textSecondary }}
               >
                 Minimum shelf life
               </Text>
               <View
                 style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
               >
-                <Text style={[styles.timelineValue, { color: colors.text }]}>
+                <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
                   {rfq.minShelfLifeMonths} months
                 </Text>
                 {rfq.strictMinShelfLife && (
                   <View
-                    style={[
-                      styles.strictBadge,
-                      { backgroundColor: colors.warning + "18" },
-                    ]}
+                    className="px-[7px] py-0.5 rounded-md"
+                    style={{ backgroundColor: colors.warning + "18" }}
                   >
                     <Text
-                      style={[
-                        styles.strictBadgeText,
-                        { color: colors.warning },
-                      ]}
+                      className="text-[10px] font-bold"
+                      style={{ color: colors.warning }}
                     >
                       Strict
                     </Text>
@@ -586,14 +575,12 @@ const RxRfqDetailsScreen: React.FC = () => {
             {rfq.termsOfService ? (
               <View style={{ marginTop: 4 }}>
                 <Text
-                  style={[
-                    styles.timelineLabel,
-                    { color: colors.textSecondary, marginBottom: 4 },
-                  ]}
+                  className="text-xs mb-1"
+                  style={{ color: colors.textSecondary }}
                 >
                   Terms of service
                 </Text>
-                <Text style={[styles.termsText, { color: colors.text }]}>
+                <Text className="text-xs leading-[18px]" style={{ color: colors.text }}>
                   {rfq.termsOfService}
                 </Text>
               </View>
@@ -602,18 +589,14 @@ const RxRfqDetailsScreen: React.FC = () => {
             {rfq.comment ? (
               <View style={{ marginTop: 4 }}>
                 <Text
-                  style={[
-                    styles.timelineLabel,
-                    { color: colors.textSecondary, marginBottom: 4 },
-                  ]}
+                  className="text-xs mb-1"
+                  style={{ color: colors.textSecondary }}
                 >
                   Internal comment
                 </Text>
                 <Text
-                  style={[
-                    styles.termsText,
-                    { color: colors.textSecondary, fontStyle: "italic" },
-                  ]}
+                  className="text-xs leading-[18px]"
+                  style={{ color: colors.textSecondary, fontStyle: "italic" }}
                 >
                   {rfq.comment}
                 </Text>
@@ -623,15 +606,13 @@ const RxRfqDetailsScreen: React.FC = () => {
 
           {/* Items */}
           <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-              },
-            ]}
+            className="rounded-[14px] border p-4 gap-2.5"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
           >
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
+            <Text className="text-sm font-bold" style={{ color: colors.text }}>
               Requested Items ({rfq.items.length})
             </Text>
             <RxRfqReadonlyItemsList items={rfq.items} />
@@ -639,18 +620,16 @@ const RxRfqDetailsScreen: React.FC = () => {
 
           {/* Visibility */}
           <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-              },
-            ]}
+            className="rounded-[14px] border p-4 gap-2.5"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
           >
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
+            <Text className="text-sm font-bold" style={{ color: colors.text }}>
               Visibility
             </Text>
-            <View style={styles.visibilityRow}>
+            <View className="flex-row items-center gap-2">
               <MaterialCommunityIcons
                 name={
                   rfq.visibilityScope === "All" ? "earth" : "filter-outline"
@@ -658,7 +637,7 @@ const RxRfqDetailsScreen: React.FC = () => {
                 size={18}
                 color={colors.textSecondary}
               />
-              <Text style={[styles.visibilityText, { color: colors.text }]}>
+              <Text className="text-[13px] flex-1" style={{ color: colors.text }}>
                 {rfq.visibilityScope === "All"
                   ? "Visible to all vendors on the marketplace"
                   : `Restricted · ${rfq.visibilityRules.length} rule${rfq.visibilityRules.length > 1 ? "s" : ""}`}
@@ -666,20 +645,16 @@ const RxRfqDetailsScreen: React.FC = () => {
             </View>
             {rfq.visibilityScope === "Restricted" &&
               rfq.visibilityRules.length > 0 && (
-                <View style={styles.ruleList}>
+                <View className="flex-row flex-wrap gap-1.5 mt-1">
                   {rfq.visibilityRules.map((rule, idx) => (
                     <View
                       key={rule.id || idx}
-                      style={[
-                        styles.ruleChip,
-                        { backgroundColor: colors.backgroundElement },
-                      ]}
+                      className="px-2.5 py-[5px] rounded-lg"
+                      style={{ backgroundColor: colors.backgroundElement }}
                     >
                       <Text
-                        style={[
-                          styles.ruleChipText,
-                          { color: colors.textSecondary },
-                        ]}
+                        className="text-[11px] font-medium"
+                        style={{ color: colors.textSecondary }}
                       >
                         {rule.ruleType}:{" "}
                         {rule.region || rule.facilityType || rule.facility}
@@ -691,17 +666,15 @@ const RxRfqDetailsScreen: React.FC = () => {
           </View>
 
           {/* Responses */}
-          <View style={styles.responsesSection}>
-            <View style={styles.responsesHeader}>
-              <Text style={[styles.cardTitle, { color: colors.text }]}>
+          <View className="gap-2">
+            <View className="flex-row justify-between items-baseline">
+              <Text className="text-sm font-bold" style={{ color: colors.text }}>
                 Responses ({responses.length})
               </Text>
               {responses.length > 1 && (
                 <Text
-                  style={[
-                    styles.responsesSubtitle,
-                    { color: colors.textSecondary },
-                  ]}
+                  className="text-[11px]"
+                  style={{ color: colors.textSecondary }}
                 >
                   Sorted by quote value
                 </Text>
@@ -710,13 +683,11 @@ const RxRfqDetailsScreen: React.FC = () => {
 
             {sortedResponses.length === 0 ? (
               <View
-                style={[
-                  styles.emptyResponses,
-                  {
-                    backgroundColor: colors.backgroundElement,
-                    borderColor: colors.border,
-                  },
-                ]}
+                className="items-center justify-center py-7 px-5 rounded-xl border border-dashed gap-2"
+                style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.border,
+                }}
               >
                 <MaterialCommunityIcons
                   name="email-outline"
@@ -724,10 +695,8 @@ const RxRfqDetailsScreen: React.FC = () => {
                   color={colors.textSecondary}
                 />
                 <Text
-                  style={[
-                    styles.emptyResponsesText,
-                    { color: colors.textSecondary },
-                  ]}
+                  className="text-[13px] text-center"
+                  style={{ color: colors.textSecondary }}
                 >
                   {rfq.status === "draft"
                     ? "Publish this RFQ to start receiving vendor responses."
@@ -775,128 +744,5 @@ const RxRfqDetailsScreen: React.FC = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    gap: 4,
-  },
-  headerIconButton: { padding: 6 },
-  headerCenter: { flex: 1, alignItems: "center", gap: 4 },
-  headerCode: { fontSize: 15, fontWeight: "700" },
-
-  scrollContent: { padding: 16, gap: 12 },
-
-  bannedBanner: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 12,
-  },
-  bannedTitle: { fontSize: 13, fontWeight: "700" },
-  bannedNote: { fontSize: 12, marginTop: 2 },
-
-  awardBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 12,
-  },
-  awardTitle: { fontSize: 13, fontWeight: "700" },
-  awardNote: { fontSize: 12, marginTop: 2 },
-
-  card: { borderRadius: 14, borderWidth: 1, padding: 16, gap: 10 },
-  cardTitle: { fontSize: 14, fontWeight: "700" },
-
-  facility: { fontSize: 17, fontWeight: "700" },
-  postedByRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 },
-  postedByLabel: { fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.4 },
-  description: { fontSize: 13, lineHeight: 19 },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 2 },
-  chip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  chipText: { fontSize: 12, fontWeight: "500" },
-
-  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  statCard: {
-    flexBasis: "23%",
-    flexGrow: 1,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 10,
-    alignItems: "center",
-    gap: 4,
-  },
-  statValue: { fontSize: 14, fontWeight: "700" },
-  statLabel: { fontSize: 10, textAlign: "center" },
-
-  timelineRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 3,
-  },
-  timelineLabel: { fontSize: 12 },
-  timelineValue: { fontSize: 13, fontWeight: "500" },
-
-  deadlineRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 10,
-    marginTop: 4,
-  },
-  deadlineCountdown: { fontSize: 11, fontWeight: "600", marginTop: 2 },
-  extendButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  extendButtonText: { fontSize: 12, fontWeight: "600" },
-
-  strictBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
-  strictBadgeText: { fontSize: 10, fontWeight: "700" },
-
-  termsText: { fontSize: 12, lineHeight: 18 },
-
-  visibilityRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  visibilityText: { fontSize: 13, flex: 1 },
-  ruleList: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
-  ruleChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
-  ruleChipText: { fontSize: 11, fontWeight: "500" },
-
-  responsesSection: { gap: 8 },
-  responsesHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "baseline",
-  },
-  responsesSubtitle: { fontSize: 11 },
-  emptyResponses: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 28,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    gap: 8,
-  },
-  emptyResponsesText: { fontSize: 13, textAlign: "center" },
-});
 
 export default RxRfqDetailsScreen;

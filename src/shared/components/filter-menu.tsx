@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  View,
-  ScrollView,
-  StyleSheet,
-  ViewStyle,
-  StyleProp,
-} from "react-native";
+import { View, ScrollView, ViewStyle, StyleProp } from "react-native";
 
 interface FilterMenuProps {
   children: React.ReactNode;
@@ -21,11 +15,11 @@ export default function FilterMenu({
   showsHorizontalScrollIndicator = false,
 }: FilterMenuProps) {
   return (
-    <View style={[styles.container, style]}>
+    <View className="w-full h-[52px]" style={style}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={showsHorizontalScrollIndicator}
-        contentContainerStyle={[styles.contentContainer, contentContainerStyle]}
+        contentContainerStyle={[{ gap: 8, paddingHorizontal: 8, paddingVertical: 4, alignItems: "center" }, contentContainerStyle]}
       >
         {children}
       </ScrollView>
@@ -33,16 +27,3 @@ export default function FilterMenu({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-    height: 52,
-  },
-
-  contentContainer: {
-    gap: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    alignItems: "center",
-  },
-});

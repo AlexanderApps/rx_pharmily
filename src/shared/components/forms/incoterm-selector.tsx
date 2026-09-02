@@ -1,20 +1,8 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  Pressable,
-} from "react-native";
+import React, { useMemo, useState } from "react";
+import { View, Text, TouchableOpacity, Pressable, StyleSheet, Modal, ScrollView } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import {
-  BottomSheetModal,
-} from "@gorhom/bottom-sheet";
-import { BsFlatList as BottomSheetFlatList } from "@/shared/components/bs/bs-primitives";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { SafeAreaView } from "react-native-safe-area-context";
-import BottomSheet from "@/shared/components/bottom-sheet";
-import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
+import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 
 interface IncotermsDropdownProps {
   value: string;
@@ -23,6 +11,11 @@ interface IncotermsDropdownProps {
   error?: string;
 }
 
+// Was BottomSheet-based (native sheet / bottom-sheet.web.tsx's own
+// centered-on-web behavior) — now always a centered, scrollable Modal
+// on both platforms, same as reference-picker.tsx's own move for the
+// same reason: consistent behavior regardless of platform or nesting,
+// rather than the previous native-sheet/web-dialog split.
 export const IncotermsDropdown: React.FC<IncotermsDropdownProps> = ({
   value,
   onChange,
@@ -31,376 +24,136 @@ export const IncotermsDropdown: React.FC<IncotermsDropdownProps> = ({
 }) => {
   const { colors } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
-  const { incotermOptions } = useRxRfqsStore();
+  // Reads from the real incoterms reference table — see
+  // reference-data.types.ts and the incoterms migration for how this
+  // is seeded and kept in sync with what the app actually offers.
+  const incotermRows = useReferenceDataStore((state) => state.incoterms);
 
-  const filterModalRef = useRef<BottomSheetModal>(null);
-
-  const snapPoints = useMemo(() => ["80%"], []);
-
-  const incotermList = useMemo(() => incotermOptions, []);
-
-  const selectedOption = useMemo(
-    () =>
-      incotermList.find((option) => option.code === value) ?? incotermList[0],
-    [value],
+  const incotermList = useMemo(
+    () => incotermRows.map((row) => ({ code: row.code, label: row.label, description: row.description })),
+    [incotermRows],
   );
 
-  const toggleBottomSheet = () => {
-    if (isOpen) {
-      filterModalRef.current?.dismiss();
-    } else {
-      filterModalRef.current?.present();
-    }
-  };
-
-  const closeSheet = () => {
-    filterModalRef.current?.dismiss();
-  };
+  const selectedOption = useMemo(
+    () => incotermList.find((option) => option.code === value) ?? incotermList[0],
+    [incotermList, value],
+  );
 
   const handleSelect = (code: string) => {
     onChange(code);
-    closeSheet();
-  };
-
-  const handleBottomSheetChange = (index: number) => {
-    // index is -1 when the sheet is completely closed/dismissed
-    setIsOpen(index !== -1);
+    setIsOpen(false);
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <View style={styles.container}>
-        {label && (
-          <Text
-            style={[
-              styles.label,
-              {
-                color: colors.textSecondary,
-              },
-            ]}
-          >
-            {label}
-          </Text>
-        )}
+    <View className="gap-1.5">
+      {label && (
+        <Text className="text-[13px] font-semibold uppercase tracking-[0.5px]" style={{ color: colors.textSecondary }}>
+          {label}
+        </Text>
+      )}
 
-        <TouchableOpacity
-          style={[
-            styles.trigger,
-            {
-              backgroundColor: colors.backgroundElement,
-              borderColor: error ? colors.error : colors.border,
-            },
-          ]}
-          onPress={toggleBottomSheet}
-        >
-          <View style={styles.triggerContent}>
-            <MaterialCommunityIcons
-              name={
-                selectedOption?.code === ""
-                  ? "file-cancel-outline"
-                  : "truck-cargo-container"
-              }
-              size={18}
-              color={
-                selectedOption?.code === ""
-                  ? colors.textSecondary
-                  : colors.primary
-              }
-            />
-
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.triggerText,
-                {
-                  color: colors.text,
-                },
-              ]}
-            >
-              {selectedOption?.label ?? "Select Incoterm"}
-            </Text>
-          </View>
-
-          <MaterialCommunityIcons
-            name="chevron-down"
-            size={20}
-            color={error ? colors.error : colors.textSecondary}
-            style={[styles.icon, isOpen && styles.iconRotated]}
-          />
-        </TouchableOpacity>
-
-        {error && (
-          <Text
-            style={[
-              styles.errorText,
-              {
-                color: colors.error,
-              },
-            ]}
-          >
-            {error}
-          </Text>
-        )}
-      </View>
-
-      <BottomSheet
-        ref={filterModalRef}
-        snapPoints={snapPoints}
-        enablePanDownToClose
-        showHandle={true}
-        cornerRadius={16}
-        padding={20}
-        onChange={handleBottomSheetChange}
-        backgroundColor={colors.backgroundSecondary}
+      <TouchableOpacity
+        className="flex-row items-center justify-between border rounded-[10px] px-3.5 py-3.5"
+        style={{ backgroundColor: colors.backgroundElement, borderColor: error ? colors.error : colors.border }}
+        onPress={() => setIsOpen((prev) => !prev)}
       >
-        <View
-          style={[
-            styles.modalHeader,
-            {
-              borderBottomColor: colors.border,
-            },
-          ]}
-        >
-          <TouchableOpacity onPress={closeSheet} style={styles.closeButton}>
-            <MaterialCommunityIcons
-              name="close"
-              size={24}
-              color={colors.text}
-            />
-          </TouchableOpacity>
+        <View className="flex-row items-center flex-1 gap-2.5">
+          <MaterialCommunityIcons
+            name={
+              !selectedOption || selectedOption.code === ""
+                ? "file-cancel-outline"
+                : "truck-cargo-container"
+            }
+            size={18}
+            color={!selectedOption || selectedOption.code === "" ? colors.textSecondary : colors.primary}
+          />
 
-          <View style={styles.headerTextContainer}>
-            <Text
-              style={[
-                styles.modalTitle,
-                {
-                  color: colors.text,
-                },
-              ]}
-            >
-              Select Shipping Incoterm
-            </Text>
-
-            <Text
-              style={[
-                styles.modalSubtitle,
-                {
-                  color: colors.textSecondary,
-                },
-              ]}
-            >
-              Determines delivery responsibility and risk transfer
-            </Text>
-          </View>
+          <Text numberOfLines={1} className="flex-1 text-sm font-medium" style={{ color: colors.text }}>
+            {selectedOption?.label ?? "Select Incoterm"}
+          </Text>
         </View>
 
-        <BottomSheetFlatList
-          data={incotermList}
-          keyExtractor={(item) => item.code || "NONE"}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => {
-            const isSelected = value === item.code;
-
-            return (
-              <Pressable
-                onPress={() => handleSelect(item.code)}
-                style={[
-                  styles.optionRow,
-                  {
-                    borderBottomColor: colors.border,
-                  },
-                  isSelected && {
-                    backgroundColor: `${colors.primary}10`,
-                  },
-                ]}
-              >
-                <View style={styles.optionContent}>
-                  <View
-                    style={[
-                      styles.codeBadge,
-                      {
-                        backgroundColor:
-                          item.code === ""
-                            ? colors.border
-                            : `${colors.primary}15`,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.codeBadgeText,
-                        {
-                          color:
-                            item.code === ""
-                              ? colors.textSecondary
-                              : colors.primary,
-                        },
-                      ]}
-                    >
-                      {item.code || "NONE"}
-                    </Text>
-                  </View>
-
-                  <View style={styles.optionTextContainer}>
-                    <Text
-                      style={[
-                        styles.optionLabel,
-                        {
-                          color: colors.text,
-                        },
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
-
-                    <Text
-                      style={[
-                        styles.optionDescription,
-                        {
-                          color: colors.textSecondary,
-                        },
-                      ]}
-                    >
-                      {item.description}
-                    </Text>
-                  </View>
-                </View>
-
-                {isSelected && (
-                  <MaterialCommunityIcons
-                    name="check-circle"
-                    size={22}
-                    color={colors.primary}
-                  />
-                )}
-              </Pressable>
-            );
-          }}
+        <MaterialCommunityIcons
+          name="chevron-down"
+          size={20}
+          color={error ? colors.error : colors.textSecondary}
+          style={isOpen ? { marginLeft: 8, transform: [{ rotate: "180deg" }] } : { marginLeft: 8 }}
         />
-      </BottomSheet>
-    </SafeAreaView>
+      </TouchableOpacity>
+
+      {error && (
+        <Text className="text-xs" style={{ color: colors.error }}>
+          {error}
+        </Text>
+      )}
+
+      <Modal visible={isOpen} transparent animationType="fade" onRequestClose={() => setIsOpen(false)}>
+        <Pressable className="flex-1 bg-black/50 justify-center p-6" onPress={() => setIsOpen(false)}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View
+              className="rounded-2xl self-center w-full overflow-hidden"
+              style={{ backgroundColor: colors.backgroundSecondary, maxWidth: 460, maxHeight: "75%" }}
+            >
+              <View
+                className="px-4 py-4"
+                style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
+              >
+                <Text className="text-lg font-bold" style={{ color: colors.text }}>
+                  Select Shipping Incoterm
+                </Text>
+                <Text className="text-[13px] mt-0.5" style={{ color: colors.textSecondary }}>
+                  Determines delivery responsibility and risk transfer
+                </Text>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {incotermList.map((item) => {
+                  const isSelected = value === item.code;
+                  return (
+                    <Pressable
+                      key={item.code || "NONE"}
+                      onPress={() => handleSelect(item.code)}
+                      className="flex-row items-center justify-between px-4 py-4"
+                      style={{
+                        borderBottomWidth: StyleSheet.hairlineWidth,
+                        borderBottomColor: colors.border,
+                        backgroundColor: isSelected ? `${colors.primary}10` : "transparent",
+                      }}
+                    >
+                      <View className="flex-row flex-1 gap-3">
+                        <View
+                          className="w-[60px] rounded-md items-center justify-center py-[5px] self-start"
+                          style={{ backgroundColor: item.code === "" ? colors.border : `${colors.primary}15` }}
+                        >
+                          <Text
+                            className="text-[11px] font-bold"
+                            style={{ color: item.code === "" ? colors.textSecondary : colors.primary }}
+                          >
+                            {item.code || "NONE"}
+                          </Text>
+                        </View>
+
+                        <View className="flex-1">
+                          <Text className="text-sm font-semibold" style={{ color: colors.text }}>
+                            {item.label}
+                          </Text>
+                          <Text className="mt-1 text-xs leading-[18px]" style={{ color: colors.textSecondary }}>
+                            {item.description}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {isSelected && (
+                        <MaterialCommunityIcons name="check-circle" size={22} color={colors.primary} />
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    gap: 6,
-  },
-
-  label: {
-    fontSize: 13,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-
-  trigger: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-  },
-
-  triggerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    gap: 10,
-  },
-
-  triggerText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-
-  icon: {
-    marginLeft: 8,
-  },
-  iconRotated: {
-    transform: [{ rotate: "180deg" }],
-  },
-
-  errorText: {
-    fontSize: 12,
-  },
-
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-
-  closeButton: {
-    padding: 4,
-    marginRight: 12,
-  },
-
-  headerTextContainer: {
-    flex: 1,
-  },
-
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
-
-  modalSubtitle: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-
-  listContent: {
-    paddingBottom: 40,
-  },
-
-  optionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-
-  optionContent: {
-    flexDirection: "row",
-    flex: 1,
-    gap: 12,
-  },
-
-  codeBadge: {
-    width: 60,
-    borderRadius: 6,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 5,
-    alignSelf: "flex-start",
-  },
-
-  codeBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-
-  optionTextContainer: {
-    flex: 1,
-  },
-
-  optionLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-
-  optionDescription: {
-    marginTop: 4,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-});

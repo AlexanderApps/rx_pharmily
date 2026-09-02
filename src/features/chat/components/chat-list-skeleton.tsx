@@ -1,19 +1,19 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import Skeleton from "@/shared/components/skeleton";
 
 const ChatListSkeleton: React.FC = () => {
   return (
-    <View style={styles.container}>
+    <View className="px-4 pt-2">
       {[0, 1, 2, 3, 4, 5].map((i) => (
-        <View key={i} style={styles.row}>
+        <View key={i} className="flex-row items-center gap-3 py-2.5">
           <Skeleton width={44} height={44} borderRadius={22} />
-          <View style={styles.body}>
-            <View style={styles.topLine}>
+          <View className="flex-1">
+            <View className="flex-row items-center justify-between">
               <Skeleton width="45%" height={13} />
               <Skeleton width={32} height={11} />
             </View>
-            <Skeleton width="65%" height={12} style={{ marginTop: 6 }} />
+            <Skeleton width="65%" height={12} className="mt-1.5" />
           </View>
         </View>
       ))}
@@ -22,10 +22,3 @@ const ChatListSkeleton: React.FC = () => {
 };
 
 export default ChatListSkeleton;
-
-const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, paddingTop: 8 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 },
-  body: { flex: 1 },
-  topLine: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-});

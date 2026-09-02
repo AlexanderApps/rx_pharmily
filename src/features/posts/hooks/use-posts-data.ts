@@ -59,6 +59,8 @@ function mapPostRow(row: any, hasLiked: boolean, myVotedOptionId: string | null)
     likeCount: row.like_count,
     hasLiked,
     commentCount: row.comment_count,
+    status: row.status,
+    deletedAt: row.deleted_at ? new Date(row.deleted_at) : undefined,
   };
 }
 
@@ -69,6 +71,8 @@ function mapCommentRow(row: any): Comment {
     author: mapAuthorFromProfile(row.profiles),
     text: row.text,
     createdAt: new Date(row.created_at),
+    status: row.status,
+    deletedAt: row.deleted_at ? new Date(row.deleted_at) : undefined,
   };
 }
 
@@ -93,6 +97,18 @@ type PostsStore = {
 
   addPost: (data: PostFormData) => Promise<string | undefined>;
   deletePost: (id: string) => Promise<void>;
+  // Admin moderation — distinct from deletePost above (an unused,
+  // unrelated hard-delete). suspend/reinstate toggle the status flag;
+  // remove/restore use the existing soft-delete columns (deleted_at/
+  // deleted_by) that posts already had before this.
+  suspendPost: (id: string) => Promise<boolean>;
+  reinstatePost: (id: string) => Promise<boolean>;
+  removePost: (id: string) => Promise<boolean>;
+  restorePost: (id: string) => Promise<boolean>;
+  suspendComment: (postId: string, commentId: string) => Promise<boolean>;
+  reinstateComment: (postId: string, commentId: string) => Promise<boolean>;
+  removeComment: (postId: string, commentId: string) => Promise<boolean>;
+  restoreComment: (postId: string, commentId: string) => Promise<boolean>;
   toggleLike: (postId: string) => Promise<void>;
   addComment: (postId: string, text: string) => Promise<void>;
   votePoll: (postId: string, optionId: string) => Promise<void>;
@@ -271,6 +287,133 @@ export const usePostsStore = create<PostsStore & { pollIdByPost: Record<string, 
       const { [id]: _removed, ...rest } = state.commentsByPost;
       return { posts: state.posts.filter((p) => p.id !== id), commentsByPost: rest };
     });
+  },
+
+  suspendPost: async (id) => {
+    const { error } = await supabase.from("posts").update({ status: "suspended" }).eq("id", id);
+    if (error) {
+      console.warn("[posts] suspendPost failed:", error.message);
+      return false;
+    }
+    set((state) => ({
+      posts: state.posts.map((p) => (p.id === id ? { ...p, status: "suspended" } : p)),
+    }));
+    return true;
+  },
+
+  reinstatePost: async (id) => {
+    const { error } = await supabase.from("posts").update({ status: "active" }).eq("id", id);
+    if (error) {
+      console.warn("[posts] reinstatePost failed:", error.message);
+      return false;
+    }
+    set((state) => ({
+      posts: state.posts.map((p) => (p.id === id ? { ...p, status: "active" } : p)),
+    }));
+    return true;
+  },
+
+  removePost: async (id) => {
+    const adminId = await requireUserId();
+    const { error } = await supabase
+      .from("posts")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: adminId })
+      .eq("id", id);
+    if (error) {
+      console.warn("[posts] removePost failed:", error.message);
+      return false;
+    }
+    set((state) => ({
+      posts: state.posts.map((p) => (p.id === id ? { ...p, deletedAt: new Date() } : p)),
+    }));
+    return true;
+  },
+
+  restorePost: async (id) => {
+    const { error } = await supabase.from("posts").update({ deleted_at: null, deleted_by: null }).eq("id", id);
+    if (error) {
+      console.warn("[posts] restorePost failed:", error.message);
+      return false;
+    }
+    set((state) => ({
+      posts: state.posts.map((p) => (p.id === id ? { ...p, deletedAt: undefined } : p)),
+    }));
+    return true;
+  },
+
+  suspendComment: async (postId, commentId) => {
+    const { error } = await supabase.from("comments").update({ status: "suspended" }).eq("id", commentId);
+    if (error) {
+      console.warn("[posts] suspendComment failed:", error.message);
+      return false;
+    }
+    set((state) => ({
+      commentsByPost: {
+        ...state.commentsByPost,
+        [postId]: (state.commentsByPost[postId] ?? []).map((c) =>
+          c.id === commentId ? { ...c, status: "suspended" } : c,
+        ),
+      },
+    }));
+    return true;
+  },
+
+  reinstateComment: async (postId, commentId) => {
+    const { error } = await supabase.from("comments").update({ status: "active" }).eq("id", commentId);
+    if (error) {
+      console.warn("[posts] reinstateComment failed:", error.message);
+      return false;
+    }
+    set((state) => ({
+      commentsByPost: {
+        ...state.commentsByPost,
+        [postId]: (state.commentsByPost[postId] ?? []).map((c) =>
+          c.id === commentId ? { ...c, status: "active" } : c,
+        ),
+      },
+    }));
+    return true;
+  },
+
+  removeComment: async (postId, commentId) => {
+    const adminId = await requireUserId();
+    const { error } = await supabase
+      .from("comments")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: adminId })
+      .eq("id", commentId);
+    if (error) {
+      console.warn("[posts] removeComment failed:", error.message);
+      return false;
+    }
+    set((state) => ({
+      commentsByPost: {
+        ...state.commentsByPost,
+        [postId]: (state.commentsByPost[postId] ?? []).map((c) =>
+          c.id === commentId ? { ...c, deletedAt: new Date() } : c,
+        ),
+      },
+    }));
+    return true;
+  },
+
+  restoreComment: async (postId, commentId) => {
+    const { error } = await supabase
+      .from("comments")
+      .update({ deleted_at: null, deleted_by: null })
+      .eq("id", commentId);
+    if (error) {
+      console.warn("[posts] restoreComment failed:", error.message);
+      return false;
+    }
+    set((state) => ({
+      commentsByPost: {
+        ...state.commentsByPost,
+        [postId]: (state.commentsByPost[postId] ?? []).map((c) =>
+          c.id === commentId ? { ...c, deletedAt: undefined } : c,
+        ),
+      },
+    }));
+    return true;
   },
 
   toggleLike: async (postId) => {

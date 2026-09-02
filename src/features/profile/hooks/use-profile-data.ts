@@ -93,8 +93,10 @@ function mapUserRow(row: any): UserProfile {
     createdAt: new Date(row.created_at),
     publicVisibility: { showEmail: row.public_show_email, showPhone: row.public_show_phone },
     location: row.location ?? undefined,
+    region: row.region ?? undefined,
     latitude: row.latitude ?? undefined,
     longitude: row.longitude ?? undefined,
+    avatarUrl: row.avatar_url ?? undefined,
   };
 }
 
@@ -116,6 +118,7 @@ function mapFacilityRow(row: any): FacilityProfile {
     createdAt: new Date(row.created_at),
     latitude: row.latitude ?? undefined,
     longitude: row.longitude ?? undefined,
+    logoUrl: row.logo_url ?? undefined,
   };
 }
 
@@ -126,6 +129,7 @@ function mapOrganizationRow(row: any, facilityIds: string[]): OrganizationProfil
     type: row.type,
     registrationNumber: row.registration_number ?? undefined,
     headquartersLocation: row.headquarters_location ?? undefined,
+    region: row.region ?? undefined,
     email: row.email ?? undefined,
     phone: row.phone ?? undefined,
     adminUserId: row.admin_user_id,
@@ -135,6 +139,7 @@ function mapOrganizationRow(row: any, facilityIds: string[]): OrganizationProfil
     publicVisibility: { showEmail: row.public_show_email, showPhone: row.public_show_phone },
     latitude: row.latitude ?? undefined,
     longitude: row.longitude ?? undefined,
+    logoUrl: row.logo_url ?? undefined,
   };
 }
 
@@ -186,6 +191,7 @@ function mapOrganizationCreationRequestRow(row: any): OrganizationCreationReques
     type: row.type,
     registrationNumber: row.registration_number ?? undefined,
     headquartersLocation: row.headquarters_location ?? undefined,
+    region: row.region ?? undefined,
     email: row.email ?? undefined,
     phone: row.phone ?? undefined,
     status: row.status,
@@ -798,8 +804,10 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         license_number: data.licenseNumber ?? null,
         bio: data.bio ?? null,
         location: data.location ?? null,
+        region: data.region ?? null,
         latitude: data.latitude ?? null,
         longitude: data.longitude ?? null,
+        avatar_url: data.avatarUrl ?? null,
       })
       .eq("id", userId);
     if (error) {
@@ -823,6 +831,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         registration_number: data.registrationNumber ?? null,
         latitude: data.latitude ?? null,
         longitude: data.longitude ?? null,
+        logo_url: data.logoUrl ?? null,
       })
       .eq("id", id);
     if (error) {
@@ -842,10 +851,12 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         type: data.type,
         registration_number: data.registrationNumber ?? null,
         headquarters_location: data.headquartersLocation ?? null,
+        region: data.region ?? null,
         email: data.email ?? null,
         phone: data.phone ?? null,
         latitude: data.latitude ?? null,
         longitude: data.longitude ?? null,
+        logo_url: data.logoUrl ?? null,
       })
       .eq("id", id);
     if (error) {
@@ -1239,6 +1250,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         type: data.type,
         registration_number: data.registrationNumber?.trim() || null,
         headquarters_location: data.headquartersLocation?.trim() || null,
+        region: data.region?.trim() || null,
         email: data.email?.trim() || null,
         phone: data.phone?.trim() || null,
         latitude: data.latitude ?? null,

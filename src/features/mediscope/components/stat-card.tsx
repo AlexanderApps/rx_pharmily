@@ -1,7 +1,6 @@
 // Reusable Components inside the module boundary
-
 import React from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 // ==========================================
@@ -39,12 +38,19 @@ export function StatCard({ number, label, type, colors }: StatCardProps) {
   };
 
   return (
-    <View style={[styles.statCard, { backgroundColor: getBackgroundColor() }]}>
-      <Text style={[styles.statNumber, { color: getTextColor() }]}>
+    <View
+      className="w-[31%] rounded-2xl p-3.5 justify-center"
+      style={{ backgroundColor: getBackgroundColor() }}
+    >
+      <Text
+        className="text-2xl font-bold"
+        style={{ color: getTextColor() }}
+      >
         {number}
       </Text>
       <Text
-        style={[styles.statLabel, { color: colors.textSecondary }]}
+        className="text-xs font-medium mt-1"
+        style={{ color: colors.textSecondary }}
         numberOfLines={1}
       >
         {label}
@@ -74,23 +80,19 @@ export function ActionButton({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.actionButton,
-        { backgroundColor: colors.backgroundSecondary },
-        pressed && styles.actionPressed,
-      ]}
+      className="w-[31%] rounded-2xl p-3 items-center justify-center active:opacity-80"
+      style={{ backgroundColor: colors.backgroundSecondary }}
     >
       <View
-        style={[
-          styles.actionIconWrapper,
-          { backgroundColor: colors.backgroundElement },
-        ]}
+        className="w-11 h-11 rounded-xl items-center justify-center mb-2"
+        style={{ backgroundColor: colors.backgroundElement }}
       >
-        {/*<MaterialCommunityIcons name={icon} size={22} color={iconColor} />*/}
+        {/* <MaterialCommunityIcons name={icon} size={22} color={iconColor} /> */}
         {icon}
       </View>
       <Text
-        style={[styles.actionLabel, { color: colors.text }]}
+        className="text-[13px] font-medium"
+        style={{ color: colors.text }}
         numberOfLines={1}
       >
         {label}
@@ -98,46 +100,3 @@ export function ActionButton({
     </Pressable>
   );
 }
-
-// ==========================================
-// Module Scoped Stylesheet
-// ==========================================
-const styles = StyleSheet.create({
-  statCard: {
-    width: "31%",
-    borderRadius: 16,
-    padding: 14,
-    justifyContent: "center",
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  statLabel: {
-    fontSize: 12,
-    fontWeight: "500",
-    marginTop: 4,
-  },
-  actionButton: {
-    width: "31%",
-    borderRadius: 16,
-    padding: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionPressed: {
-    opacity: 0.8,
-  },
-  actionIconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  actionLabel: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
-});

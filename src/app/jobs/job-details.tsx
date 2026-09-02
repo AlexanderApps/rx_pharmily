@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View, Text, Pressable, ScrollView, Platform} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { format } from "timeago.js";
@@ -11,23 +11,41 @@ import DetailSkeleton from "@/shared/components/detail-skeleton";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useRxJobsStore } from "@/features/rxjobs/hooks/use-rxjobs-data";
-import { ApplicationStatus, JobStatus } from "@/features/rxjobs/types/rxjobs.types";
+import {
+  ApplicationStatus,
+  JobStatus,
+} from "@/features/rxjobs/types/rxjobs.types";
 
 const fmtDate = (d?: Date) =>
   d
-    ? new Date(d).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })
+    ? new Date(d).toLocaleDateString(undefined, {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "-";
 
 const JOB_STATUS_META: Record<
   JobStatus,
-  { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; tone: "success" | "warning" | "error" }
+  {
+    label: string;
+    icon: keyof typeof MaterialCommunityIcons.glyphMap;
+    tone: "success" | "warning" | "error";
+  }
 > = {
   open: { label: "Open", icon: "briefcase-check-outline", tone: "success" },
   closed: { label: "Closed", icon: "briefcase-off-outline", tone: "warning" },
   cancelled: { label: "Cancelled", icon: "cancel", tone: "error" },
 };
 
-const STATUS_META: Record<ApplicationStatus, { label: string; icon: string; tone: "success" | "warning" | "error" | "info" }> = {
+const STATUS_META: Record<
+  ApplicationStatus,
+  {
+    label: string;
+    icon: string;
+    tone: "success" | "warning" | "error" | "info";
+  }
+> = {
   submitted: { label: "Submitted", icon: "email-outline", tone: "info" },
   reviewing: { label: "Reviewing", icon: "eye-outline", tone: "warning" },
   shortlisted: { label: "Shortlisted", icon: "star-outline", tone: "success" },
@@ -52,17 +70,20 @@ export default function JobDetailsScreen() {
   const jobs = useRxJobsStore((state) => state.jobs);
   const isLoadingJobs = useRxJobsStore((state) => state.isLoading);
   const applications = useRxJobsStore((state) => state.applications);
-  const fetchApplicationsForJob = useRxJobsStore((state) => state.fetchApplicationsForJob);
-
-  useEffect(() => {
-    if (id) fetchApplicationsForJob(id);
-  }, [id]);
-
+  const fetchApplicationsForJob = useRxJobsStore(
+    (state) => state.fetchApplicationsForJob,
+  );
   const deleteJob = useRxJobsStore((state) => state.deleteJob);
   const closeJob = useRxJobsStore((state) => state.closeJob);
   const cancelJob = useRxJobsStore((state) => state.cancelJob);
   const reopenJob = useRxJobsStore((state) => state.reopenJob);
-  const updateApplicationStatus = useRxJobsStore((state) => state.updateApplicationStatus);
+  const updateApplicationStatus = useRxJobsStore(
+    (state) => state.updateApplicationStatus,
+  );
+
+  useEffect(() => {
+    if (id) fetchApplicationsForJob(id);
+  }, [id]);
 
   const job = useMemo(() => jobs.find((j) => j.id === id), [jobs, id]);
   const jobApplications = useMemo(
@@ -73,14 +94,16 @@ export default function JobDetailsScreen() {
   if (!job) {
     if (isLoadingJobs) {
       return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
           <DetailSkeleton rows={3} />
         </SafeAreaView>
       );
     }
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <Text style={{ color: colors.text, padding: 16 }}>No job found for id: {id}</Text>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <Text className="p-4" style={{ color: colors.text }}>
+          No job found for id: {id}
+        </Text>
       </SafeAreaView>
     );
   }
@@ -89,21 +112,25 @@ export default function JobDetailsScreen() {
 
   if (!isOwner) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <View style={{ padding: 16, gap: 12 }}>
-          <Text style={{ color: colors.text, fontSize: 15, fontWeight: "600" }}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <View className="p-4 gap-3">
+          <Text className="text-[15px] font-semibold" style={{ color: colors.text }}>
             This is a management view
           </Text>
-          <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+          <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
             Only {job.companyName} can manage this listing.
           </Text>
           <Pressable
             onPress={() =>
-              router.replace({ pathname: "/jobs/job-market-details", params: { id: job.id } })
+              router.replace({
+                pathname: "/jobs/job-market-details",
+                params: { id: job.id },
+              })
             }
-            style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+            className="py-3.5 rounded-xl items-center"
+            style={{ backgroundColor: colors.primary }}
           >
-            <Text style={styles.primaryButtonText}>View listing</Text>
+            <Text className="text-white text-[15px] font-semibold">View listing</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -130,7 +157,8 @@ export default function JobDetailsScreen() {
   const handleClose = async () => {
     const ok = await confirm({
       title: "Close this listing?",
-      message: "This marks the search as ended (e.g. the position was filled). You can still review applicants, and can reopen it later.",
+      message:
+        "This marks the search as ended (e.g. the position was filled). You can still review applicants, and can reopen it later.",
       confirmLabel: "Close Listing",
     });
     if (!ok) return;
@@ -141,7 +169,8 @@ export default function JobDetailsScreen() {
   const handleCancel = async () => {
     const ok = await confirm({
       title: "Withdraw this listing?",
-      message: "This removes it from search results before it was filled. You can reopen it later if you change your mind.",
+      message:
+        "This removes it from search results before it was filled. You can reopen it later if you change your mind.",
       confirmLabel: "Withdraw",
       cancelLabel: "Keep it",
       destructive: true,
@@ -166,35 +195,62 @@ export default function JobDetailsScreen() {
   const statusColor = colors[statusMeta.tone];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.navbar, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Navbar */}
+      <View
+        className="flex-row items-center px-4 py-3 border-b gap-3"
+        style={{ borderBottomColor: colors.border }}
+      >
+        {Platform.OS !== "web" && (
+        <Pressable
+          onPress={() => router.back()}
+          className="w-9 h-9 justify-center items-center"
+          hitSlop={8}
+        >
           <Ionicons name="arrow-back-outline" size={22} color={colors.text} />
         </Pressable>
-        <View style={styles.navbarMeta}>
-          <Text style={[styles.navbarCode, { color: colors.text }]} numberOfLines={1}>
+        )}
+        <View className="flex-1">
+          <Text
+            className="text-[15px] font-semibold"
+            style={{ color: colors.text }}
+            numberOfLines={1}
+          >
             {job.title}
           </Text>
-          <View style={styles.navbarStatusRow}>
-            <View style={[styles.statusPill, { backgroundColor: statusColor + "18" }]}>
-              <MaterialCommunityIcons name={statusMeta.icon} size={11} color={statusColor} />
-              <Text style={[styles.statusPillText, { color: statusColor }]}>{statusMeta.label}</Text>
+          <View className="flex-row items-center gap-2 mt-0.5">
+            <View
+              className="flex-row items-center gap-1 px-2 py-0.5 rounded-md"
+              style={{ backgroundColor: statusColor + "18" }}
+            >
+              <MaterialCommunityIcons
+                name={statusMeta.icon}
+                size={11}
+                color={statusColor}
+              />
+              <Text className="text-[10px] font-bold" style={{ color: statusColor }}>
+                {statusMeta.label}
+              </Text>
             </View>
-            <Text style={[styles.navbarTime, { color: colors.textSecondary }]}>
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>
               Posted {format(job.createdAt)}
             </Text>
           </View>
         </View>
         <Pressable
-          onPress={() => router.push({ pathname: "/jobs/post-job", params: { id: job.id } })}
-          style={[styles.editBtn, { backgroundColor: colors.backgroundSecondary }]}
+          onPress={() =>
+            router.push({ pathname: "/jobs/post-job", params: { id: job.id } })
+          }
+          className="w-9 h-9 rounded-[10px] justify-center items-center"
+          style={{ backgroundColor: colors.backgroundSecondary }}
         >
           <MaterialCommunityIcons name="pencil-outline" size={18} color={colors.text} />
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.postedByRow}>
+      <ScrollView contentContainerClassName="px-4 pt-4">
+        {/* Posted by */}
+        <View className="flex-row items-center gap-2.5 mb-3.5">
           <ClickableAvatar
             entityType="facility"
             entityId={job.postedBy}
@@ -204,78 +260,153 @@ export default function JobDetailsScreen() {
             size={38}
           />
           <View>
-            <Text style={[styles.postedByLabel, { color: colors.textSecondary }]}>Posted by</Text>
-            <Text style={[styles.postedByName, { color: colors.text }]}>{job.companyName}</Text>
+            <Text
+              className="text-[11px] font-semibold uppercase tracking-wide"
+              style={{ color: colors.textSecondary }}
+            >
+              Posted by
+            </Text>
+            <Text className="text-sm font-bold mt-0.5" style={{ color: colors.text }}>
+              {job.companyName}
+            </Text>
           </View>
         </View>
 
+        {/* Info card */}
         <View
-          style={[styles.card, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+          className="rounded-2xl border overflow-hidden mb-5"
+          style={{
+            backgroundColor: colors.backgroundSecondary,
+            borderColor: colors.border,
+          }}
         >
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Company</Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{job.companyName}</Text>
+          <View className="flex-row justify-between items-center px-3.5 py-2.5">
+            <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+              Company
+            </Text>
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
+              {job.companyName}
+            </Text>
           </View>
-          <View style={[styles.infoRow, styles.infoRowBorder, { borderTopColor: colors.border }]}>
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Job type</Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{job.jobType}</Text>
+          <View
+            className="flex-row justify-between items-center px-3.5 py-2.5 border-t"
+            style={{ borderTopColor: colors.border }}
+          >
+            <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+              Job type
+            </Text>
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
+              {job.jobType}
+            </Text>
           </View>
-          <View style={[styles.infoRow, styles.infoRowBorder, { borderTopColor: colors.border }]}>
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Salary</Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{job.salaryRange}</Text>
+          <View
+            className="flex-row justify-between items-center px-3.5 py-2.5 border-t"
+            style={{ borderTopColor: colors.border }}
+          >
+            <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+              Salary
+            </Text>
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
+              {job.salaryRange}
+            </Text>
           </View>
           {job.applicationDeadline && (
-            <View style={[styles.infoRow, styles.infoRowBorder, { borderTopColor: colors.border }]}>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Apply by</Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>
+            <View
+              className="flex-row justify-between items-center px-3.5 py-2.5 border-t"
+              style={{ borderTopColor: colors.border }}
+            >
+              <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+                Apply by
+              </Text>
+              <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
                 {fmtDate(job.applicationDeadline)}
               </Text>
             </View>
           )}
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        {/* Applicants */}
+        <Text
+          className="text-xs font-medium uppercase tracking-wide mb-2"
+          style={{ color: colors.text }}
+        >
           Applicants ({jobApplications.length})
         </Text>
+
         {jobApplications.length === 0 ? (
-          <Text style={{ color: colors.textSecondary, fontSize: 13 }}>No applicants yet.</Text>
+          <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+            No applicants yet.
+          </Text>
         ) : (
-          <View style={{ gap: 8 }}>
+          <View className="gap-2">
             {jobApplications.map((application) => {
               const meta = STATUS_META[application.status];
               const toneColor = colors[meta.tone];
               return (
                 <View
                   key={application.id}
-                  style={[styles.appCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                  className="rounded-[14px] border p-3 gap-1.5 mb-2"
+                  style={{
+                    backgroundColor: colors.backgroundSecondary,
+                    borderColor: colors.border,
+                  }}
                 >
-                  <View style={styles.appTopRow}>
-                    <Text style={[styles.appName, { color: colors.text }]} numberOfLines={1}>
+                  <View className="flex-row items-center justify-between gap-2">
+                    <Text
+                      className="text-sm font-semibold flex-1"
+                      style={{ color: colors.text }}
+                      numberOfLines={1}
+                    >
                       {application.applicantName}
                     </Text>
-                    <View style={[styles.appBadge, { backgroundColor: toneColor + "18" }]}>
-                      <MaterialCommunityIcons name={meta.icon as any} size={12} color={toneColor} />
-                      <Text style={[styles.appBadgeText, { color: toneColor }]}>{meta.label}</Text>
+                    <View
+                      className="flex-row items-center gap-1 px-2 py-0.5 rounded-md"
+                      style={{ backgroundColor: toneColor + "18" }}
+                    >
+                      <MaterialCommunityIcons
+                        name={meta.icon as any}
+                        size={12}
+                        color={toneColor}
+                      />
+                      <Text
+                        className="text-[10px] font-bold"
+                        style={{ color: toneColor }}
+                      >
+                        {meta.label}
+                      </Text>
                     </View>
                   </View>
                   {application.coverNote ? (
-                    <Text style={[styles.appCover, { color: colors.textSecondary }]}>
+                    <Text
+                      className="text-xs leading-[17px] italic"
+                      style={{ color: colors.textSecondary }}
+                    >
                       {application.coverNote}
                     </Text>
                   ) : null}
-                  <Text style={[styles.appTime, { color: colors.textSecondary }]}>
+                  <Text className="text-[11px]" style={{ color: colors.textSecondary }}>
                     Applied {format(application.appliedAt)}
                   </Text>
-                  <View style={styles.appActionsRow}>
-                    {NEXT_ACTIONS.filter((a) => a.status !== application.status).map((action) => (
-                      <Pressable
-                        key={action.status}
-                        onPress={() => updateApplicationStatus(application.id, action.status)}
-                        style={[styles.appActionButton, { backgroundColor: colors.backgroundElement }]}
-                      >
-                        <Text style={[styles.appActionText, { color: colors.text }]}>{action.label}</Text>
-                      </Pressable>
-                    ))}
+                  <View className="flex-row flex-wrap gap-1.5 mt-1">
+                    {NEXT_ACTIONS.filter((a) => a.status !== application.status).map(
+                      (action) => (
+                        <Pressable
+                          key={action.status}
+                          onPress={() =>
+                            updateApplicationStatus(application.id, action.status)
+                          }
+                          className="px-2.5 py-1.5 rounded-lg"
+                          style={{ backgroundColor: colors.backgroundElement }}
+                        >
+                          <Text
+                            className="text-[11px] font-semibold"
+                            style={{ color: colors.text }}
+                          >
+                            {action.label}
+                          </Text>
+                        </Pressable>
+                      ),
+                    )}
                   </View>
                 </View>
               );
@@ -283,112 +414,86 @@ export default function JobDetailsScreen() {
           </View>
         )}
 
-        <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 20 }]}>Listing Status</Text>
-        <View style={styles.statusActionsRow}>
+        {/* Listing status actions */}
+        <Text
+          className="text-xs font-medium uppercase tracking-wide mb-2 mt-5"
+          style={{ color: colors.text }}
+        >
+          Listing Status
+        </Text>
+        <View className="flex-row gap-2 mt-1">
           {job.status === "open" && (
             <>
               <Pressable
                 onPress={handleClose}
-                style={[styles.statusActionButton, { backgroundColor: colors.warning + "18" }]}
+                className="flex-row items-center gap-1.5 px-3.5 py-2.5 rounded-[10px]"
+                style={{ backgroundColor: colors.warning + "18" }}
               >
-                <MaterialCommunityIcons name="briefcase-off-outline" size={15} color={colors.warning} />
-                <Text style={[styles.statusActionText, { color: colors.warning }]}>Close</Text>
+                <MaterialCommunityIcons
+                  name="briefcase-off-outline"
+                  size={15}
+                  color={colors.warning}
+                />
+                <Text
+                  className="text-[13px] font-semibold"
+                  style={{ color: colors.warning }}
+                >
+                  Close
+                </Text>
               </Pressable>
               <Pressable
                 onPress={handleCancel}
-                style={[styles.statusActionButton, { backgroundColor: colors.error + "18" }]}
+                className="flex-row items-center gap-1.5 px-3.5 py-2.5 rounded-[10px]"
+                style={{ backgroundColor: colors.error + "18" }}
               >
                 <MaterialCommunityIcons name="cancel" size={15} color={colors.error} />
-                <Text style={[styles.statusActionText, { color: colors.error }]}>Withdraw</Text>
+                <Text
+                  className="text-[13px] font-semibold"
+                  style={{ color: colors.error }}
+                >
+                  Withdraw
+                </Text>
               </Pressable>
             </>
           )}
           {job.status !== "open" && (
             <Pressable
               onPress={handleReopen}
-              style={[styles.statusActionButton, { backgroundColor: colors.success + "18" }]}
+              className="flex-row items-center gap-1.5 px-3.5 py-2.5 rounded-[10px]"
+              style={{ backgroundColor: colors.success + "18" }}
             >
-              <MaterialCommunityIcons name="briefcase-check-outline" size={15} color={colors.success} />
-              <Text style={[styles.statusActionText, { color: colors.success }]}>Reopen</Text>
+              <MaterialCommunityIcons
+                name="briefcase-check-outline"
+                size={15}
+                color={colors.success}
+              />
+              <Text
+                className="text-[13px] font-semibold"
+                style={{ color: colors.success }}
+              >
+                Reopen
+              </Text>
             </Pressable>
           )}
         </View>
 
-        <Pressable onPress={handleDelete} style={[styles.deleteButton, { borderColor: colors.error }]}>
-          <MaterialCommunityIcons name="trash-can-outline" size={16} color={colors.error} />
-          <Text style={[styles.deleteButtonText, { color: colors.error }]}>Delete listing</Text>
+        <Pressable
+          onPress={handleDelete}
+          className="flex-row items-center justify-center gap-1.5 py-3 rounded-[10px] border mt-2"
+          style={{ borderColor: colors.error }}
+        >
+          <MaterialCommunityIcons
+            name="trash-can-outline"
+            size={16}
+            color={colors.error}
+          />
+          <Text className="text-[13px] font-semibold" style={{ color: colors.error }}>
+            Delete listing
+          </Text>
         </Pressable>
 
-        <View style={{ height: 24 }} />
+        <View className="h-6" />
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  navbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    gap: 12,
-  },
-  backBtn: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
-  navbarMeta: { flex: 1 },
-  navbarCode: { fontSize: 15, fontWeight: "600" },
-  navbarStatusRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3 },
-  statusPill: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 7 },
-  statusPillText: { fontSize: 10, fontWeight: "700" },
-  navbarTime: { fontSize: 12 },
-  statusActionsRow: { flexDirection: "row", gap: 8, marginTop: 4 },
-  statusActionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  statusActionText: { fontSize: 13, fontWeight: "600" },
-  editBtn: { width: 36, height: 36, borderRadius: 10, justifyContent: "center", alignItems: "center" },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 16 },
-  card: { borderRadius: 16, borderWidth: 0.5, overflow: "hidden", marginBottom: 20 },
-  postedByRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 },
-  postedByLabel: { fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.4 },
-  postedByName: { fontSize: 14, fontWeight: "700", marginTop: 1 },
-  infoRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 14, paddingVertical: 11 },
-  infoRowBorder: { borderTopWidth: 0.5 },
-  infoLabel: { fontSize: 13 },
-  infoValue: { fontSize: 13, fontWeight: "500" },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-    marginBottom: 8,
-  },
-  appCard: { borderRadius: 14, borderWidth: 1, padding: 12, gap: 6, marginBottom: 8 },
-  appTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  appName: { fontSize: 14, fontWeight: "600", flex: 1 },
-  appBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  appBadgeText: { fontSize: 10, fontWeight: "700" },
-  appCover: { fontSize: 12, lineHeight: 17, fontStyle: "italic" },
-  appTime: { fontSize: 11 },
-  appActionsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
-  appActionButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  appActionText: { fontSize: 11, fontWeight: "600" },
-  deleteButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    marginTop: 8,
-  },
-  deleteButtonText: { fontSize: 13, fontWeight: "600" },
-  primaryButton: { paddingVertical: 14, borderRadius: 12, alignItems: "center" },
-  primaryButtonText: { color: "#fff", fontSize: 15, fontWeight: "600" },
-});

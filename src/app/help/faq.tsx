@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, TextInput, Pressable, FlatList, StyleSheet } from "react-native";
+import { View, Text, TextInput, Pressable, FlatList } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import ScreenHeader from "@/shared/components/screen-header";
 import { useHelpStore } from "@/features/help/hooks/use-help-data";
 import FaqAccordionItem from "@/features/help/components/faq-accordion-item";
 
@@ -17,7 +18,6 @@ export default function FaqScreen() {
     fetchFaqItems();
   }, []);
 
-
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return faqItems;
@@ -30,34 +30,33 @@ export default function FaqScreen() {
   }, [faqItems, search]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
-        </Pressable>
-        <Text style={[styles.title, { color: colors.text }]}>FAQ</Text>
-      </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Header Bar */}
+      <ScreenHeader title="FAQ" />
 
-      <View style={styles.searchWrap}>
-        <View style={[styles.searchBox, { backgroundColor: colors.backgroundElement }]}>
+      {/* Search Input Section */}
+      <View className="px-4 pt-3.5 pb-1">
+        <View className="flex-row items-center gap-2 rounded-xl px-3.5 py-2.5" style={{ backgroundColor: colors.backgroundElement }}>
           <Ionicons name="search" size={17} color={colors.textSecondary} />
           <TextInput
             value={search}
             onChangeText={setSearch}
             placeholder="Search questions..."
             placeholderTextColor={colors.textSecondary}
-            style={[styles.searchInput, { color: colors.text }]}
+            className="flex-1 text-sm p-0"
+            style={{ color: colors.text }}
           />
         </View>
       </View>
 
+      {/* Accordion List Content */}
       <FlatList
         data={results}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        contentContainerStyle={{ padding: 16 }}
+        ItemSeparatorComponent={() => <View className="h-2.5" />}
         ListEmptyComponent={
-          <Text style={{ color: colors.textSecondary, textAlign: "center", marginTop: 24 }}>
+          <Text className="text-center mt-6" style={{ color: colors.textSecondary }}>
             No matching questions.
           </Text>
         }
@@ -66,27 +65,3 @@ export default function FaqScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  searchWrap: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 },
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  searchInput: { flex: 1, fontSize: 14, padding: 0 },
-  listContent: { padding: 16 },
-});

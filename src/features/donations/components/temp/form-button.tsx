@@ -74,18 +74,18 @@ const FormButton: React.FC<FormButtonProps> = ({
       activeOpacity={isDisabled ? 1 : 0.7}
     >
       {isLoading ? (
-        <View style={styles.loadingContainer}>
+        <View className="flex-row items-center justify-center gap-2">
           <ActivityIndicator size="small" color={textColor} />
 
-          <Text style={[styles.text, { color: textColor }]}>Loading...</Text>
+          <Text className="text-sm font-semibold" style={{ color: textColor }}>Loading...</Text>
         </View>
       ) : (
-        <View style={styles.content}>
+        <View className="flex-row items-center justify-center gap-2">
           {icon && (
             <MaterialCommunityIcons name={icon} size={18} color={textColor} />
           )}
 
-          <Text style={[styles.text, { color: textColor }]}>{title}</Text>
+          <Text className="text-sm font-semibold" style={{ color: textColor }}>{title}</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -101,25 +101,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: 44,
   },
-
-  content: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-
-  loadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-
-  text: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
 });
 
 export default FormButton;
+

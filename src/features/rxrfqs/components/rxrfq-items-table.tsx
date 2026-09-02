@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   ScrollView,
+  Platform,
 } from "react-native";
 import { useTheme } from "@/shared/hooks/use-theme";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -13,6 +14,27 @@ import RxRfQItemModal from "@/features/rxrfqs/components/rxrfq-item-modal";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { RxRfqItem } from "@/features/rxrfqs/types/rxrfqs.types";
 import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
+
+// Platform, not a viewport-width breakpoint — this is specifically
+// "mobile app vs web browser" (the native sizing already works well at
+// any native screen size), not "narrow web window vs wide web window".
+// Native values below are exactly what this file already had; only the
+// web branch is new.
+const isWeb = Platform.OS === "web";
+
+const COLS = {
+  product: isWeb ? 320 : 180,
+  qty: isWeb ? 90 : 50,
+  uom: isWeb ? 100 : 60,
+  alt: isWeb ? 130 : 50,
+  comment: isWeb ? 110 : 40,
+  actions: isWeb ? 100 : 70,
+};
+const CELL_TEXT = isWeb ? "text-sm" : "text-xs";
+const CELL_PADDING = isWeb ? "px-3" : "px-1.5";
+const ROW_HEIGHT = isWeb ? "min-h-16" : "min-h-12";
+const ICON_SIZE = isWeb ? 20 : 16;
+const BADGE_ICON_SIZE = isWeb ? 14 : 12;
 
 interface RxRfQItemsTableProps {
   items: RxRfqItem[];
@@ -58,20 +80,12 @@ const RxRfQItemsTable: React.FC<RxRfQItemsTableProps> = ({
     sheetRef.current?.present();
   };
 
-  const columns = [
-    { title: "Product", style: styles.productColumn },
-    { title: "Qty", style: styles.quantityColumn },
-    { title: "UOM", style: styles.uomColumn },
-    { title: "Allow Alt.", style: styles.allowAlternativeColumn },
-    { title: "Comments", style: styles.commentColumn },
-    { title: "Actions", style: styles.actionsColumn },
-  ];
-
   return (
-    <View style={styles.container}>
+    <View className="w-full">
       {items.length > 0 && (
         <TouchableOpacity
-          style={[styles.addInlineButton, { backgroundColor: colors.text }]}
+          className="flex-row items-center self-end gap-1.5 px-3 py-2 rounded-lg mb-3"
+          style={{ backgroundColor: colors.text }}
           onPress={openAddModal}
         >
           <MaterialCommunityIcons
@@ -80,10 +94,8 @@ const RxRfQItemsTable: React.FC<RxRfQItemsTableProps> = ({
             color={colors.backgroundSecondary}
           />
           <Text
-            style={[
-              styles.addInlineButtonText,
-              { color: colors.backgroundSecondary },
-            ]}
+            className="text-[13px] font-semibold"
+            style={{ color: colors.backgroundSecondary }}
           >
             Add Item
           </Text>
@@ -91,18 +103,16 @@ const RxRfQItemsTable: React.FC<RxRfQItemsTableProps> = ({
       )}
 
       {error && (
-        <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+        <Text className="text-xs font-medium mb-2" style={{ color: colors.error }}>{error}</Text>
       )}
 
       {items.length === 0 ? (
         <View
-          style={[
-            styles.emptyState,
-            {
-              backgroundColor: colors.backgroundElement,
-              borderColor: colors.border,
-            },
-          ]}
+          className="items-center justify-center py-10 px-5 rounded-xl border border-dashed"
+          style={{
+            backgroundColor: colors.backgroundElement,
+            borderColor: colors.border,
+          }}
         >
           <MaterialCommunityIcons
             name="inbox-outline"
@@ -110,18 +120,20 @@ const RxRfQItemsTable: React.FC<RxRfQItemsTableProps> = ({
             color={colors.textSecondary}
           />
 
-          <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
+          <Text className="text-base font-semibold mt-3" style={{ color: colors.text }}>
             No items added yet
           </Text>
 
           <Text
-            style={[styles.emptyStateSubtitle, { color: colors.textSecondary }]}
+            className="text-[13px] mt-1 mb-4 text-center"
+            style={{ color: colors.textSecondary }}
           >
             Add RxRfQ items to continue
           </Text>
 
           <TouchableOpacity
-            style={[styles.emptyStateButton, { backgroundColor: colors.text }]}
+            className="flex-row items-center gap-2 px-4 py-2.5 rounded-lg"
+            style={{ backgroundColor: colors.text }}
             onPress={openAddModal}
           >
             <MaterialCommunityIcons
@@ -131,10 +143,8 @@ const RxRfQItemsTable: React.FC<RxRfQItemsTableProps> = ({
             />
 
             <Text
-              style={[
-                styles.emptyStateButtonText,
-                { color: colors.backgroundSecondary },
-              ]}
+              className="text-sm font-semibold"
+              style={{ color: colors.backgroundSecondary }}
             >
               Add First Item
             </Text>
@@ -144,89 +154,61 @@ const RxRfQItemsTable: React.FC<RxRfQItemsTableProps> = ({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.tableScroll}
+          className="w-full"
         >
           <View
-            style={[
-              styles.tableContainer,
-              {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
-              },
-            ]}
+            className="border rounded-[10px] overflow-hidden"
+            style={{
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+            }}
           >
             {/* Header */}
             <View
-              style={[
-                styles.tableHeader,
-                {
-                  backgroundColor: colors.backgroundSecondary,
-                  borderBottomColor: colors.border,
-                },
-              ]}
+              className="flex-row border-b py-2.5"
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderBottomColor: colors.border,
+              }}
             >
               <Text
-                style={[
-                  styles.cellText,
-                  styles.headerCell,
-                  styles.productColumn,
-                  { color: colors.text },
-                ]}
+                className={`${CELL_TEXT} ${CELL_PADDING} font-semibold`}
+                style={{ color: colors.text, width: COLS.product }}
               >
                 Product
               </Text>
 
               <Text
-                style={[
-                  styles.cellText,
-                  styles.headerCell,
-                  styles.quantityColumn,
-                  { color: colors.text, textAlign: "center" },
-                ]}
+                className={`${CELL_TEXT} ${CELL_PADDING} font-semibold text-center`}
+                style={{ color: colors.text, width: COLS.qty }}
               >
                 Qty
               </Text>
 
               <Text
-                style={[
-                  styles.cellText,
-                  styles.headerCell,
-                  styles.uomColumn,
-                  { color: colors.text, textAlign: "center" },
-                ]}
+                className={`${CELL_TEXT} ${CELL_PADDING} font-semibold text-center`}
+                style={{ color: colors.text, width: COLS.uom }}
               >
                 UOM
               </Text>
 
               <Text
-                style={[
-                  styles.cellText,
-                  styles.headerCell,
-                  styles.allowAlternativeColumn,
-                  { color: colors.text, textAlign: "center" },
-                ]}
+                className={`${CELL_TEXT} ${CELL_PADDING} font-semibold text-center`}
+                style={{ color: colors.text, width: COLS.alt }}
               >
-                Alt
+                {isWeb ? "Alternatives" : "Alt"}
               </Text>
 
               <Text
-                style={[
-                  styles.cellText,
-                  styles.headerCell,
-                  styles.commentColumn,
-                  { color: colors.text, textAlign: "center" },
-                ]}
+                className={`${CELL_TEXT} ${CELL_PADDING} font-semibold text-center`}
+                style={{ color: colors.text, width: COLS.comment }}
               >
-                Cmt
+                {isWeb ? "Comment" : "Cmt"}
               </Text>
 
               <Text
-                style={[
-                  styles.cellText,
-                  styles.headerCell,
-                  styles.actionsColumn,
-                  { color: colors.text, textAlign: "center" },
-                ]}
+                className={`${CELL_TEXT} ${CELL_PADDING} font-semibold text-center`}
+                style={{ color: colors.text, width: COLS.actions }}
               >
                 Actions
               </Text>
@@ -239,18 +221,12 @@ const RxRfQItemsTable: React.FC<RxRfQItemsTableProps> = ({
               scrollEnabled={false}
               renderItem={({ item }) => (
                 <View
-                  style={[
-                    styles.tableRow,
-                    { borderBottomColor: colors.border },
-                  ]}
+                  className={`flex-row items-center ${ROW_HEIGHT}`}
+                  style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
                 >
                   <Text
-                    style={[
-                      styles.cellText,
-                      styles.bodyCell,
-                      styles.productColumn,
-                      { color: colors.text },
-                    ]}
+                    className={`${CELL_TEXT} ${CELL_PADDING} font-normal`}
+                    style={{ color: colors.text, width: COLS.product }}
                     numberOfLines={1}
                     ellipsizeMode="tail"
                   >
@@ -258,50 +234,32 @@ const RxRfQItemsTable: React.FC<RxRfQItemsTableProps> = ({
                   </Text>
 
                   <Text
-                    style={[
-                      styles.cellText,
-                      styles.bodyCell,
-                      styles.quantityColumn,
-                      {
-                        color: colors.text,
-                        textAlign: "center",
-                      },
-                    ]}
+                    className={`${CELL_TEXT} ${CELL_PADDING} font-normal text-center`}
+                    style={{ color: colors.text, width: COLS.qty }}
                   >
                     {item.quantity}
                   </Text>
 
                   <Text
-                    style={[
-                      styles.cellText,
-                      styles.bodyCell,
-                      styles.uomColumn,
-                      {
-                        color: colors.text,
-                        textAlign: "center",
-                      },
-                    ]}
+                    className={`${CELL_TEXT} ${CELL_PADDING} font-normal text-center`}
+                    style={{ color: colors.text, width: COLS.uom }}
                     numberOfLines={1}
                   >
                     {item.uom || "-"}
                   </Text>
 
-                  <View
-                    style={[styles.allowAlternativeColumn, styles.cellCenter]}
-                  >
+                  <View className="items-center justify-center" style={{ width: COLS.alt }}>
                     <View
-                      style={[
-                        styles.allowAlternativeBadge,
-                        {
-                          backgroundColor: item.allowAlternatives
-                            ? colors.success + "20"
-                            : colors.error + "20",
-                        },
-                      ]}
+                      className="p-1 rounded-md"
+                      style={{
+                        backgroundColor: item.allowAlternatives
+                          ? colors.success + "20"
+                          : colors.error + "20",
+                      }}
                     >
                       <MaterialCommunityIcons
                         name={item.allowAlternatives ? "check" : "close"}
-                        size={12}
+                        size={BADGE_ICON_SIZE}
                         color={
                           item.allowAlternatives ? colors.success : colors.error
                         }
@@ -310,38 +268,31 @@ const RxRfQItemsTable: React.FC<RxRfQItemsTableProps> = ({
                   </View>
 
                   <Text
-                    style={[
-                      styles.cellText,
-                      styles.bodyCell,
-                      styles.commentColumn,
-                      {
-                        color: colors.textSecondary,
-                        textAlign: "center",
-                      },
-                    ]}
+                    className={`${CELL_TEXT} ${CELL_PADDING} font-normal text-center`}
+                    style={{ color: colors.textSecondary, width: COLS.comment }}
                   >
                     {item.comment?.trim() ? "..." : "-"}
                   </Text>
 
-                  <View style={[styles.actionsColumn, styles.rowActions]}>
+                  <View className="flex-row items-center justify-center gap-0.5" style={{ width: COLS.actions }}>
                     <TouchableOpacity
                       onPress={() => handleEditItem(item)}
-                      style={styles.actionIconButton}
+                      className="p-1 mx-1"
                     >
                       <MaterialCommunityIcons
                         name="pencil-outline"
-                        size={16}
+                        size={ICON_SIZE}
                         color={colors.textSecondary}
                       />
                     </TouchableOpacity>
 
                     <TouchableOpacity
                       onPress={() => handleDeleteItem(item.id)}
-                      style={styles.actionIconButton}
+                      className="p-1 mx-1"
                     >
                       <MaterialCommunityIcons
                         name="trash-can-outline"
-                        size={16}
+                        size={ICON_SIZE}
                         color={colors.error}
                       />
                     </TouchableOpacity>
@@ -363,174 +314,5 @@ const RxRfQItemsTable: React.FC<RxRfQItemsTableProps> = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-  },
-
-  // actionsContainer: {
-  //   flexDirection: "row",
-  //   justifyContent: "space-between",
-  //   alignItems: "center",
-  //   marginBottom: 12,
-  // },
-
-  // viewButton: {
-  //   flexDirection: "row",
-  //   alignItems: "center",
-  //   gap: 6,
-  //   paddingHorizontal: 12,
-  //   paddingVertical: 8,
-  //   borderRadius: 8,
-  //   borderWidth: 1,
-  // },
-
-  // viewButtonText: {
-  //   fontSize: 13,
-  //   fontWeight: "600",
-  // },
-
-  addInlineButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-end",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-
-  addInlineButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-
-  errorText: {
-    fontSize: 12,
-    fontWeight: "500",
-    marginBottom: 8,
-  },
-
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderStyle: "dashed",
-  },
-
-  emptyStateTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginTop: 12,
-  },
-
-  emptyStateSubtitle: {
-    fontSize: 13,
-    marginTop: 4,
-    marginBottom: 16,
-    textAlign: "center",
-  },
-
-  emptyStateButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-
-  emptyStateButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-
-  tableScroll: {
-    width: "100%",
-  },
-
-  tableContainer: {
-    borderWidth: 1,
-    borderRadius: 10,
-    overflow: "hidden",
-  },
-
-  tableHeader: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    paddingVertical: 10,
-  },
-
-  tableRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    minHeight: 48,
-  },
-
-  cellText: {
-    fontSize: 12,
-    paddingHorizontal: 6,
-  },
-
-  headerCell: {
-    fontWeight: "600",
-  },
-
-  bodyCell: {
-    fontWeight: "400",
-  },
-
-  cellCenter: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  productColumn: {
-    width: 180,
-  },
-
-  quantityColumn: {
-    width: 50,
-  },
-
-  uomColumn: {
-    width: 60,
-  },
-
-  allowAlternativeColumn: {
-    width: 50,
-  },
-
-  commentColumn: {
-    width: 40,
-  },
-
-  actionsColumn: {
-    width: 70,
-  },
-
-  rowActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 2,
-  },
-
-  actionIconButton: {
-    padding: 4,
-    marginHorizontal: 4,
-  },
-
-  allowAlternativeBadge: {
-    padding: 4,
-    borderRadius: 6,
-  },
-});
 
 export default RxRfQItemsTable;

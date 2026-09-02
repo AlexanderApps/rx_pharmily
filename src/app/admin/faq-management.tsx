@@ -1,9 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, FlatList, Pressable, TextInput, Modal, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  Pressable,
+  TextInput,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { router, Redirect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import EmptyState from "@/shared/components/empty-state";
+import ScreenHeader from "@/shared/components/screen-header";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { isAdminRole } from "@/features/auth/types/auth.types";
 import { useHelpStore } from "@/features/help/hooks/use-help-data";
@@ -14,11 +25,13 @@ import SubmitButton from "@/shared/components/submit-button";
 import ListSkeleton from "@/shared/components/list-skeleton";
 
 type DraftFaq = { question: string; answer: string; category: string };
+
 const EMPTY_DRAFT: DraftFaq = { question: "", answer: "", category: "" };
 
 export default function FaqManagementScreen() {
   const { colors } = useTheme();
   const isAdmin = useAuthStore((state) => isAdminRole(state.profile?.accountRole));
+
   const faqItems = useHelpStore((state) => state.faqItems);
   const fetchFaqItems = useHelpStore((state) => state.fetchFaqItems);
   const addFaqItem = useHelpStore((state) => state.addFaqItem);
@@ -35,7 +48,10 @@ export default function FaqManagementScreen() {
   }, []);
 
   const sorted = useMemo(
-    () => [...faqItems].sort((a, b) => a.category.localeCompare(b.category) || a.question.localeCompare(b.question)),
+    () =>
+      [...faqItems].sort(
+        (a, b) => a.category.localeCompare(b.category) || a.question.localeCompare(b.question),
+      ),
     [faqItems],
   );
 
@@ -55,11 +71,18 @@ export default function FaqManagementScreen() {
     setModalOpen(true);
   };
 
-  const canSave = draft.question.trim().length > 0 && draft.answer.trim().length > 0 && draft.category.trim().length > 0;
+  const canSave =
+    draft.question.trim().length > 0 &&
+    draft.answer.trim().length > 0 &&
+    draft.category.trim().length > 0;
 
   const handleSave = async () => {
     if (!canSave) return;
-    const data = { question: draft.question.trim(), answer: draft.answer.trim(), category: draft.category.trim() };
+    const data = {
+      question: draft.question.trim(),
+      answer: draft.answer.trim(),
+      category: draft.category.trim(),
+    };
     const ok = editingId ? await updateFaqItem(editingId, data) : await addFaqItem(data);
     if (ok) {
       toast.success(editingId ? "FAQ entry updated." : "FAQ entry added.");
@@ -78,23 +101,27 @@ export default function FaqManagementScreen() {
     });
     if (!ok) return;
     const success = await deleteFaqItem(item.id);
-    toast[success ? "success" : "error"](success ? "FAQ entry deleted." : "Couldn't delete the entry.");
+    toast[success ? "success" : "error"](
+      success ? "FAQ entry deleted." : "Couldn't delete the entry.",
+    );
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>FAQ Management</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{faqItems.length} entries</Text>
-        </View>
-        <Pressable onPress={openNew} style={[styles.newButton, { backgroundColor: colors.primary }]}>
-          <MaterialCommunityIcons name="plus" size={20} color="#fff" />
-        </Pressable>
-      </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Header */}
+      <ScreenHeader
+        title="FAQ Management"
+        subtitle={`${faqItems.length} entries`}
+        actions={
+          <Pressable
+            onPress={openNew}
+            className="w-[34px] h-[34px] rounded-[10px] items-center justify-center"
+            style={{ backgroundColor: colors.primary }}
+          >
+            <MaterialCommunityIcons name="plus" size={20} color="#fff" />
+          </Pressable>
+        }
+      />
 
       {isLoading && sorted.length === 0 ? (
         <ListSkeleton variant="card" rows={5} />
@@ -102,31 +129,57 @@ export default function FaqManagementScreen() {
         <FlatList
           data={sorted}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          contentContainerClassName="p-4 grow"
+          ItemSeparatorComponent={() => <View className="h-2.5" />}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <MaterialCommunityIcons name="help-circle-outline" size={36} color={colors.textSecondary} />
-              <Text style={{ color: colors.textSecondary, fontSize: 13 }}>No FAQ entries yet.</Text>
-            </View>
+            <EmptyState icon="help-circle-outline" message="No FAQ entries yet." />
           }
           renderItem={({ item }) => (
-            <View style={[styles.card, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              <View style={[styles.categoryPill, { backgroundColor: colors.primary + "18" }]}>
-                <Text style={[styles.categoryText, { color: colors.primary }]}>{item.category}</Text>
+            <View
+              className="rounded-[14px] border p-3.5 gap-1.5"
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+              }}
+            >
+              <View
+                className="self-start px-2 py-0.5 rounded-lg"
+                style={{ backgroundColor: colors.primary + "18" }}
+              >
+                <Text className="text-[10px] font-bold" style={{ color: colors.primary }}>
+                  {item.category}
+                </Text>
               </View>
-              <Text style={[styles.question, { color: colors.text }]}>{item.question}</Text>
-              <Text style={[styles.answer, { color: colors.textSecondary }]} numberOfLines={3}>
+              <Text className="text-sm font-bold mt-0.5" style={{ color: colors.text }}>
+                {item.question}
+              </Text>
+              <Text
+                className="text-xs leading-[17px]"
+                style={{ color: colors.textSecondary }}
+                numberOfLines={3}
+              >
                 {item.answer}
               </Text>
-              <View style={styles.cardActions}>
-                <Pressable onPress={() => openEdit(item)} style={[styles.actionButton, { backgroundColor: colors.info + "18" }]}>
+              <View className="flex-row gap-2 mt-1.5">
+                <Pressable
+                  onPress={() => openEdit(item)}
+                  className="flex-row items-center gap-1.5 px-2.5 py-1.5 rounded-lg"
+                  style={{ backgroundColor: colors.info + "18" }}
+                >
                   <MaterialCommunityIcons name="pencil-outline" size={13} color={colors.info} />
-                  <Text style={[styles.actionButtonText, { color: colors.info }]}>Edit</Text>
+                  <Text className="text-xs font-bold" style={{ color: colors.info }}>
+                    Edit
+                  </Text>
                 </Pressable>
-                <Pressable onPress={() => handleDelete(item)} style={[styles.actionButton, { backgroundColor: colors.error + "18" }]}>
+                <Pressable
+                  onPress={() => handleDelete(item)}
+                  className="flex-row items-center gap-1.5 px-2.5 py-1.5 rounded-lg"
+                  style={{ backgroundColor: colors.error + "18" }}
+                >
                   <MaterialCommunityIcons name="trash-can-outline" size={13} color={colors.error} />
-                  <Text style={[styles.actionButtonText, { color: colors.error }]}>Delete</Text>
+                  <Text className="text-xs font-bold" style={{ color: colors.error }}>
+                    Delete
+                  </Text>
                 </Pressable>
               </View>
             </View>
@@ -134,14 +187,23 @@ export default function FaqManagementScreen() {
         />
       )}
 
-      <Modal visible={modalOpen} animationType="slide" transparent onRequestClose={() => setModalOpen(false)}>
+      {/* Modal */}
+      <Modal
+        visible={modalOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setModalOpen(false)}
+      >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalBackdrop}
+          className="flex-1 justify-end bg-black/40"
         >
-          <View style={[styles.modalCard, { backgroundColor: colors.background }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
+          <View
+            className="rounded-t-[20px] p-5 max-h-[88%]"
+            style={{ backgroundColor: colors.background }}
+          >
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-base font-bold" style={{ color: colors.text }}>
                 {editingId ? "Edit FAQ Entry" : "New FAQ Entry"}
               </Text>
               <Pressable onPress={() => setModalOpen(false)} hitSlop={8}>
@@ -149,33 +211,54 @@ export default function FaqManagementScreen() {
               </Pressable>
             </View>
 
-            <Text style={[styles.label, { color: colors.text }]}>Category</Text>
+            <Text className="text-xs font-semibold" style={{ color: colors.text }}>
+              Category
+            </Text>
             <TextInput
               value={draft.category}
               onChangeText={(v) => setDraft((d) => ({ ...d, category: v }))}
               placeholder="e.g. Getting Started"
               placeholderTextColor={colors.textSecondary}
-              style={[styles.input, { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }]}
+              className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+              style={{
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
+                color: colors.text,
+              }}
             />
 
-            <Text style={[styles.label, { color: colors.text, marginTop: 12 }]}>Question</Text>
+            <Text className="text-xs font-semibold mt-3" style={{ color: colors.text }}>
+              Question
+            </Text>
             <TextInput
               value={draft.question}
               onChangeText={(v) => setDraft((d) => ({ ...d, question: v }))}
               placeholder="The question as it should appear"
               placeholderTextColor={colors.textSecondary}
-              style={[styles.input, { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }]}
+              className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+              style={{
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
+                color: colors.text,
+              }}
             />
 
-            <Text style={[styles.label, { color: colors.text, marginTop: 12 }]}>Answer</Text>
+            <Text className="text-xs font-semibold mt-3" style={{ color: colors.text }}>
+              Answer
+            </Text>
             <TextInput
               value={draft.answer}
               onChangeText={(v) => setDraft((d) => ({ ...d, answer: v }))}
               placeholder="The answer shown when expanded"
               placeholderTextColor={colors.textSecondary}
-              style={[styles.input, styles.textArea, { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }]}
+              className="border rounded-lg px-3 py-2.5 text-sm mt-1.5 min-h-[100px]"
+              style={{
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
+                color: colors.text,
+                textAlignVertical: "top",
+              }}
               multiline
-              textAlignVertical="top"
             />
 
             <SubmitButton
@@ -190,35 +273,3 @@ export default function FaqManagementScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: 1 },
-  newButton: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  listContent: { padding: 16, flexGrow: 1 },
-  empty: { alignItems: "center", justifyContent: "center", gap: 10, paddingTop: 80 },
-  card: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 6 },
-  categoryPill: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  categoryText: { fontSize: 10, fontWeight: "700" },
-  question: { fontSize: 14, fontWeight: "700", marginTop: 2 },
-  answer: { fontSize: 12, lineHeight: 17 },
-  cardActions: { flexDirection: "row", gap: 8, marginTop: 6 },
-  actionButton: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8 },
-  actionButtonText: { fontSize: 12, fontWeight: "700" },
-  modalBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.4)" },
-  modalCard: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: "88%" },
-  modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
-  modalTitle: { fontSize: 16, fontWeight: "700" },
-  label: { fontSize: 12, fontWeight: "600" },
-  input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, marginTop: 6 },
-  textArea: { minHeight: 100 },
-});

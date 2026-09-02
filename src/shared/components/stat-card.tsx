@@ -1,8 +1,8 @@
 // Reusable Components inside the module boundary
-
 import React from "react";
-import { StyleSheet, Pressable } from "react-native";
+import { Pressable } from "react-native";
 import { ThemedText } from "@/shared/components/themed-text";
+import { noSelectStyle } from "@/shared/constants/text-selection";
 
 // ==========================================
 // StatCard Component
@@ -50,19 +50,20 @@ export default function StatCard({
     <Pressable
       onPress={onPress}
       disabled={!onPress} // Disables press telemetry interactions entirely if no handler hook function is passed
-      style={({ pressed }) => [
-        styles.statCard,
-        {
-          backgroundColor: getBackgroundColor(),
-          opacity: pressed ? 0.7 : 1, // Provides instant visual touch state feedback response
-        },
-      ]}
+      className={`w-[31%] rounded-2xl p-3.5 justify-center active:opacity-70 ${
+        onPress ? "cursor-pointer hover:opacity-90" : ""
+      }`}
+      style={{ backgroundColor: getBackgroundColor() }}
     >
-      <ThemedText style={[styles.statNumber, { color: getTextColor() }]}>
+      <ThemedText
+        className="text-2xl font-bold"
+        style={{ color: getTextColor(), ...noSelectStyle }}
+      >
         {number}
       </ThemedText>
       <ThemedText
-        style={[styles.statLabel, { color: colors.textSecondary }]}
+        className="text-xs font-medium mt-1"
+        style={{ color: colors.textSecondary, ...noSelectStyle }}
         numberOfLines={1}
       >
         {label}
@@ -70,24 +71,3 @@ export default function StatCard({
     </Pressable>
   );
 }
-
-// ==========================================
-// Module Scoped Stylesheet
-// ==========================================
-const styles = StyleSheet.create({
-  statCard: {
-    width: "31%",
-    borderRadius: 16,
-    padding: 14,
-    justifyContent: "center",
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  statLabel: {
-    fontSize: 12,
-    fontWeight: "500",
-    marginTop: 4,
-  },
-});

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Pressable, Alert, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -46,11 +46,12 @@ const MediscopeImageInput: React.FC<MediscopeImageInputProps> = ({
 
   if (imageUrl) {
     return (
-      <View style={styles.previewWrap}>
-        <LoadingImage source={{ uri: imageUrl }} style={styles.preview} />
+      <View className="w-[120px] h-[120px]">
+        <LoadingImage source={{ uri: imageUrl }} style={{ width: 120, height: 120, borderRadius: 10 }} />
         <Pressable
           onPress={() => onChange(undefined)}
-          style={[styles.removeButton, { backgroundColor: colors.error }]}
+          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full items-center justify-center"
+          style={{ backgroundColor: colors.error }}
           hitSlop={6}
         >
           <MaterialCommunityIcons name="close" size={13} color="#fff" />
@@ -63,14 +64,15 @@ const MediscopeImageInput: React.FC<MediscopeImageInputProps> = ({
     <Pressable
       onPress={pickImage}
       disabled={uploading}
-      style={[styles.picker, { backgroundColor: colors.backgroundElement, borderColor: colors.border, opacity: uploading ? 0.6 : 1 }]}
+      className="flex-row items-center justify-center gap-2 border border-dashed rounded-[10px] py-4"
+      style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, opacity: uploading ? 0.6 : 1 }}
     >
       {uploading ? (
         <ActivityIndicator size="small" color={colors.textSecondary} />
       ) : (
         <MaterialCommunityIcons name="camera-plus-outline" size={20} color={colors.textSecondary} />
       )}
-      <Text style={[styles.pickerText, { color: colors.textSecondary }]}>
+      <Text className="text-[13px] font-medium" style={{ color: colors.textSecondary }}>
         {uploading ? "Uploading..." : "Attach a photo (optional)"}
       </Text>
     </Pressable>
@@ -79,28 +81,3 @@ const MediscopeImageInput: React.FC<MediscopeImageInputProps> = ({
 
 export default MediscopeImageInput;
 
-const styles = StyleSheet.create({
-  picker: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderRadius: 10,
-    paddingVertical: 16,
-  },
-  pickerText: { fontSize: 13, fontWeight: "500" },
-  previewWrap: { width: 120, height: 120 },
-  preview: { width: 120, height: 120, borderRadius: 10 },
-  removeButton: {
-    position: "absolute",
-    top: -6,
-    right: -6,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

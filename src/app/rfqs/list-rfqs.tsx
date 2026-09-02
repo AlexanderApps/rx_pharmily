@@ -1,5 +1,6 @@
+import { useMemo } from "react";
 import { router } from "expo-router";
-import { Pressable, FlatList } from "react-native";
+import { Pressable, FlatList, Platform} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -14,6 +15,15 @@ import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
 export default function ListRFQs() {
   const { colors } = useTheme();
   const rxRfqData = useRxRfqsStore((state) => state.rxrfqs);
+
+  // This is the public marketplace view — draft (not yet visible to
+  // anyone but its owner), cancelled, and closed requests aren't
+  // available to respond to, so they don't belong in a browse of what's
+  // currently open for quotes.
+  const publishedRfqs = useMemo(
+    () => rxRfqData.filter((rfq) => rfq.status === "published"),
+    [rxRfqData],
+  );
 
   return (
     <ThemedView style={{ flex: 1 }}>
@@ -36,6 +46,7 @@ export default function ListRFQs() {
             }}
           >
             {/* Back Button */}
+            {Platform.OS !== "web" && (
             <Pressable
               onPress={() => router.back()}
               style={{
@@ -49,6 +60,7 @@ export default function ListRFQs() {
             >
               <Ionicons name="arrow-back" size={22} color={colors.text} />
             </Pressable>
+            )}
 
             {/* Search */}
             <ThemedView style={{ flex: 1 }}>
@@ -90,7 +102,7 @@ export default function ListRFQs() {
         {/* Screen Content Feed */}
         <ThemedView style={{ flex: 1 }}>
           <RxRfqList
-            rfqs={rxRfqData}
+            rfqs={publishedRfqs}
             onCardPress={(id) =>
               router.push({
                 pathname: "/rfqs/rxrfq-market-details",

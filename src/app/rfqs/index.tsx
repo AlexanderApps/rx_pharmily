@@ -1,12 +1,10 @@
-import React, { useRef } from "react";
+import React, { useMemo, useRef } from "react";
 import {
   View,
   Text,
   ScrollView,
   Pressable,
-  StyleSheet,
-  Animated,
-} from "react-native";
+  Animated, Platform} from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -19,11 +17,13 @@ import { HorizontalScrollContainer } from "@/shared/components/hs-section-contai
 import { HorizontalRequestCard } from "@/features/rxrfqs/components/hs-card-container";
 import { RxRfqCardData } from "@/features/rxrfqs/types/rxrfqs.types";
 import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
+import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { RequestCardRow } from "@/features/rxrfqs/components/request-card-row";
 
 export default function RxRfqScreen() {
   const { colors } = useTheme();
   const nearByRequests = useRxRfqsStore((state) => state.rxrfqs);
+  const rxrfqMarketPlace = useRxRfqsStore((state) => state.rxrfqMarketPlace);
 
   // Animated value to track vertical scroll depth
   // Fades in the header search icon after scrolling past the static search box (~90px)
@@ -34,32 +34,54 @@ export default function RxRfqScreen() {
     outputRange: [0, 1],
     extrapolate: "clamp",
   });
-  const activeRequests = [
-    {
-      id: 1,
-      medication: "Enoxaparin",
-      strength: "40mg Injection",
-      responses: 3,
-      status: "responses",
-      time: "2h ago",
-    },
-    {
-      id: 2,
-      medication: "Cefuroxime",
-      strength: "500mg Tablet",
-      responses: 1,
-      status: "responses",
-      time: "5h ago",
-    },
-    {
-      id: 3,
-      medication: "Salbutamol Inhaler",
-      strength: "100mcg",
-      responses: 0,
-      status: "waiting",
-      time: "1d ago",
-    },
-  ];
+
+  // "Overview" is the current user's own RFQs — createdBy === user.id,
+  // the same comparison every isOwner field in this app already uses —
+  // not "any RFQ my facility posted", which would also count a
+  // colleague's requests.
+  const overviewStats = useMemo(() => {
+    const userId = useProfileStore.getState().user.id;
+    const myActiveRequests = rxrfqMarketPlace.filter(
+      (rfq) => rfq.createdBy === userId && rfq.status === "published",
+    );
+    const totalResponses = myActiveRequests.reduce(
+      (sum, rfq) => sum + rfq.responseCount,
+      0,
+    );
+    const awaitingDecision = myActiveRequests.filter(
+      (rfq) => rfq.responseCount > 0,
+    ).length;
+
+    return {
+      activeCount: myActiveRequests.length,
+      totalResponses,
+      awaitingDecision,
+    };
+  }, [rxrfqMarketPlace]);
+
+  // "My Active RxRFQs" below: the current user's own most-recently-created
+  // requests, excluding ones that are settled (closed/cancelled) rather
+  // than actually active or still awaiting a decision. Sorted by createdAt
+  // from the raw rxrfqMarketPlace data (a draft RFQ may have no meaningful
+  // publishedAt yet), then displayed via rxrfqs, the already-resolved card
+  // view RequestCardRow expects.
+  const myRecentRfqs = useMemo(() => {
+    const userId = useProfileStore.getState().user.id;
+    const myOwnRfqs = rxrfqMarketPlace
+      .filter(
+        (rfq) =>
+          rfq.createdBy === userId &&
+          rfq.status !== "closed" &&
+          rfq.status !== "cancelled",
+      )
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 3);
+
+    const cardsById = new Map(nearByRequests.map((card) => [card.id, card]));
+    return myOwnRfqs
+      .map((rfq) => cardsById.get(rfq.id))
+      .filter((card): card is RxRfqCardData => !!card);
+  }, [rxrfqMarketPlace, nearByRequests]);
 
   const nearByRequestsAction = (id: string) => {
     router.push({
@@ -76,44 +98,42 @@ export default function RxRfqScreen() {
   };
 
   return (
-    <ThemedView style={styles.flex1}>
-      <SafeAreaView style={styles.flex1} edges={["top", "left", "right"]}>
+    <ThemedView className="flex-1">
+      <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
         {/* Sticky Custom Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerLeftGroup}>
+        <View className="px-4 pt-3 pb-3 border-b-[0.5px]" style={{ borderBottomColor: colors.border }}>
+          <View className="flex-row justify-between items-center">
+            <View className="flex-row items-center flex-1">
               {/* Backward Stack Navigation */}
+              {Platform.OS !== "web" && (
               <Pressable
                 onPress={() => router.back()}
-                style={styles.backButton}
+                className="mr-3 p-1"
               >
                 <Ionicons name="arrow-back" size={24} color={colors.text} />
               </Pressable>
+              )}
 
               <View>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>
+                <Text className="text-2xl font-bold" style={{ color: colors.text }}>
                   RxRFQs
                 </Text>
                 <Text
-                  style={[
-                    styles.headerSubtitle,
-                    { color: colors.textSecondary },
-                  ]}
+                  className="text-xs mt-0.5"
+                  style={{ color: colors.textSecondary }}
                 >
                   Get quotes for your medications
                 </Text>
               </View>
             </View>
 
-            <View style={styles.headerActions}>
+            <View className="flex-row items-center gap-2">
               {/* Dynamic Header Search Button (visible only when scrolled down) */}
               <Animated.View style={{ opacity: headerSearchOpacity }}>
                 <Pressable
                   onPress={() => router.push("/rfqs/search-rfqs")}
-                  style={[
-                    styles.actionIconBtn,
-                    { backgroundColor: colors.backgroundSecondary },
-                  ]}
+                  className="w-10 h-10 rounded-xl justify-center items-center"
+                  style={{ backgroundColor: colors.backgroundSecondary }}
                 >
                   <Ionicons
                     name="search-outline"
@@ -125,11 +145,11 @@ export default function RxRfqScreen() {
 
               {/* Prominent Filter Button Layout */}
               <Pressable
-                style={[
-                  styles.actionIconBtn,
-                  styles.filterBtnActive,
-                  { backgroundColor: colors.backgroundSecondary },
-                ]}
+                className="w-10 h-10 rounded-xl justify-center items-center border"
+                style={{
+                  backgroundColor: colors.backgroundSecondary,
+                  borderColor: "rgba(0,0,0,0.05)",
+                }}
               >
                 <Ionicons
                   name="options-outline"
@@ -137,6 +157,19 @@ export default function RxRfqScreen() {
                   color={colors.text}
                 />
               </Pressable>
+
+              {/* Create — web only; native keeps the floating action
+                  button below instead, which is the mobile-appropriate
+                  affordance for this action. */}
+              {Platform.OS === "web" && (
+                <Pressable
+                  onPress={() => router.push("/rfqs/add-rfqs")}
+                  className="w-10 h-10 rounded-xl justify-center items-center cursor-pointer hover:opacity-90"
+                  style={{ backgroundColor: colors.primary }}
+                >
+                  <Ionicons name="add" size={22} color={colors.background || "#ffffff"} />
+                </Pressable>
+              )}
             </View>
           </View>
         </View>
@@ -144,7 +177,7 @@ export default function RxRfqScreen() {
         {/* Scrollable Main Area mapped to Animated Tracking */}
         <Animated.ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={{ paddingBottom: 120 }}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
             { useNativeDriver: true },
@@ -152,17 +185,14 @@ export default function RxRfqScreen() {
           scrollEventThrottle={16}
         >
           {/* Main Search Button (Static Layout Placement) */}
-          <View style={styles.sectionPadding}>
+          <View className="px-5 mt-6">
             <Pressable
               onPress={() => router.push("/rfqs/search-rfqs")}
-              style={({ pressed }) => [
-                styles.searchBox,
-                {
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: colors.border,
-                  opacity: pressed ? 0.7 : 1,
-                },
-              ]}
+              className="flex-row items-center rounded-2xl border px-4 py-3 active:opacity-70"
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+              }}
             >
               <Ionicons
                 name="search-outline"
@@ -170,7 +200,8 @@ export default function RxRfqScreen() {
                 color={colors.textSecondary}
               />
               <Text
-                style={[styles.searchText, { color: colors.textSecondary }]}
+                className="flex-1 ml-3 text-base"
+                style={{ color: colors.textSecondary }}
               >
                 Search medication...
               </Text>
@@ -178,45 +209,45 @@ export default function RxRfqScreen() {
           </View>
 
           {/* Stats Overview */}
-          <View style={styles.sectionPadding}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          <View className="px-5 mt-6">
+            <Text className="text-lg font-semibold mb-3" style={{ color: colors.text }}>
               Overview
             </Text>
 
-            <View style={styles.statsRow}>
+            <View className="flex-row gap-3">
               <StatCard
-                number="3"
-                label="My Requests"
+                number={overviewStats.activeCount.toString()}
+                label="Active Requests"
                 type="success"
                 colors={colors}
                 onPress={() =>
                   router.push({
                     pathname: "/rfqs/my-rfqs",
-                    params: { filter: "active" },
+                    params: { filter: "published" },
                   })
                 }
               />
               <StatCard
-                number="7"
+                number={overviewStats.totalResponses.toString()}
                 label="Responses"
                 type="info"
                 colors={colors}
                 onPress={() =>
                   router.push({
                     pathname: "/rfqs/my-rfqs",
-                    params: { filter: "active" },
+                    params: { filter: "published" },
                   })
                 }
               />
               <StatCard
-                number="2"
+                number={overviewStats.awaitingDecision.toString()}
                 label="Awaiting"
                 type="warning"
                 colors={colors}
                 onPress={() =>
                   router.push({
                     pathname: "/rfqs/my-rfqs",
-                    params: { filter: "active" },
+                    params: { filter: "published" },
                   })
                 }
               />
@@ -230,7 +261,7 @@ export default function RxRfqScreen() {
             textColor={colors.text}
             onViewAllPress={() => router.push("/rfqs/my-rfqs")}
           >
-            {nearByRequests.slice(0, 3).map((item, index, slicedArray) => (
+            {myRecentRfqs.map((item, index, slicedArray) => (
               <RequestCardRow
                 key={item.id}
                 item={item}
@@ -247,9 +278,11 @@ export default function RxRfqScreen() {
             onViewAllPress={() => router.push("/rfqs/list-rfqs")}
           >
             {nearByRequests
-              .filter((data) => {
-                return data.facilityLocation === "Accra";
-              })
+              .filter(
+                (data) =>
+                  data.facilityLocation === "Accra" && data.status === "published",
+              )
+              .slice(0, 10)
               .map((item, index) => (
                 <HorizontalRequestCard
                   key={index}
@@ -260,11 +293,11 @@ export default function RxRfqScreen() {
           </HorizontalScrollContainer>
 
           {/* Quick Actions */}
-          <View style={styles.sectionPadding}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          <View className="px-5 mt-6">
+            <Text className="text-lg font-semibold mb-3" style={{ color: colors.text }}>
               Quick Actions
             </Text>
-            <View style={styles.statsRow}>
+            <View className="flex-row gap-3">
               <ActionButton
                 icon={
                   <MaterialCommunityIcons
@@ -302,14 +335,20 @@ export default function RxRfqScreen() {
           </View>
         </Animated.ScrollView>
 
-        {/* Floating Action Button */}
+        {/* Floating Action Button — native only; web uses the header
+            Create button instead. */}
+        {Platform.OS !== "web" && (
         <Pressable
           onPress={() => router.push("/rfqs/add-rfqs")}
-          style={({ pressed }) => [
-            styles.fab,
-            { backgroundColor: colors.primary || "#16a34a" },
-            pressed && { opacity: 0.9 },
-          ]}
+          className="absolute right-6 bottom-8 w-16 h-16 rounded-full justify-center items-center shadow-lg active:opacity-90 cursor-pointer hover:opacity-90"
+          style={{
+            backgroundColor: colors.primary || "#16a34a",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 8,
+          }}
         >
           <Ionicons
             name="add"
@@ -317,101 +356,8 @@ export default function RxRfqScreen() {
             color={colors.background || "#ffffff"}
           />
         </Pressable>
+        )}
       </SafeAreaView>
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex1: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 120,
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 0.5,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  headerLeftGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  backButton: {
-    marginRight: 12,
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  actionIconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  filterBtnActive: {
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.05)",
-  },
-  sectionPadding: {
-    paddingHorizontal: 20,
-    marginTop: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  searchText: {
-    flex: 1,
-    marginLeft: 12,
-    fontSize: 16,
-  },
-  statsRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  fab: {
-    position: "absolute",
-    right: 24,
-    bottom: 32,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-});

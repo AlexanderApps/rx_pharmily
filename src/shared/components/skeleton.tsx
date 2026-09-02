@@ -7,6 +7,7 @@ interface SkeletonProps {
   height?: number;
   borderRadius?: number;
   style?: ViewStyle;
+  className?: string;
 }
 
 // A smooth, continuous opacity pulse rather than a moving shimmer gradient
@@ -18,6 +19,7 @@ const Skeleton: React.FC<SkeletonProps> = ({
   height = 16,
   borderRadius = 6,
   style,
+  className,
 }) => {
   const { colors } = useTheme();
   const pulse = useRef(new Animated.Value(0.35)).current;
@@ -35,7 +37,7 @@ const Skeleton: React.FC<SkeletonProps> = ({
           duration: 700,
           useNativeDriver: true,
         }),
-      ]),
+      ])
     );
     loop.start();
     return () => loop.stop();
@@ -43,6 +45,7 @@ const Skeleton: React.FC<SkeletonProps> = ({
 
   return (
     <Animated.View
+      className={className}
       style={[
         {
           width,

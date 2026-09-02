@@ -37,53 +37,56 @@ const DonationListCard: React.FC<DonationListCardProps> = ({
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={onPress}
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.backgroundSecondary,
-          borderColor: colors.border,
-          shadowColor: colors.text,
-        },
-      ]}
+      className="rounded-[18px] p-4"
+      style={{
+        backgroundColor: colors.backgroundSecondary,
+        borderColor: colors.border,
+        borderWidth: StyleSheet.hairlineWidth,
+        shadowColor: colors.text,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
+        elevation: 2,
+      }}
     >
-      <View style={styles.headerRow}>
-        <View style={[styles.iconContainer, { backgroundColor: colors.secondary + "18" }]}>
+      <View className="flex-row items-center">
+        <View className="w-10 h-10 rounded-xl justify-center items-center" style={{ backgroundColor: colors.secondary + "18" }}>
           <MaterialCommunityIcons name="hand-heart-outline" size={20} color={colors.secondary} />
         </View>
 
-        <View style={styles.content}>
-          <Text numberOfLines={1} style={[styles.facilityName, { color: colors.text }]}>
+        <View className="flex-1 ml-3">
+          <Text numberOfLines={1} className="text-[15px] font-bold" style={{ color: colors.text }}>
             {donation.facilityName}
           </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          <Text className="text-xs mt-px" style={{ color: colors.textSecondary }}>
             {donation.itemCount} {donation.itemCount === 1 ? "item" : "items"} available
           </Text>
         </View>
 
-        <View style={[styles.statusPill, { backgroundColor: statusColor + "18" }]}>
+        <View className="flex-row items-center gap-1 px-2 py-1 rounded-lg" style={{ backgroundColor: statusColor + "18" }}>
           <MaterialCommunityIcons name={statusMeta.icon} size={11} color={statusColor} />
-          <Text style={[styles.statusPillText, { color: statusColor }]}>{statusMeta.label}</Text>
+          <Text className="text-[10px] font-bold" style={{ color: statusColor }}>{statusMeta.label}</Text>
         </View>
       </View>
 
-      <View style={styles.locationRow}>
+      <View className="flex-row items-center gap-1 mt-2.5 ml-[52px]">
         <MaterialCommunityIcons name="map-marker-outline" size={12} color={colors.textSecondary} />
-        <Text numberOfLines={1} style={[styles.locationText, { color: colors.textSecondary }]}>
+        <Text numberOfLines={1} className="flex-1 text-xs" style={{ color: colors.textSecondary }}>
           {donation.location}
         </Text>
       </View>
 
-      <View style={styles.footerRow}>
-        <View style={styles.statsContainer}>
-          <View style={[styles.badge, { backgroundColor: colors.info + "14" }]}>
+      <View className="flex-row justify-between items-center mt-3 ml-[52px]">
+        <View className="flex-row items-center gap-1.5">
+          <View className="flex-row items-center px-2 py-1 rounded-lg gap-1" style={{ backgroundColor: colors.info + "14" }}>
             <MaterialCommunityIcons name="package-variant-closed" size={12} color={colors.info} />
-            <Text style={[styles.badgeText, { color: colors.info }]}>{donation.itemCount}</Text>
+            <Text className="text-[11px] font-bold" style={{ color: colors.info }}>{donation.itemCount}</Text>
           </View>
 
           {donation.responseCount > 0 && (
-            <View style={[styles.badge, { backgroundColor: colors.success + "14" }]}>
+            <View className="flex-row items-center px-2 py-1 rounded-lg gap-1" style={{ backgroundColor: colors.success + "14" }}>
               <MaterialCommunityIcons name="hand-heart-outline" size={12} color={colors.success} />
-              <Text style={[styles.badgeText, { color: colors.success }]}>
+              <Text className="text-[11px] font-bold" style={{ color: colors.success }}>
                 {donation.responseCount}
               </Text>
             </View>
@@ -91,14 +94,14 @@ const DonationListCard: React.FC<DonationListCardProps> = ({
         </View>
 
         {showActions && (onEdit || onDelete) ? (
-          <View style={styles.actionButtons}>
+          <View className="flex-row items-center">
             {onEdit && (
               <TouchableOpacity
                 onPress={(e) => {
                   e.stopPropagation();
                   onEdit();
                 }}
-                style={styles.iconButton}
+                className="p-1 ml-2"
               >
                 <MaterialCommunityIcons name="pencil-outline" size={17} color={colors.textSecondary} />
               </TouchableOpacity>
@@ -109,14 +112,14 @@ const DonationListCard: React.FC<DonationListCardProps> = ({
                   e.stopPropagation();
                   onDelete();
                 }}
-                style={styles.iconButton}
+                className="p-1 ml-2"
               >
                 <MaterialCommunityIcons name="trash-can-outline" size={17} color={colors.error} />
               </TouchableOpacity>
             )}
           </View>
         ) : (
-          <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>
+          <Text className="text-[11px]" style={{ color: colors.textSecondary }}>
             {format(donation.createdAt)}
           </Text>
         )}
@@ -125,58 +128,5 @@ const DonationListCard: React.FC<DonationListCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  headerRow: { flexDirection: "row", alignItems: "center" },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  content: { flex: 1, marginLeft: 12 },
-  facilityName: { fontSize: 15, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: 1 },
-  statusPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  statusPillText: { fontSize: 10, fontWeight: "700" },
-  locationRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 10, marginLeft: 52 },
-  locationText: { flex: 1, fontSize: 12 },
-  footerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 12,
-    marginLeft: 52,
-  },
-  statsContainer: { flexDirection: "row", alignItems: "center", gap: 6 },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    gap: 4,
-  },
-  badgeText: { fontSize: 11, fontWeight: "700" },
-  timeAgo: { fontSize: 11 },
-  actionButtons: { flexDirection: "row", alignItems: "center" },
-  iconButton: { padding: 4, marginLeft: 8 },
-});
-
 export default DonationListCard;
+

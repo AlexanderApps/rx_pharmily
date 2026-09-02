@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Pressable } from "react-native";
+import { Pressable, Platform} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -39,6 +39,7 @@ export default function ListJobs() {
             }}
           >
             {/* Back Button */}
+            {Platform.OS !== "web" && (
             <Pressable
               onPress={() => router.back()}
               style={{
@@ -52,6 +53,7 @@ export default function ListJobs() {
             >
               <Ionicons name="arrow-back" size={22} color={colors.text} />
             </Pressable>
+            )}
 
             {/* Search */}
             <ThemedView style={{ flex: 1 }}>

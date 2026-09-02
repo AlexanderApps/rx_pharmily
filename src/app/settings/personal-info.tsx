@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, Platform} from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -38,13 +38,12 @@ export default function PersonalInfoScreen() {
     <ThemedView style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }}>
         {/* Header Row */}
-        <View style={styles.headerRow}>
+        <View className="flex-row items-center px-4 py-3">
+          {Platform.OS !== "web" && (
           <Pressable
             onPress={() => router.back()}
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && { opacity: 0.7 },
-            ]}
+            className="p-1 mr-3"
+            style={({ pressed }) => (pressed ? { opacity: 0.7 } : undefined)}
           >
             <MaterialCommunityIcons
               name="arrow-left"
@@ -52,46 +51,44 @@ export default function PersonalInfoScreen() {
               color={colors.text}
             />
           </Pressable>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
+          )}
+          <Text className="text-xl font-semibold" style={{ color: colors.text }}>
             Personal Information
           </Text>
         </View>
 
         <ScrollView
-          style={[styles.container, { backgroundColor: colors.background }]}
-          contentContainerStyle={styles.contentContainer}
+          className="flex-1"
+          style={{ backgroundColor: colors.background }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
           showsVerticalScrollIndicator={false}
         >
           {/* KYC Status Banner Card */}
-          <View style={[styles.sectionContainer, { marginTop: 16 }]}>
+          <View className="mt-4">
             <View
-              style={[
-                styles.cardWrapper,
-                { backgroundColor: colors.backgroundSecondary },
-              ]}
+              className="rounded-xl overflow-hidden"
+              style={{ backgroundColor: colors.backgroundSecondary }}
             >
-              <View style={styles.kycRow}>
-                <View style={styles.rowLeft}>
+              <View className="flex-row items-center justify-between p-4">
+                <View className="flex-row items-center flex-1 mr-3">
                   <MaterialCommunityIcons
                     name="shield-check-outline"
                     size={24}
                     color={colors.text}
                   />
-                  <View style={styles.textMetaWrapper}>
-                    <Text style={[styles.rowText, { color: colors.text }]}>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-base font-medium" style={{ color: colors.text }}>
                       Identity Verification
                     </Text>
                     <Text
-                      style={[
-                        styles.descriptionText,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-[13px] mt-0.5"
+                      style={{ color: colors.textSecondary }}
                     >
                       KYC compliance data status
                     </Text>
                   </View>
                 </View>
-                <View style={[styles.badge, { backgroundColor: kyc.bg }]}>
+                <View className="flex-row items-center px-2.5 py-1.5 rounded-xl" style={{ backgroundColor: kyc.bg }}>
                   <MaterialCommunityIcons
                     name={
                       kyc.icon as React.ComponentProps<
@@ -102,7 +99,7 @@ export default function PersonalInfoScreen() {
                     color={kyc.text}
                     style={{ marginRight: 4 }}
                   />
-                  <Text style={[styles.badgeText, { color: kyc.text }]}>
+                  <Text className="text-xs font-semibold" style={{ color: kyc.text }}>
                     {profile.kycStatus}
                   </Text>
                 </View>
@@ -111,32 +108,30 @@ export default function PersonalInfoScreen() {
           </View>
 
           {/* SECTION 1: Personal Details */}
-          <View style={styles.sectionContainer}>
+          <View className="mt-5">
             <Text
-              style={[styles.sectionTitle, { color: colors.textSecondary }]}
+              className="text-[13px] font-semibold uppercase mb-2 ml-1 tracking-[0.5px]"
+              style={{ color: colors.textSecondary }}
             >
               Personal Details
             </Text>
             <View
-              style={[
-                styles.cardWrapper,
-                { backgroundColor: colors.backgroundSecondary },
-              ]}
+              className="rounded-xl overflow-hidden"
+              style={{ backgroundColor: colors.backgroundSecondary }}
             >
               {/* Full Name */}
               <View
-                style={[
-                  styles.rowItem,
-                  { borderBottomColor: colors.border, borderBottomWidth: 0.5 },
-                ]}
+                className="px-4 py-3.5"
+                style={{ borderBottomColor: colors.border, borderBottomWidth: 0.5 }}
               >
-                <View style={styles.infoBlock}>
+                <View className="flex-col">
                   <Text
-                    style={[styles.infoLabel, { color: colors.textSecondary }]}
+                    className="text-xs font-medium uppercase mb-1 tracking-[0.3px]"
+                    style={{ color: colors.textSecondary }}
                   >
                     Full Name
                   </Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>
+                  <Text className="text-base font-normal leading-[22px]" style={{ color: colors.text }}>
                     {profile.name}
                   </Text>
                 </View>
@@ -144,32 +139,32 @@ export default function PersonalInfoScreen() {
 
               {/* Username */}
               <View
-                style={[
-                  styles.rowItem,
-                  { borderBottomColor: colors.border, borderBottomWidth: 0.5 },
-                ]}
+                className="px-4 py-3.5"
+                style={{ borderBottomColor: colors.border, borderBottomWidth: 0.5 }}
               >
-                <View style={styles.infoBlock}>
+                <View className="flex-col">
                   <Text
-                    style={[styles.infoLabel, { color: colors.textSecondary }]}
+                    className="text-xs font-medium uppercase mb-1 tracking-[0.3px]"
+                    style={{ color: colors.textSecondary }}
                   >
                     Username
                   </Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>
+                  <Text className="text-base font-normal leading-[22px]" style={{ color: colors.text }}>
                     @{profile.username}
                   </Text>
                 </View>
               </View>
 
               {/* Email Address */}
-              <View style={styles.rowItem}>
-                <View style={styles.infoBlock}>
+              <View className="px-4 py-3.5">
+                <View className="flex-col">
                   <Text
-                    style={[styles.infoLabel, { color: colors.textSecondary }]}
+                    className="text-xs font-medium uppercase mb-1 tracking-[0.3px]"
+                    style={{ color: colors.textSecondary }}
                   >
                     Email Address
                   </Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>
+                  <Text className="text-base font-normal leading-[22px]" style={{ color: colors.text }}>
                     {profile.email}
                   </Text>
                 </View>
@@ -178,32 +173,30 @@ export default function PersonalInfoScreen() {
           </View>
 
           {/* SECTION 2: Professional Details */}
-          <View style={styles.sectionContainer}>
+          <View className="mt-5">
             <Text
-              style={[styles.sectionTitle, { color: colors.textSecondary }]}
+              className="text-[13px] font-semibold uppercase mb-2 ml-1 tracking-[0.5px]"
+              style={{ color: colors.textSecondary }}
             >
               Employment & Assignment
             </Text>
             <View
-              style={[
-                styles.cardWrapper,
-                { backgroundColor: colors.backgroundSecondary },
-              ]}
+              className="rounded-xl overflow-hidden"
+              style={{ backgroundColor: colors.backgroundSecondary }}
             >
               {/* Profession */}
               <View
-                style={[
-                  styles.rowItem,
-                  { borderBottomColor: colors.border, borderBottomWidth: 0.5 },
-                ]}
+                className="px-4 py-3.5"
+                style={{ borderBottomColor: colors.border, borderBottomWidth: 0.5 }}
               >
-                <View style={styles.infoBlock}>
+                <View className="flex-col">
                   <Text
-                    style={[styles.infoLabel, { color: colors.textSecondary }]}
+                    className="text-xs font-medium uppercase mb-1 tracking-[0.3px]"
+                    style={{ color: colors.textSecondary }}
                   >
                     Profession
                   </Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>
+                  <Text className="text-base font-normal leading-[22px]" style={{ color: colors.text }}>
                     {profile.profession}
                   </Text>
                 </View>
@@ -211,32 +204,32 @@ export default function PersonalInfoScreen() {
 
               {/* License Number */}
               <View
-                style={[
-                  styles.rowItem,
-                  { borderBottomColor: colors.border, borderBottomWidth: 0.5 },
-                ]}
+                className="px-4 py-3.5"
+                style={{ borderBottomColor: colors.border, borderBottomWidth: 0.5 }}
               >
-                <View style={styles.infoBlock}>
+                <View className="flex-col">
                   <Text
-                    style={[styles.infoLabel, { color: colors.textSecondary }]}
+                    className="text-xs font-medium uppercase mb-1 tracking-[0.3px]"
+                    style={{ color: colors.textSecondary }}
                   >
                     Medical License Number
                   </Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>
+                  <Text className="text-base font-normal leading-[22px]" style={{ color: colors.text }}>
                     {profile.licenseNumber}
                   </Text>
                 </View>
               </View>
 
               {/* Affiliated Facilities */}
-              <View style={styles.rowItem}>
-                <View style={styles.infoBlock}>
+              <View className="px-4 py-3.5">
+                <View className="flex-col">
                   <Text
-                    style={[styles.infoLabel, { color: colors.textSecondary }]}
+                    className="text-xs font-medium uppercase mb-1 tracking-[0.3px]"
+                    style={{ color: colors.textSecondary }}
                   >
                     Assigned Facilities
                   </Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>
+                  <Text className="text-base font-normal leading-[22px]" style={{ color: colors.text }}>
                     {profile.facilities}
                   </Text>
                 </View>
@@ -246,18 +239,18 @@ export default function PersonalInfoScreen() {
 
           {/* Edit Profile Callout Button */}
           <Pressable
-            style={({ pressed }) => [
-              styles.editButton,
-              { backgroundColor: colors.primary },
-              pressed && { opacity: 0.9 },
-            ]}
+            className="flex-row items-center justify-center mt-8 py-3.5 rounded-xl"
+            style={({ pressed }) => ({
+              backgroundColor: colors.primary,
+              opacity: pressed ? 0.9 : 1,
+            })}
           >
             <MaterialCommunityIcons
               name="account-edit-outline"
               size={20}
               color={colors.background}
             />
-            <Text style={[styles.editButtonText, { color: colors.background }]}>
+            <Text className="text-base font-semibold ml-2" style={{ color: colors.background }}>
               Request Information Update
             </Text>
           </Pressable>
@@ -266,109 +259,3 @@ export default function PersonalInfoScreen() {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backButton: {
-    padding: 4,
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-  },
-  container: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-  },
-  sectionContainer: {
-    marginTop: 20,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    marginBottom: 8,
-    marginLeft: 4,
-    letterSpacing: 0.5,
-  },
-  cardWrapper: {
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  rowItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  kycRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-  },
-  rowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    marginRight: 12,
-  },
-  textMetaWrapper: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  rowText: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  descriptionText: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  infoBlock: {
-    flexDirection: "column",
-  },
-  infoLabel: {
-    fontSize: 12,
-    fontWeight: "500",
-    textTransform: "uppercase",
-    marginBottom: 4,
-    letterSpacing: 0.3,
-  },
-  infoValue: {
-    fontSize: 16,
-    fontWeight: "400",
-    lineHeight: 22,
-  },
-  editButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  editButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 8,
-  },
-});

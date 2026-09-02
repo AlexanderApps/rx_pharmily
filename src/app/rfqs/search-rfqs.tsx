@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
-import { Pressable, StyleSheet, TextInput } from "react-native";
+import { Pressable, TextInput, Platform} from "react-native";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -43,7 +43,7 @@ export default function SearchDonationsContent() {
   }, []);
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView className="flex-1">
       <SafeAreaView style={{ flex: 1 }}>
         <ThemedView
           style={{
@@ -62,6 +62,7 @@ export default function SearchDonationsContent() {
             }}
           >
             {/* Back Button */}
+            {Platform.OS !== "web" && (
             <Pressable
               onPress={() => router.back()}
               style={{
@@ -75,6 +76,7 @@ export default function SearchDonationsContent() {
             >
               <Ionicons name="arrow-back" size={22} color={colors.text} />
             </Pressable>
+            )}
 
             {/* Search */}
             <ThemedView
@@ -199,9 +201,3 @@ export default function SearchDonationsContent() {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});

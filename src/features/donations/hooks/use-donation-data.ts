@@ -31,6 +31,16 @@ function mapItemRow(row: any): DonationItem {
 // donation row itself — a facility created or renamed after this donation
 // was posted still resolves correctly, instead of freezing whatever name
 // existed at post time (the exact bug class fixed in RxRFQ this session).
+function mapVisibilityRuleRow(row: any) {
+  return {
+    id: row.id,
+    ruleType: row.rule_type,
+    region: row.region ?? undefined,
+    facilityType: row.facility_type ?? undefined,
+    facility: row.facility_id ?? undefined,
+  };
+}
+
 function mapDonationRow(row: any): Donation {
   const facility = useProfileStore.getState().facilities.find((f) => f.id === row.facility_id);
   return {
@@ -44,6 +54,8 @@ function mapDonationRow(row: any): Donation {
     comment: row.comment,
     isActive: row.is_active,
     status: row.status,
+    visibilityScope: row.visibility_scope,
+    visibilityRules: (row.donation_visibility_rules ?? []).map(mapVisibilityRuleRow),
     donatedItems: (row.donation_items ?? []).map(mapItemRow),
     createdAt: new Date(row.created_at),
     createdBy: row.created_by,
@@ -73,7 +85,7 @@ function mapResponseRow(row: any, responderFacilityName: string): DonationRespon
   };
 }
 
-const DONATION_SELECT = "*, donation_items(*)";
+const DONATION_SELECT = "*, donation_items(*), donation_visibility_rules(*)";
 const RESPONSE_SELECT = "*, donation_response_items(*)";
 
 // Pure mapper, no store/network access needed — Donation already carries
@@ -163,7 +175,7 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
 
   addDonation: async (data) => {
     const userId = await requireUserId();
-    const { donatedItems, facility, ...rest } = data;
+    const { donatedItems, visibilityRules, facility, ...rest } = data;
 
     const { data: row, error } = await supabase
       .from("donations")
@@ -175,6 +187,7 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
         comment: rest.comment,
         is_active: rest.isActive,
         status: rest.status,
+        visibility_scope: rest.visibilityScope,
         created_by: userId,
       })
       .select()
@@ -198,6 +211,19 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
         })),
       );
       if (itemsError) console.warn("[donations] addDonation (items) failed:", itemsError.message);
+    }
+
+    if (visibilityRules.length > 0) {
+      const { error: rulesError } = await supabase.from("donation_visibility_rules").insert(
+        visibilityRules.map((rule) => ({
+          donation_id: row.id,
+          rule_type: rule.ruleType,
+          region: rule.region ?? null,
+          facility_type: rule.facilityType ?? null,
+          facility_id: rule.facility ?? null,
+        })),
+      );
+      if (rulesError) console.warn("[donations] addDonation (visibility rules) failed:", rulesError.message);
     }
 
     await get().fetchDonation(row.id);
@@ -225,6 +251,7 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
         comment: data.comment,
         is_active: data.isActive,
         status: data.status,
+        visibility_scope: data.visibilityScope,
       })
       .eq("id", id);
     if (error) {
@@ -244,6 +271,19 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
           status: item.status,
           is_active: item.isActive,
           is_custom_product: item.isCustomProduct,
+        })),
+      );
+    }
+
+    await supabase.from("donation_visibility_rules").delete().eq("donation_id", id);
+    if (data.visibilityRules.length > 0) {
+      await supabase.from("donation_visibility_rules").insert(
+        data.visibilityRules.map((rule) => ({
+          donation_id: id,
+          rule_type: rule.ruleType,
+          region: rule.region ?? null,
+          facility_type: rule.facilityType ?? null,
+          facility_id: rule.facility ?? null,
         })),
       );
     }

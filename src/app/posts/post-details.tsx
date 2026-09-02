@@ -5,7 +5,6 @@ import {
   TextInput,
   Pressable,
   FlatList,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -14,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import ScreenHeader from "@/shared/components/screen-header";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
 import { usePostsStore } from "@/features/posts/hooks/use-posts-data";
 import PostCard from "@/features/posts/components/post-card";
@@ -34,7 +34,6 @@ export default function PostDetailsScreen() {
     if (id) fetchComments(id);
   }, [id]);
 
-
   const listRef = useRef<FlatList>(null);
   const [commentText, setCommentText] = useState("");
 
@@ -47,14 +46,14 @@ export default function PostDetailsScreen() {
   if (!post) {
     if (isLoadingPosts) {
       return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
           <DetailSkeleton rows={3} />
         </SafeAreaView>
       );
     }
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <Text style={{ color: colors.text, padding: 16 }}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <Text className="p-4" style={{ color: colors.text }}>
           No post found for id: {id}
         </Text>
       </SafeAreaView>
@@ -69,16 +68,12 @@ export default function PostDetailsScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-        </Pressable>
-        <Text style={[styles.title, { color: colors.text }]}>Post</Text>
-      </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Top Header Section */}
+      <ScreenHeader title="Post" />
 
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
       >
@@ -86,26 +81,34 @@ export default function PostDetailsScreen() {
           ref={listRef}
           data={comments}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={{ padding: 16, flexGrow: 1 }}
           ListHeaderComponent={
-            <View style={{ marginBottom: 8 }}>
+            <View className="mb-2">
               <PostCard post={post} />
-              <Text style={[styles.commentsHeading, { color: colors.textSecondary }]}>
+              <Text className="text-xs font-semibold mt-4 mb-1" style={{ color: colors.textSecondary }}>
                 Comments ({comments.length})
               </Text>
             </View>
           }
           ListEmptyComponent={
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+            <Text className="text-[13px] text-center mt-6" style={{ color: colors.textSecondary }}>
               No comments yet — be the first to reply.
             </Text>
           }
           renderItem={({ item }) => <CommentRow comment={item} />}
         />
 
-        <View style={[styles.composer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
-          <View style={[styles.avatar, { backgroundColor: currentUser.avatarColor }]}>
-            <Text style={styles.avatarText}>
+        {/* Input Message Composer Banner Footer */}
+        <View 
+          className="flex-row items-end gap-2 px-3 pt-2 pb-2.5 border-t" 
+          style={{ backgroundColor: colors.background, borderTopColor: colors.border }}
+        >
+          {/* User Profile Initial Badge */}
+          <View 
+            className="w-8 h-8 rounded-full items-center justify-center" 
+            style={{ backgroundColor: currentUser.avatarColor }}
+          >
+            <Text className="text-white text-[11px] font-bold">
               {currentUser.fullName
                 .split(" ")
                 .map((p) => p[0])
@@ -113,28 +116,26 @@ export default function PostDetailsScreen() {
                 .join("")}
             </Text>
           </View>
+          
           <TextInput
             value={commentText}
             onChangeText={setCommentText}
             placeholder="Write a comment..."
             placeholderTextColor={colors.textSecondary}
-            style={[
-              styles.input,
-              { backgroundColor: colors.backgroundElement, color: colors.text },
-            ]}
+            className="flex-1 min-h-[36px] max-h-[100px] rounded-full px-3.5 py-2 text-sm"
+            style={{ backgroundColor: colors.backgroundElement, color: colors.text }}
             multiline
           />
+          
           <Pressable
             onPress={handleSendComment}
             disabled={!commentText.trim()}
-            style={[
-              styles.sendButton,
-              {
-                backgroundColor: commentText.trim()
-                  ? colors.primary
-                  : colors.backgroundElement,
-              },
-            ]}
+            className="w-9 h-9 rounded-full items-center justify-center"
+            style={{
+              backgroundColor: commentText.trim()
+                ? colors.primary
+                : colors.backgroundElement,
+            }}
           >
             <MaterialCommunityIcons
               name="send"
@@ -147,52 +148,3 @@ export default function PostDetailsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  listContent: { padding: 16, flexGrow: 1 },
-  commentsHeading: { fontSize: 12, fontWeight: "600", marginTop: 16, marginBottom: 4 },
-  emptyText: { fontSize: 13, textAlign: "center", marginTop: 24 },
-  composer: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 10,
-    borderTopWidth: 1,
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: { color: "#fff", fontSize: 11, fontWeight: "700" },
-  input: {
-    flex: 1,
-    minHeight: 36,
-    maxHeight: 100,
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    fontSize: 14,
-  },
-  sendButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

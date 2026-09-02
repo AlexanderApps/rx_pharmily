@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Platform, View } from "react-native";
 import { useTheme } from "@/shared/hooks/use-theme";
 import WebSidebar from "@/shared/components/web-sidebar";
 import WebTopBar from "@/shared/components/web-top-bar";
+import GlobalSearchModal from "@/shared/components/global-search-modal";
+import { useGlobalSearchStore } from "@/shared/hooks/use-global-search";
 
 interface WebAppShellProps {
   children: React.ReactNode;
@@ -34,6 +36,18 @@ const WebAppShell: React.FC<WebAppShellProps> = ({ children, showChrome = true }
 
   const { colors } = useTheme();
 
+  useEffect(() => {
+    if (typeof window === "undefined" || !showChrome) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        useGlobalSearchStore.getState().toggle();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showChrome]);
+
   if (!showChrome) {
     return (
       <View className="flex-1 items-center" style={{ backgroundColor: colors.backgroundSecondary, minHeight: "100vh" as any }}>
@@ -61,6 +75,7 @@ const WebAppShell: React.FC<WebAppShellProps> = ({ children, showChrome = true }
             merge where necessary," not forced on every screen at once. */}
         <View className="flex-1">{children}</View>
       </View>
+      <GlobalSearchModal />
     </View>
   );
 };

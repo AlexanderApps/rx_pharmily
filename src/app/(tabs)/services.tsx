@@ -1,5 +1,5 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import { StyleSheet, View, Text } from "react-native";
+import { View, Text } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { ThemedText } from "@/shared/components/themed-text";
@@ -13,33 +13,19 @@ export default function ServiceScreen() {
   const { colors } = useTheme();
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={{ flex: 1 }}>
+    <ThemedView className="flex-1 items-center justify-center">
+      <SafeAreaView className="flex-1">
         <ThemedView>
           {/* Custom Header */}
           <ThemedView
-            style={{
-              paddingHorizontal: 20,
-              paddingVertical: 16,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.backgroundSecondary,
-            }}
+            className="px-5 py-4 border-b"
+            style={{ borderBottomColor: colors.backgroundSecondary }}
           >
-            <ThemedText
-              style={{
-                fontSize: 24,
-                fontWeight: "bold",
-              }}
-            >
+            <ThemedText className="text-2xl font-bold">
               Services
             </ThemedText>
 
-            <ThemedText
-              style={{
-                // color: colors.textSecondarySecondary,
-                marginTop: 4,
-              }}
-            >
+            <ThemedText className="mt-1">
               Explore available services and resources
             </ThemedText>
           </ThemedView>
@@ -47,22 +33,14 @@ export default function ServiceScreen() {
           {/* Screen Content */}
           <ThemedView
             type="background"
-            style={{
-              flex: 1,
-              padding: 16,
-              flexDirection: "row",
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              // marginTop: 5,
-            }}
+            className="flex-1 p-4 flex-row flex-wrap justify-between"
           >
-
             {/* Quick Actions */}
-            <View style={styles.sectionPadding}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            <View className="px-[5px] mt-[15px]">
+              <Text className="text-lg font-semibold mb-3" style={{ color: colors.text }}>
                 Quick Actions
               </Text>
-              <View style={styles.statsRow}>
+              <View className="flex-row flex-wrap gap-3">
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -200,76 +178,9 @@ export default function ServiceScreen() {
                 />
               </View>
             </View>
-
           </ThemedView>
         </ThemedView>
       </SafeAreaView>
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  flex1: {
-    flex: 1,
-  },
-
-  /* Sections */
-  sectionPadding: {
-    paddingHorizontal: 5,
-    marginTop: 15,
-  },
-
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-
-  sectionHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-
-  viewAllText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#16a34a",
-  },
-
-  /* Overview Stats */
-  statsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    rowGap: 12,
-  },
-
-  /* Floating Action Button */
-  // fab: {
-  //   position: "absolute",
-  //   right: 24,
-  //   bottom: 32,
-  //   width: 64,
-  //   height: 64,
-  //   borderRadius: 32,
-  //   justifyContent: "center",
-  //   alignItems: "center",
-
-  //   shadowColor: "#000",
-  //   shadowOffset: {
-  //     width: 0,
-  //     height: 6,
-  //   },
-  //   shadowOpacity: 0.2,
-  //   shadowRadius: 8,
-
-  //   elevation: 8,
-  // },
-});

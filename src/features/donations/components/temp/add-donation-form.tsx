@@ -2,13 +2,11 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   View,
   ScrollView,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
 } from "react-native";
-import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import TermsOfServiceInput from "@/shared/components/tos-input";
@@ -22,10 +20,12 @@ import FormButton from "./form-button";
 import MyFacilityPicker from "@/shared/components/forms/my-facility-picker";
 import CategoriesMultiSelect from "./categories-multiselect";
 import StatusDropdown from "./status-dropdown";
-import { useNavigation } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { confirm } from "@/shared/hooks/use-confirm";
+import { useUnsavedChangesGuard } from "@/shared/hooks/use-unsaved-changes-guard";
+import { VisibilityManager } from "@/shared/components/visibility/visibility-manager";
+import { VisibilityRule } from "@/shared/types/shared.types";
 import {
   DonationFormData,
   DonationItem,
@@ -38,6 +38,8 @@ const INITIAL_FORM_STATE: DonationFormData = {
   comment: "",
   isActive: true,
   status: "opened",
+  visibilityScope: "All",
+  visibilityRules: [],
   donatedItems: [],
 };
 
@@ -46,7 +48,6 @@ const AddDonationForm: React.FC<{
   initialData?: Partial<DonationFormData>;
   isLoading?: boolean;
 }> = ({ onSubmit, initialData, isLoading = false }) => {
-  const navigation = useNavigation();
   const { colors } = useTheme();
 
   // 1. Store the true initial baseline to accurately compare changes later
@@ -69,30 +70,7 @@ const AddDonationForm: React.FC<{
   const hasUnsavedChanges =
     JSON.stringify(formData) !== JSON.stringify(baselineData.current);
 
-  // Intercept native navigation actions
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("beforeRemove", (e) => {
-      // Allow exit if no changes exist or if the form is currently submitting
-      if (!hasUnsavedChanges || isSubmitting) {
-        return;
-      }
-
-      e.preventDefault();
-
-      (async () => {
-        const ok = await confirm({
-          title: "Discard changes?",
-          message: "You have unsaved changes. Are you sure you want to leave?",
-          confirmLabel: "Discard",
-          cancelLabel: "Stay Here",
-          destructive: true,
-        });
-        if (ok) navigation.dispatch(e.data.action);
-      })();
-    });
-
-    return unsubscribe;
-  }, [navigation, hasUnsavedChanges, isSubmitting]);
+  const { guardedBack } = useUnsavedChangesGuard({ hasUnsavedChanges: hasUnsavedChanges && !isSubmitting });
 
   // Update individual form fields
   const updateField = useCallback(
@@ -114,6 +92,25 @@ const AddDonationForm: React.FC<{
     },
     [errors],
   );
+
+  // Same shape as mediscope-req-form.tsx's own addVisibilityRule/
+  // removeVisibilityRule, matching this file's useCallback convention.
+  const addVisibilityRule = useCallback(
+    (rule: VisibilityRule) => {
+      setFormData((prev) => ({
+        ...prev,
+        visibilityRules: [...prev.visibilityRules, rule],
+      }));
+    },
+    [],
+  );
+
+  const removeVisibilityRule = useCallback((index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      visibilityRules: prev.visibilityRules.filter((_, idx) => idx !== index),
+    }));
+  }, []);
 
   // Validate form
   const validateForm = (): boolean => {
@@ -176,40 +173,40 @@ const AddDonationForm: React.FC<{
   }, []);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView className="flex-1">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
+        className="flex-1"
       >
         {/* Enhanced Header Section with Back Navigation */}
         <ThemedView
-          style={[
-            styles.headerContainer,
-            {
-              backgroundColor: colors.background,
-              borderBottomColor: colors.border,
-            },
-          ]}
+          className="flex-row items-center justify-between px-4 py-3 border-b"
+          style={{
+            backgroundColor: colors.background,
+            borderBottomColor: colors.border,
+          }}
         >
+          {Platform.OS !== "web" && (
           <TouchableOpacity
-            onPress={() => router.back()}
-            style={[
-              styles.backButton,
-              { backgroundColor: colors.backgroundElement },
-            ]}
+            onPress={guardedBack}
+            className="p-2 rounded-lg w-10 h-10 items-center justify-center"
+            style={{ backgroundColor: colors.backgroundElement }}
             accessibilityLabel="Go back"
           >
             <Ionicons name="arrow-back" size={22} color={colors.text} />
           </TouchableOpacity>
+          )}
 
-          <ThemedView style={styles.headerTextContainer}>
+          <ThemedView className="items-center flex-1">
             <ThemedText
-              style={[styles.headerTitle, { color: colors.text }]}
+              className="text-lg font-bold"
+              style={{ color: colors.text }}
             >
               Add Donation
             </ThemedText>
             <ThemedText
-              style={[styles.headerSubtitle, { color: colors.textSecondary }]}
+              className="text-xs mt-0.5"
+              style={{ color: colors.textSecondary }}
             >
               Create a new contribution entry
             </ThemedText>
@@ -220,8 +217,8 @@ const AddDonationForm: React.FC<{
         </ThemedView>
 
         <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          className="flex-1"
+          contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: 16 }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Facility Section */}
@@ -260,9 +257,9 @@ const AddDonationForm: React.FC<{
             />
           </DonationFormSection>
 
-          {/* Status & Active Section */}
-          <DonationFormSection title="Status & Visibility">
-            <View style={styles.statusStack}>
+          {/* Status Section */}
+          <DonationFormSection title="Status">
+            <View className="flex-col gap-4 w-full">
               {/* Dropdown takes full row width */}
               <StatusDropdown
                 value={formData.status}
@@ -271,7 +268,7 @@ const AddDonationForm: React.FC<{
               />
 
               {/* Checkbox takes full row width beneath it */}
-              <View style={styles.checkboxWrapper}>
+              <View className="mt-1.5 w-full">
                 <ActiveCheckbox
                   value={formData.isActive}
                   onChange={(value) => updateField("isActive", value)}
@@ -279,6 +276,17 @@ const AddDonationForm: React.FC<{
                 />
               </View>
             </View>
+          </DonationFormSection>
+
+          {/* Marketplace Visibility Section */}
+          <DonationFormSection title="Visibility">
+            <VisibilityManager
+              scope={formData.visibilityScope}
+              rules={formData.visibilityRules}
+              onScopeChange={(scope) => updateField("visibilityScope", scope)}
+              onAddRule={addVisibilityRule}
+              onRemoveRule={removeVisibilityRule}
+            />
           </DonationFormSection>
 
           {/* Donated Items Section */}
@@ -295,111 +303,30 @@ const AddDonationForm: React.FC<{
           </DonationFormSection>
 
           {/* Action Buttons */}
-          <View style={styles.buttonContainer}>
+          <View className="flex-row gap-3 mt-8 mb-4">
             <FormButton
               title="Reset"
               onPress={handleReset}
               variant="secondary"
-              style={styles.resetButton}
+              style={{ flex: 1 }}
               disabled={isLoading || isSubmitting}
             />
             <FormButton
               title="Submit Donation"
               onPress={handleSubmit}
               variant="primary"
-              style={styles.submitButton}
+              style={{ flex: 1.2 }}
               isLoading={isLoading || isSubmitting}
             />
           </View>
 
           {/* Bottom Spacing */}
-          <View style={styles.bottomSpacing} />
+          <View className="h-5" />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
-  header: {
-    marginBottom: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 2,
-  },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 8,
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTextContainer: {
-    alignItems: "center",
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  headerContent: {
-    gap: 8,
-  },
-  headerLine: {
-    height: 3,
-    borderRadius: 1.5,
-    width: 40,
-  },
-  statusStack: {
-    flexDirection: "column",
-    gap: 16,
-    width: "100%",
-  },
-  // Added layout alignment adjustments specifically for the active toggle container
-  checkboxWrapper: {
-    marginTop: 6, // Pushes checkbox down slightly to account for the dropdown's top label space
-    width: "100%",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 32,
-    marginBottom: 16,
-  },
-  resetButton: {
-    flex: 1,
-  },
-  submitButton: {
-    flex: 1.2,
-  },
-  bottomSpacing: {
-    height: 20,
-  },
-});
-
 export default AddDonationForm;
+

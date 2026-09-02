@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Pressable, Alert, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -138,21 +138,22 @@ const MediaPicker: React.FC<MediaPickerProps> = ({ media, onChange }) => {
   };
 
   return (
-    <View style={styles.wrap}>
+    <View className="gap-2.5">
       {media.length > 0 && (
-        <View style={styles.thumbRow}>
+        <View className="flex-row flex-wrap gap-2">
           {media.map((item) => (
-            <View key={item.id} style={styles.thumbWrap}>
+            <View key={item.id} className="w-[72px] h-[72px]">
               {item.type === "image" ? (
-                <LoadingImage source={{ uri: item.uri }} style={styles.thumb} />
+                <LoadingImage source={{ uri: item.uri }} style={{ width: 72, height: 72, borderRadius: 10 }} />
               ) : (
-                <View style={[styles.thumb, styles.videoThumb, { backgroundColor: colors.backgroundElement }]}>
+                <View className="w-[72px] h-[72px] rounded-[10px] items-center justify-center" style={{ backgroundColor: colors.backgroundElement }}>
                   <MaterialCommunityIcons name="play-circle-outline" size={22} color={colors.text} />
                 </View>
               )}
               <Pressable
                 onPress={() => removeMedia(item.id)}
-                style={[styles.removeButton, { backgroundColor: colors.error }]}
+                className="absolute -top-[5px] -right-[5px] w-[18px] h-[18px] rounded-full items-center justify-center"
+                style={{ backgroundColor: colors.error }}
                 hitSlop={6}
               >
                 <MaterialCommunityIcons name="close" size={12} color="#fff" />
@@ -162,17 +163,15 @@ const MediaPicker: React.FC<MediaPickerProps> = ({ media, onChange }) => {
         </View>
       )}
 
-      <View style={styles.actionsRow}>
+      <View className="flex-row items-center gap-2 flex-wrap">
         <Pressable
           onPress={pickImages}
           disabled={hasVideo || uploading}
-          style={[
-            styles.actionButton,
-            { backgroundColor: colors.backgroundElement, opacity: hasVideo || uploading ? 0.5 : 1 },
-          ]}
+          className="flex-row items-center gap-1.5 px-3 py-2 rounded-full"
+          style={{ backgroundColor: colors.backgroundElement, opacity: hasVideo || uploading ? 0.5 : 1 }}
         >
           <MaterialCommunityIcons name="image-multiple-outline" size={16} color={colors.textSecondary} />
-          <Text style={[styles.actionText, { color: colors.textSecondary }]}>
+          <Text className="text-xs font-semibold" style={{ color: colors.textSecondary }}>
             Photos
           </Text>
         </Pressable>
@@ -180,13 +179,11 @@ const MediaPicker: React.FC<MediaPickerProps> = ({ media, onChange }) => {
         <Pressable
           onPress={pickVideo}
           disabled={media.length > 0 || uploading}
-          style={[
-            styles.actionButton,
-            { backgroundColor: colors.backgroundElement, opacity: media.length > 0 || uploading ? 0.5 : 1 },
-          ]}
+          className="flex-row items-center gap-1.5 px-3 py-2 rounded-full"
+          style={{ backgroundColor: colors.backgroundElement, opacity: media.length > 0 || uploading ? 0.5 : 1 }}
         >
           <MaterialCommunityIcons name="video-outline" size={16} color={colors.textSecondary} />
-          <Text style={[styles.actionText, { color: colors.textSecondary }]}>
+          <Text className="text-xs font-semibold" style={{ color: colors.textSecondary }}>
             Video
           </Text>
         </Pressable>
@@ -194,7 +191,7 @@ const MediaPicker: React.FC<MediaPickerProps> = ({ media, onChange }) => {
         {uploading ? (
           <ActivityIndicator size="small" color={colors.textSecondary} />
         ) : (
-          <Text style={[styles.hint, { color: colors.textSecondary }]}>
+          <Text className="text-[11px] ml-1" style={{ color: colors.textSecondary }}>
             Up to 20MB per file
           </Text>
         )}
@@ -205,31 +202,3 @@ const MediaPicker: React.FC<MediaPickerProps> = ({ media, onChange }) => {
 
 export default MediaPicker;
 
-const styles = StyleSheet.create({
-  wrap: { gap: 10 },
-  thumbRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  thumbWrap: { width: 72, height: 72 },
-  thumb: { width: 72, height: 72, borderRadius: 10 },
-  videoThumb: { alignItems: "center", justifyContent: "center" },
-  removeButton: {
-    position: "absolute",
-    top: -5,
-    right: -5,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionsRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  actionText: { fontSize: 12, fontWeight: "600" },
-  hint: { fontSize: 11, marginLeft: 4 },
-});

@@ -5,7 +5,6 @@ import {
   TextInput,
   ScrollView,
   Pressable,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -15,15 +14,23 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { format } from "timeago.js";
 import { useTheme } from "@/shared/hooks/use-theme";
+import ScreenHeader from "@/shared/components/screen-header";
 import { useHelpStore } from "@/features/help/hooks/use-help-data";
 import EmergencyBanner from "@/features/help/components/emergency-banner";
 import { toast } from "@/shared/hooks/use-toast";
 import SubmitButton from "@/shared/components/submit-button";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
+import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
+import { isAdminRole } from "@/features/auth/types/auth.types";
 
 export default function QuestionDetailsScreen() {
   const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
+  // Same restriction as consult-details.tsx — matches pharmacist_answers'
+  // own insert policy (is_admin(), covering admin and superadmin), and
+  // for the same reason: without this the question's own asker would see
+  // an "Answer as pharmacist" form they can't actually use.
+  const isAdmin = useAuthStore((state) => isAdminRole(state.profile?.accountRole));
 
   const questions = useHelpStore((state) => state.questions);
   const isLoadingQuestions = useHelpStore((state) => state.isLoadingQuestions);
@@ -42,14 +49,14 @@ export default function QuestionDetailsScreen() {
   if (!item) {
     if (isLoadingQuestions) {
       return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
           <DetailSkeleton rows={3} />
         </SafeAreaView>
       );
     }
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <Text style={{ color: colors.text, padding: 16 }}>No question found for id: {id}</Text>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <Text className="p-4" style={{ color: colors.text }}>No question found for id: {id}</Text>
       </SafeAreaView>
     );
   }
@@ -70,133 +77,91 @@ export default function QuestionDetailsScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={() => router.back()} style={styles.back}>
-            <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-          </Pressable>
-          <Text style={[styles.title, { color: colors.text }]}>Question</Text>
-        </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
+        
+        {/* Navigation Header Element */}
+        <ScreenHeader title="Question" />
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.metaRow}>
-            <View style={[styles.categoryPill, { backgroundColor: colors.secondary + "18" }]}>
-              <Text style={[styles.categoryText, { color: colors.secondary }]}>{item.category}</Text>
+        <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
+          
+          {/* Metadata Filter Row */}
+          <View className="flex-row items-center justify-between">
+            <View className="px-2.5 py-1 rounded-lg" style={{ backgroundColor: colors.secondary + "18" }}>
+              <Text className="text-[11px] font-bold" style={{ color: colors.secondary }}>{item.category}</Text>
             </View>
-            <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>{format(item.createdAt)}</Text>
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>{format(item.createdAt)}</Text>
           </View>
 
           {item.medicationName && (
-            <Text style={[styles.medication, { color: colors.textSecondary }]}>
+            <Text className="text-xs mt-2" style={{ color: colors.textSecondary }}>
               Regarding: {item.medicationName}
             </Text>
           )}
 
-          <View style={[styles.questionCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-            <Text style={[styles.questionText, { color: colors.text }]}>{item.question}</Text>
+          {/* User Question Card */}
+          <View className="rounded-[14px] border p-3.5 mt-3" style={{ backgroundColor: colors.backgroundSecondary, borderColor: colors.border }}>
+            <Text className="text-sm leading-5" style={{ color: colors.text }}>{item.question}</Text>
           </View>
 
+          {/* Core Response Section */}
           {item.answer ? (
-            <View style={[styles.answerCard, { backgroundColor: colors.success + "10", borderColor: colors.success + "40" }]}>
-              <View style={styles.answerHeader}>
+            <View className="rounded-[14px] border p-3.5 gap-2 mt-3" style={{ backgroundColor: colors.success + "10", borderColor: colors.success + "40" }}>
+              <View className="flex-row items-center gap-1.5">
                 <MaterialCommunityIcons name="account-check-outline" size={16} color={colors.success} />
-                <Text style={[styles.answerAuthor, { color: colors.success }]}>{item.answer.pharmacistName}</Text>
-                <Text style={[styles.answerTime, { color: colors.textSecondary }]}>
+                <Text className="text-sm font-bold flex-1" style={{ color: colors.success }}>{item.answer.pharmacistName}</Text>
+                <Text className="text-[11px]" style={{ color: colors.textSecondary }}>
                   {format(item.answer.createdAt)}
                 </Text>
               </View>
-              <Text style={[styles.answerText, { color: colors.text }]}>{item.answer.message}</Text>
+              <Text className="text-sm leading-5" style={{ color: colors.text }}>{item.answer.message}</Text>
             </View>
           ) : (
             <>
-              <View style={[styles.pendingCard, { backgroundColor: colors.warning + "10" }]}>
+              {/* Pending Awaiting Feedback State */}
+              <View className="flex-row items-center gap-2 rounded-xl p-3.5 mt-3" style={{ backgroundColor: colors.warning + "10" }}>
                 <MaterialCommunityIcons name="clock-outline" size={16} color={colors.warning} />
-                <Text style={[styles.pendingText, { color: colors.warning }]}>
+                <Text className="text-[13px] font-semibold" style={{ color: colors.warning }}>
                   Awaiting a reply from a pharmacist.
                 </Text>
               </View>
 
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Answer as pharmacist</Text>
-              <TextInput
-                value={pharmacistName}
-                onChangeText={setPharmacistName}
-                placeholder="Your name, e.g. Ama Boateng, PharmD"
-                placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.input,
-                  { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-                ]}
-              />
-              <TextInput
-                value={answerMessage}
-                onChangeText={setAnswerMessage}
-                placeholder="Write your reply..."
-                placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.input,
-                  styles.textArea,
-                  { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-                ]}
-                multiline
-                textAlignVertical="top"
-              />
-              <SubmitButton label="Send Reply" onPress={handleSubmitAnswer} icon="send-outline" />
+              {/* Form Input Reply Area */}
+              {isAdmin && (
+                <>
+                  <Text className="text-sm font-bold mt-4 mb-2" style={{ color: colors.text }}>Answer as pharmacist</Text>
+                  <TextInput
+                    value={pharmacistName}
+                    onChangeText={setPharmacistName}
+                    placeholder="Your name, e.g. Ama Boateng, PharmD"
+                    placeholderTextColor={colors.textSecondary}
+                    className="border rounded-lg px-3 py-2.5 text-sm mb-2.5"
+                    style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
+                  />
+                  <TextInput
+                    value={answerMessage}
+                    onChangeText={setAnswerMessage}
+                    placeholder="Write your reply..."
+                    placeholderTextColor={colors.textSecondary}
+                    className="border rounded-lg px-3 py-2.5 text-sm mb-2.5 min-h-[80px]"
+                    style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
+                    multiline
+                    textAlignVertical="top"
+                  />
+                  <SubmitButton label="Send Reply" onPress={handleSubmitAnswer} icon="send-outline" />
+                </>
+              )}
             </>
           )}
 
-          <View style={{ marginTop: 16 }}>
+          {/* Emergency Safety Alert Component */}
+          <View className="mt-4">
             <EmergencyBanner variant="inline" />
           </View>
 
-          <View style={{ height: 24 }} />
+          <View className="h-6" />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  content: { padding: 16 },
-  metaRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  categoryPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  categoryText: { fontSize: 11, fontWeight: "700" },
-  timeAgo: { fontSize: 12 },
-  medication: { fontSize: 12, marginTop: 8 },
-  questionCard: { borderRadius: 14, borderWidth: 1, padding: 14, marginTop: 12 },
-  questionText: { fontSize: 14, lineHeight: 20 },
-  answerCard: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 8, marginTop: 12 },
-  answerHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
-  answerAuthor: { fontSize: 13, fontWeight: "700", flex: 1 },
-  answerTime: { fontSize: 11 },
-  answerText: { fontSize: 14, lineHeight: 20 },
-  pendingCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 12,
-  },
-  pendingText: { fontSize: 13, fontWeight: "600" },
-  sectionTitle: { fontSize: 14, fontWeight: "700", marginTop: 16, marginBottom: 8 },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    fontSize: 14,
-    marginBottom: 10,
-  },
-  textArea: { minHeight: 80 },
-});

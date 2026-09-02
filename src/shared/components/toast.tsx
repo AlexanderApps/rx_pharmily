@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Text, StyleSheet, Pressable } from "react-native";
+import { Text, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Animated, {
@@ -68,16 +68,24 @@ const Toast: React.FC = () => {
     variant === "success" ? colors.success : variant === "error" ? colors.error : colors.primary;
 
   return (
-    <SafeAreaView style={styles.wrap} pointerEvents="box-none">
+    <SafeAreaView className="absolute left-0 right-0 bottom-0 items-center z-[1000]" pointerEvents="box-none">
       <Animated.View
+        className="flex-row items-center gap-2.5 max-w-[480px] w-[92%] mb-3 px-3.5 py-3 rounded-xl border"
         style={[
-          styles.toast,
           animatedStyle,
-          { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+          {
+            backgroundColor: colors.backgroundSecondary,
+            borderColor: colors.border,
+            shadowColor: "#000",
+            shadowOpacity: 0.15,
+            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 4 },
+            elevation: 6,
+          },
         ]}
       >
         <MaterialCommunityIcons name={VARIANT_ICON[variant]} size={18} color={variantColor} />
-        <Text style={[styles.text, { color: colors.text }]} numberOfLines={2}>
+        <Text className="flex-1 text-[13px] font-semibold" style={{ color: colors.text }} numberOfLines={2}>
           {message}
         </Text>
         <Pressable onPress={hide} hitSlop={8}>
@@ -90,31 +98,3 @@ const Toast: React.FC = () => {
 
 export default Toast;
 
-const styles = StyleSheet.create({
-  wrap: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  toast: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    maxWidth: 480,
-    width: "92%",
-    marginBottom: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-  },
-  text: { flex: 1, fontSize: 13, fontWeight: "600" },
-});

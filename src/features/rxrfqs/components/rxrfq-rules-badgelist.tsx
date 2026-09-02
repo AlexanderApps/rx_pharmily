@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import InlineEmptyNotice from "@/shared/components/inline-empty-notice";
 import {
   RxRfqVisibilityRule,
   RxRfqVisibilityRuleType,
@@ -37,14 +38,15 @@ export const RxRfqRulesBadgeList: React.FC<RxRfqRulesBadgeListProps> = ({
   const { colors } = useTheme();
 
   return (
-    <View style={styles.container}>
+    <View className="mt-2 gap-2.5">
       {/* Header row */}
-      <View style={styles.headerRow}>
-        <Text style={[styles.subLabel, { color: colors.textSecondary }]}>
+      <View className="flex-row justify-between items-center">
+        <Text className="text-xs font-medium" style={{ color: colors.textSecondary }}>
           Configured Criteria Rules ({rules.length})
         </Text>
         <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: colors.primary + "15" }]}
+          className="flex-row items-center px-2.5 py-1.5 rounded-md gap-1"
+          style={{ backgroundColor: colors.primary + "15" }}
           onPress={onAddPress}
         >
           <MaterialCommunityIcons
@@ -52,7 +54,7 @@ export const RxRfqRulesBadgeList: React.FC<RxRfqRulesBadgeListProps> = ({
             size={16}
             color={colors.primary}
           />
-          <Text style={[styles.addButtonText, { color: colors.primary }]}>
+          <Text className="text-xs font-semibold" style={{ color: colors.primary }}>
             Add Target Filters
           </Text>
         </TouchableOpacity>
@@ -60,36 +62,28 @@ export const RxRfqRulesBadgeList: React.FC<RxRfqRulesBadgeListProps> = ({
 
       {/* Empty state */}
       {rules.length === 0 ? (
-        <View style={[styles.emptyBox, { borderColor: colors.border }]}>
-          <MaterialCommunityIcons
-            name="alert-circle-outline"
-            size={24}
-            color={colors.textSecondary + "80"}
-          />
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            No restrictions assigned yet. Select criteria targets above.
-          </Text>
-        </View>
+        <InlineEmptyNotice
+          icon="alert-circle-outline"
+          message="No restrictions assigned yet. Select criteria targets above."
+        />
       ) : (
         /* Badge chips */
-        <View style={styles.badgeWrapper}>
+        <View className="flex-row flex-wrap gap-2">
           {rules.map((item, index) => (
             <View
               key={index}
-              style={[
-                styles.badge,
-                {
-                  backgroundColor: colors.border + "40",
-                  borderColor: colors.border,
-                },
-              ]}
+              className="flex-row items-center px-2.5 py-2 rounded-full border-[0.5px] gap-1.5"
+              style={{
+                backgroundColor: colors.border + "40",
+                borderColor: colors.border,
+              }}
             >
               <MaterialCommunityIcons
                 name={getRuleIcon(item.ruleType)}
                 size={14}
                 color={colors.text}
               />
-              <Text style={[styles.badgeText, { color: colors.text }]}>
+              <Text className="text-xs" style={{ color: colors.text }}>
                 <Text style={{ fontWeight: "700" }}>{item.ruleType}:</Text>{" "}
                 {getRuleLabel(item)}
               </Text>
@@ -108,42 +102,3 @@ export const RxRfqRulesBadgeList: React.FC<RxRfqRulesBadgeListProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: { marginTop: 8, gap: 10 },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  subLabel: { fontSize: 12, fontWeight: "500" },
-  addButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    gap: 4,
-  },
-  addButtonText: { fontSize: 12, fontWeight: "600" },
-  emptyBox: {
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderRadius: 8,
-    padding: 16,
-    alignItems: "center",
-    gap: 6,
-    justifyContent: "center",
-  },
-  emptyText: { fontSize: 12, textAlign: "center", maxWidth: "85%" },
-  badgeWrapper: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 0.5,
-    gap: 6,
-  },
-  badgeText: { fontSize: 12 },
-});

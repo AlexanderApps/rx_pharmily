@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, FlatList, Pressable, TextInput, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, Pressable, TextInput, ActivityIndicator, StyleSheet, Platform} from "react-native";
 import { router } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -15,8 +15,8 @@ import { useChatStore, UserSearchResult } from "@/features/chat/hooks/use-chat-d
 
 export default function ChatListScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const conversations = useChatStore((state) => state.conversations);
-  const isLoading = useChatStore((state) => state.isLoading);
   const messagesByConversation = useChatStore(
     (state) => state.messagesByConversation,
   );
@@ -31,9 +31,19 @@ export default function ChatListScreen() {
   const newChatSheetRef = useRef<BottomSheetModal>(null);
   const [userSearch, setUserSearch] = useState("");
   const [startingChatWith, setStartingChatWith] = useState<string | null>(null);
+  // isLoading starts false (the store's initial state) and only flips to
+  // true once fetchConversations() actually begins — which itself has an
+  // async gap before that happens. Gating the skeleton on isLoading alone
+  // meant a fresh mount briefly rendered the FlatList's "No conversations
+  // yet" empty state before the fetch had even started, then flipped to
+  // the skeleton, then to the real result. This local flag starts false
+  // and only becomes true once the very first fetch attempt has actually
+  // finished, so the screen goes straight from mount to loading to its
+  // final state.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   useEffect(() => {
-    fetchConversations();
+    fetchConversations().finally(() => setHasLoadedOnce(true));
   }, []);
 
   useEffect(() => {
@@ -77,17 +87,29 @@ export default function ChatListScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: colors.background }}
+    <View
+      className="flex-1"
+      style={{
+        backgroundColor: colors.background,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingLeft: insets.left,
+        paddingRight: insets.right,
+      }}
     >
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <View style={styles.headerLeftGroup}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+      <View
+        className="flex-row items-center justify-between px-5 py-4 border-b"
+        style={{ borderBottomColor: colors.border }}
+      >
+        <View className="flex-row items-center gap-3 flex-1">
+          {Platform.OS !== "web" && (
+          <Pressable onPress={() => router.back()} className="p-1">
             <Ionicons name="arrow-back" size={22} color={colors.text} />
           </Pressable>
+          )}
           <View>
-            <Text style={[styles.title, { color: colors.text }]}>Chats</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            <Text className="text-2xl font-bold" style={{ color: colors.text }}>Chats</Text>
+            <Text className="text-xs mt-[3px]" style={{ color: colors.textSecondary }}>
               {totalUnread > 0
                 ? `${totalUnread} unread message${totalUnread > 1 ? "s" : ""}`
                 : "You're all caught up"}
@@ -99,13 +121,14 @@ export default function ChatListScreen() {
             setUserSearch("");
             newChatSheetRef.current?.present();
           }}
-          style={[styles.newChatButton, { backgroundColor: colors.primary }]}
+          className="w-10 h-10 rounded-full items-center justify-center"
+          style={{ backgroundColor: colors.primary }}
         >
           <MaterialCommunityIcons name="pencil-plus-outline" size={18} color="#fff" />
         </Pressable>
       </View>
 
-      {isLoading && conversations.length === 0 ? (
+      {!hasLoadedOnce ? (
         <ChatListSkeleton />
       ) : (
         <Animated.View entering={FadeIn.duration(220)} style={{ flex: 1 }}>
@@ -113,19 +136,21 @@ export default function ChatListScreen() {
             data={sorted}
             keyExtractor={(item) => item.id}
             contentContainerStyle={
-              sorted.length === 0 ? styles.emptyContent : undefined
+              sorted.length === 0 ? { flexGrow: 1 } : undefined
             }
             ItemSeparatorComponent={() => (
-              <View style={[styles.separator, { backgroundColor: colors.border }]} />
+              <View
+                style={{ height: StyleSheet.hairlineWidth, marginLeft: 74, backgroundColor: colors.border }}
+              />
             )}
             ListEmptyComponent={
-              <View style={styles.empty}>
+              <View className="flex-1 items-center justify-center gap-2.5 px-10 pt-20">
                 <MaterialCommunityIcons
                   name="chat-outline"
                   size={40}
                   color={colors.textSecondary}
                 />
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                <Text className="text-[13px] text-center" style={{ color: colors.textSecondary }}>
                   No conversations yet. Start one with the pencil icon above.
                 </Text>
               </View>
@@ -153,20 +178,27 @@ export default function ChatListScreen() {
         enablePanDownToClose
         backgroundColor={colors.backgroundSecondary}
       >
-        <View style={[styles.sheetHeader, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.sheetTitle, { color: colors.text }]}>
+        <View
+          className="px-5 pb-3"
+          style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
+        >
+          <Text className="text-base font-bold" style={{ color: colors.text }}>
             Start a new chat
           </Text>
         </View>
-        <View style={styles.searchWrap}>
-          <View style={[styles.searchBox, { backgroundColor: colors.backgroundElement }]}>
+        <View className="px-4 pt-3 pb-1">
+          <View
+            className="flex-row items-center gap-2 rounded-[10px] px-3 py-[9px]"
+            style={{ backgroundColor: colors.backgroundElement }}
+          >
             <MaterialCommunityIcons name="magnify" size={16} color={colors.textSecondary} />
             <TextInput
               value={userSearch}
               onChangeText={setUserSearch}
               placeholder="Search by name..."
               placeholderTextColor={colors.textSecondary}
-              style={[styles.searchInput, { color: colors.text }]}
+              className="flex-1 text-[13px] p-0"
+              style={{ color: colors.text }}
             />
           </View>
         </View>
@@ -175,11 +207,11 @@ export default function ChatListScreen() {
           data={userResults}
           ListEmptyComponent={
             userSearch.trim().length > 0 ? (
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              <Text className="text-[13px] text-center" style={{ color: colors.textSecondary }}>
                 No users found.
               </Text>
             ) : (
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              <Text className="text-[13px] text-center" style={{ color: colors.textSecondary }}>
                 Search for someone by name to start a chat.
               </Text>
             )
@@ -190,18 +222,17 @@ export default function ChatListScreen() {
             <Pressable
               onPress={() => handleStartChat(item)}
               disabled={!!startingChatWith}
-              style={({ pressed }) => [
-                styles.participantRow,
-                {
-                  backgroundColor: pressed ? colors.backgroundElement : "transparent",
-                  opacity: startingChatWith && startingChatWith !== item.id ? 0.4 : 1,
-                },
-              ]}
+              className="flex-row items-center gap-3 py-2.5 px-1 rounded-[10px]"
+              style={({ pressed }) => ({
+                backgroundColor: pressed ? colors.backgroundElement : "transparent",
+                opacity: startingChatWith && startingChatWith !== item.id ? 0.4 : 1,
+              })}
             >
               <View
-                style={[styles.avatar, { backgroundColor: item.avatarColor }]}
+                className="w-10 h-10 rounded-full items-center justify-center"
+                style={{ backgroundColor: item.avatarColor }}
               >
-                <Text style={styles.avatarText}>
+                <Text className="text-white text-[13px] font-bold">
                   {item.name
                     .split(" ")
                     .map((p) => p[0])
@@ -209,16 +240,11 @@ export default function ChatListScreen() {
                     .join("")}
                 </Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.participantName, { color: colors.text }]}>
+              <View className="flex-1">
+                <Text className="text-sm font-semibold" style={{ color: colors.text }}>
                   {item.name}
                 </Text>
-                <Text
-                  style={[
-                    styles.participantFacility,
-                    { color: colors.textSecondary },
-                  ]}
-                >
+                <Text className="text-xs mt-px" style={{ color: colors.textSecondary }}>
                   {item.facility}
                 </Text>
               </View>
@@ -229,66 +255,6 @@ export default function ChatListScreen() {
           )}
         />
       </BottomSheet>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  headerLeftGroup: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
-  backButton: { padding: 4 },
-  title: { fontSize: 24, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: 3 },
-  newChatButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  separator: { height: StyleSheet.hairlineWidth, marginLeft: 74 },
-  emptyContent: { flexGrow: 1 },
-  empty: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    paddingHorizontal: 40,
-    paddingTop: 80,
-  },
-  emptyText: { fontSize: 13, textAlign: "center" },
-  searchWrap: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
-  searchBox: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9 },
-  searchInput: { flex: 1, fontSize: 13, padding: 0 },
-  sheetHeader: {
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  sheetTitle: { fontSize: 16, fontWeight: "700" },
-  participantRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    borderRadius: 10,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: { color: "#fff", fontSize: 13, fontWeight: "700" },
-  participantName: { fontSize: 14, fontWeight: "600" },
-  participantFacility: { fontSize: 12, marginTop: 1 },
-});

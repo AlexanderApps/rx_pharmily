@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View, Pressable } from "react-native";
+import { Text, View, Pressable } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export interface RequestItem {
@@ -36,21 +36,14 @@ export const RequestCardRow = ({
   return (
     <Pressable
       onPress={() => onPress?.(item)}
-      style={[
-        styles.requestRow,
-        !isLastItem && {
-          borderBottomColor: colors.border,
-          borderBottomWidth: 0.5,
-        },
-      ]}
+      className="p-4"
+      style={!isLastItem ? { borderBottomColor: colors.border, borderBottomWidth: 0.5 } : undefined}
     >
-      <View style={styles.flexRowRow}>
+      <View className="flex-row items-start">
         {/* Left Icon Block */}
         <View
-          style={[
-            styles.pillIconBg,
-            { backgroundColor: colors.backgroundElement },
-          ]}
+          className="w-12 h-12 rounded-xl justify-center items-center"
+          style={{ backgroundColor: colors.backgroundElement }}
         >
           <MaterialCommunityIcons
             name={iconName}
@@ -60,21 +53,22 @@ export const RequestCardRow = ({
         </View>
 
         {/* Middle Metadata Block */}
-        <View style={styles.requestMetaBlock}>
-          <Text style={[styles.medicationName, { color: colors.text }]}>
+        <View className="flex-1 ml-3">
+          <Text className="text-base font-semibold" style={{ color: colors.text }}>
             {item.medication}
           </Text>
-          <Text style={[styles.strengthText, { color: colors.textSecondary }]}>
+          <Text className="text-sm mt-0.5" style={{ color: colors.textSecondary }}>
             {item.strength}
           </Text>
-          <View style={styles.locationWrapper}>
+          <View className="flex-row items-center mt-1.5">
             <MaterialCommunityIcons
               name="map-marker-outline"
               size={14}
               color={colors.textSecondary}
             />
             <Text
-              style={[styles.locationText, { color: colors.textSecondary }]}
+              className="text-[13px] ml-1"
+              style={{ color: colors.textSecondary }}
             >
               {item.location || "Accra, Greater Accra"}
             </Text>
@@ -82,19 +76,19 @@ export const RequestCardRow = ({
         </View>
 
         {/* Right Status Block */}
-        <View style={styles.statusBlockContainer}>
+        <View className="items-end justify-between min-h-12">
           {item.status === "responses" ? (
-            <View style={[styles.badgeBase, styles.badgeSuccess]}>
-              <Text style={styles.badgeTextSuccess}>
+            <View className="px-3 py-1 rounded-full bg-[#DCFCE7]">
+              <Text className="text-xs font-semibold text-[#15803D]">
                 {item.responses} Responses
               </Text>
             </View>
           ) : (
-            <View style={[styles.badgeBase, styles.badgeInfo]}>
-              <Text style={styles.badgeTextInfo}>Awaiting</Text>
+            <View className="px-3 py-1 rounded-full bg-[#DBEAFE]">
+              <Text className="text-xs font-semibold text-[#2563EB]">Awaiting</Text>
             </View>
           )}
-          <Text style={[styles.timeAgoText, { color: colors.textSecondary }]}>
+          <Text className="text-xs mt-2" style={{ color: colors.textSecondary }}>
             {item.time}
           </Text>
         </View>
@@ -103,70 +97,3 @@ export const RequestCardRow = ({
   );
 };
 
-const styles = StyleSheet.create({
-  requestRow: {
-    padding: 16,
-  },
-  flexRowRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  pillIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  requestMetaBlock: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  medicationName: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  strengthText: {
-    fontSize: 14,
-    marginTop: 2,
-  },
-  locationWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 6,
-  },
-  locationText: {
-    fontSize: 13,
-    marginLeft: 4,
-  },
-  statusBlockContainer: {
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    minHeight: 48,
-  },
-  badgeBase: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  badgeSuccess: {
-    backgroundColor: "#DCFCE7",
-  },
-  badgeInfo: {
-    backgroundColor: "#DBEAFE",
-  },
-  badgeTextSuccess: {
-    color: "#15803D",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  badgeTextInfo: {
-    color: "#2563EB",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  timeAgoText: {
-    fontSize: 12,
-    marginTop: 8,
-  },
-});

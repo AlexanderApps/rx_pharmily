@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { DonationCardData } from "@/features/donations/types/donation.types";
@@ -64,23 +64,16 @@ const DonationCard: React.FC<DonationCardProps> = ({
 
   return (
     <TouchableOpacity
-      style={[
-        styles.requestRow,
-        !isLastItem && {
-          borderBottomColor: colors.border,
-          borderBottomWidth: 0.5,
-        },
-      ]}
+      className="p-4"
+      style={!isLastItem ? { borderBottomColor: colors.border, borderBottomWidth: 0.5 } : undefined}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={styles.flexRowRow}>
+      <View className="flex-row items-start">
         {/* Pill Icon Box */}
         <View
-          style={[
-            styles.pillIconBg,
-            { backgroundColor: colors.backgroundElement },
-          ]}
+          className="w-12 h-12 rounded-xl justify-center items-center"
+          style={{ backgroundColor: colors.backgroundElement }}
         >
           <MaterialCommunityIcons
             name="hospital-box-outline"
@@ -90,26 +83,28 @@ const DonationCard: React.FC<DonationCardProps> = ({
         </View>
 
         {/* Info Block */}
-        <View style={styles.requestMetaBlock}>
+        <View className="flex-1 ml-3 pr-1">
           <Text
-            style={[styles.facilityName, { color: colors.text }]}
+            className="text-base font-semibold"
+            style={{ color: colors.text }}
             numberOfLines={1}
           >
             {donation.facilityName}
           </Text>
-          <Text style={[styles.itemCountText, { color: colors.textSecondary }]}>
+          <Text className="text-sm mt-0.5" style={{ color: colors.textSecondary }}>
             {donation.itemCount} {donation.itemCount === 1 ? "item" : "items"}{" "}
             available
           </Text>
 
-          <View style={styles.locationWrapper}>
+          <View className="flex-row items-center mt-1.5">
             <MaterialCommunityIcons
               name="map-marker-outline"
               size={14}
               color={colors.textSecondary}
             />
             <Text
-              style={[styles.locationText, { color: colors.textSecondary }]}
+              className="text-[13px] ml-1"
+              style={{ color: colors.textSecondary }}
               numberOfLines={1}
             >
               {donation.location}
@@ -118,31 +113,30 @@ const DonationCard: React.FC<DonationCardProps> = ({
         </View>
 
         {/* Right Action/Status Block */}
-        <View style={styles.statusBlockContainer}>
+        <View className="items-end justify-between min-h-12">
           {showActions ? (
             /* Creator Status Badge */
             <View
-              style={[styles.badgeBase, { backgroundColor: statusConfig.bg }]}
+              className="px-3 py-1 rounded-full"
+              style={{ backgroundColor: statusConfig.bg }}
             >
-              <Text style={[styles.badgeText, { color: statusConfig.text }]}>
+              <Text className="text-xs font-semibold" style={{ color: statusConfig.text }}>
                 {statusConfig.label}
               </Text>
             </View>
           ) : (
             /* Market View Generic Badge */
             <View
-              style={[
-                styles.badgeBase,
-                { backgroundColor: colors.info + "20" },
-              ]}
+              className="px-3 py-1 rounded-full"
+              style={{ backgroundColor: colors.info + "20" }}
             >
-              <Text style={[styles.badgeTextInfo, { color: colors.info }]}>
+              <Text className="text-xs font-semibold" style={{ color: colors.info }}>
                 Available
               </Text>
             </View>
           )}
 
-          <Text style={[styles.timeAgoText, { color: colors.textSecondary }]}>
+          <Text className="text-xs mt-2" style={{ color: colors.textSecondary }}>
             {formattedDate}
           </Text>
         </View>
@@ -150,19 +144,17 @@ const DonationCard: React.FC<DonationCardProps> = ({
 
       {/* Mini Actions Row for Creator */}
       {showActions && (onEdit || onDelete) && (
-        <View style={styles.miniActionsRow}>
+        <View className="flex-row justify-end mt-3 gap-4">
           {onEdit && (
-            <TouchableOpacity style={styles.miniActionButton} onPress={onEdit}>
+            <TouchableOpacity className="flex-row items-center gap-1" onPress={onEdit}>
               <MaterialCommunityIcons
                 name="pencil"
                 size={14}
                 color={colors.textSecondary}
               />
               <Text
-                style={[
-                  styles.miniActionLabel,
-                  { color: colors.textSecondary },
-                ]}
+                className="text-xs font-medium"
+                style={{ color: colors.textSecondary }}
               >
                 Edit
               </Text>
@@ -170,7 +162,7 @@ const DonationCard: React.FC<DonationCardProps> = ({
           )}
           {onDelete && (
             <TouchableOpacity
-              style={styles.miniActionButton}
+              className="flex-row items-center gap-1"
               onPress={onDelete}
             >
               <MaterialCommunityIcons
@@ -178,7 +170,7 @@ const DonationCard: React.FC<DonationCardProps> = ({
                 size={14}
                 color={colors.error}
               />
-              <Text style={[styles.miniActionLabel, { color: colors.error }]}>
+              <Text className="text-xs font-medium" style={{ color: colors.error }}>
                 Delete
               </Text>
             </TouchableOpacity>
@@ -189,80 +181,5 @@ const DonationCard: React.FC<DonationCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  requestRow: {
-    padding: 16,
-  },
-  flexRowRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  pillIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  requestMetaBlock: {
-    flex: 1,
-    marginLeft: 12,
-    paddingRight: 4,
-  },
-  facilityName: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  itemCountText: {
-    fontSize: 14,
-    marginTop: 2,
-  },
-  locationWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 6,
-  },
-  locationText: {
-    fontSize: 13,
-    marginLeft: 4,
-  },
-  statusBlockContainer: {
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    minHeight: 48,
-  },
-  badgeBase: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  badgeTextInfo: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  timeAgoText: {
-    fontSize: 12,
-    marginTop: 8,
-  },
-  miniActionsRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: 12,
-    gap: 16,
-  },
-  miniActionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  miniActionLabel: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-});
-
 export default DonationCard;
+

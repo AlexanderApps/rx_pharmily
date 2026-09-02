@@ -49,7 +49,7 @@ const diffDays = (a: Date, b: Date) =>
 // ─── sub-components ─────────────────────────────────────────────────────────
 
 const Divider: React.FC<{ color: string }> = ({ color }) => (
-  <View style={[summaryStyles.divider, { backgroundColor: color }]} />
+  <View className="w-full" style={{ height: StyleSheet.hairlineWidth, backgroundColor: color }} />
 );
 
 const MetaRow: React.FC<{
@@ -58,17 +58,18 @@ const MetaRow: React.FC<{
   value: string;
   colors: any;
 }> = ({ icon, label, value, colors }) => (
-  <View style={summaryStyles.metaRow}>
+  <View className="flex-row items-center gap-2.5 py-1">
     <MaterialCommunityIcons
       name={icon as any}
       size={16}
       color={colors.textSecondary}
     />
-    <Text style={[summaryStyles.metaLabel, { color: colors.textSecondary }]}>
+    <Text className="text-[13px] flex-1" style={{ color: colors.textSecondary }}>
       {label}
     </Text>
     <Text
-      style={[summaryStyles.metaValue, { color: colors.text }]}
+      className="text-[13px] font-medium max-w-[55%]"
+      style={{ color: colors.text }}
       numberOfLines={1}
     >
       {value}
@@ -193,38 +194,37 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
       onRequestClose={onClose}
     >
       <SafeAreaView
-        style={[styles.root, { backgroundColor: colors.background }]}
+        className="flex-1"
+        style={{ backgroundColor: colors.background }}
       >
         {/* ── Header ─────────────────────────────────────────────────── */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={onClose} style={styles.headerBack}>
+        <View className="flex-row items-center px-4 py-3.5 border-b gap-3" style={{ borderBottomColor: colors.border }}>
+          <TouchableOpacity onPress={onClose} className="p-1">
             <MaterialCommunityIcons
               name="arrow-left"
               size={22}
               color={colors.text}
             />
           </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>
+          <View className="flex-1">
+            <Text className="text-[17px] font-bold" style={{ color: colors.text }}>
               Quote Summary
             </Text>
-            <Text style={[styles.headerSub, { color: colors.textSecondary }]}>
+            <Text className="text-xs mt-px" style={{ color: colors.textSecondary }}>
               Review before submitting
             </Text>
           </View>
           {/* deadline urgency badge */}
           <View
-            style={[
-              styles.deadlineBadge,
-              {
-                backgroundColor:
-                  stats.deadlineDays <= 1
-                    ? colors.error + "18"
-                    : stats.deadlineDays <= 3
-                      ? colors.warning + "18"
-                      : colors.success + "18",
-              },
-            ]}
+            className="flex-row items-center gap-1 px-[9px] py-[5px] rounded-lg"
+            style={{
+              backgroundColor:
+                stats.deadlineDays <= 1
+                  ? colors.error + "18"
+                  : stats.deadlineDays <= 3
+                    ? colors.warning + "18"
+                    : colors.success + "18",
+            }}
           >
             <MaterialCommunityIcons
               name="clock-outline"
@@ -238,17 +238,15 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
               }
             />
             <Text
-              style={[
-                styles.deadlineBadgeText,
-                {
-                  color:
-                    stats.deadlineDays <= 1
-                      ? colors.error
-                      : stats.deadlineDays <= 3
-                        ? colors.warning
-                        : colors.success,
-                },
-              ]}
+              className="text-xs font-semibold"
+              style={{
+                color:
+                  stats.deadlineDays <= 1
+                    ? colors.error
+                    : stats.deadlineDays <= 3
+                      ? colors.warning
+                      : colors.success,
+              }}
             >
               {stats.deadlineDays <= 0
                 ? "Overdue"
@@ -258,26 +256,24 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
         </View>
 
         <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          className="flex-1"
+          contentContainerStyle={{ padding: 16, gap: 12 }}
           showsVerticalScrollIndicator={false}
         >
           {/* ── Fulfilment gauges ───────────────────────────────────── */}
           <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-              },
-            ]}
+            className="rounded-[14px] border p-4 gap-3"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
           >
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
+            <Text className="text-sm font-bold mb-0.5" style={{ color: colors.text }}>
               Fulfilment Overview
             </Text>
-            <View style={styles.gaugeRow}>
+            <View className="flex-row items-center justify-around py-1">
               {/* VFR */}
-              <View style={styles.gaugeItem}>
+              <View className="items-center gap-1.5 flex-1">
                 <ArcGaugeNew
                   pct={stats.vfrPct}
                   size={90}
@@ -290,24 +286,23 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
                   subtextColor={colors.textSecondary}
                 />
                 <Text
-                  style={[styles.gaugeLabel, { color: colors.textSecondary }]}
+                  className="text-xs font-medium text-center"
+                  style={{ color: colors.textSecondary }}
                 >
                   Item Fulfilment
                 </Text>
-                <Text style={[styles.gaugeSub, { color: colors.text }]}>
+                <Text className="text-[11px] font-normal text-center" style={{ color: colors.text }}>
                   {stats.respondedCount} / {stats.totalRfqItems} items
                 </Text>
               </View>
 
               <View
-                style={[
-                  styles.gaugeDivider,
-                  { backgroundColor: colors.border },
-                ]}
+                className="w-px h-20 mx-2"
+                style={{ backgroundColor: colors.border }}
               />
 
               {/* Volume */}
-              <View style={styles.gaugeItem}>
+              <View className="items-center gap-1.5 flex-1">
                 <ArcGaugeNew
                   pct={stats.volPct}
                   size={90}
@@ -320,11 +315,12 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
                   subtextColor={colors.textSecondary}
                 />
                 <Text
-                  style={[styles.gaugeLabel, { color: colors.textSecondary }]}
+                  className="text-xs font-medium text-center"
+                  style={{ color: colors.textSecondary }}
                 >
                   Volume Fulfilment
                 </Text>
-                <Text style={[styles.gaugeSub, { color: colors.text }]}>
+                <Text className="text-[11px] font-normal text-center" style={{ color: colors.text }}>
                   {stats.totalOfferedQty} / {stats.totalRequestedQty} units
                 </Text>
               </View>
@@ -334,12 +330,10 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
             {stats.altCount > 0 && (
               <>
                 <Divider color={colors.border} />
-                <View style={summaryStyles.altRow}>
+                <View className="flex-row items-center gap-2.5 py-0.5">
                   <View
-                    style={[
-                      summaryStyles.altIcon,
-                      { backgroundColor: colors.warning + "18" },
-                    ]}
+                    className="w-7 h-7 rounded-[7px] items-center justify-center"
+                    style={{ backgroundColor: colors.warning + "18" }}
                   >
                     <MaterialCommunityIcons
                       name="swap-horizontal"
@@ -348,16 +342,15 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
                     />
                   </View>
                   <Text
-                    style={[
-                      summaryStyles.altText,
-                      { color: colors.textSecondary },
-                    ]}
+                    className="flex-1 text-[13px]"
+                    style={{ color: colors.textSecondary }}
                   >
                     {stats.altCount} alternative
                     {stats.altCount > 1 ? "s" : ""} offered
                   </Text>
                   <Text
-                    style={[summaryStyles.altPct, { color: colors.warning }]}
+                    className="text-xs font-semibold"
+                    style={{ color: colors.warning }}
                   >
                     {Math.round((stats.altCount / stats.respondedCount) * 100)}%
                     of quoted items
@@ -369,28 +362,24 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
 
           {/* ── Value breakdown ─────────────────────────────────────── */}
           <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-              },
-            ]}
+            className="rounded-[14px] border p-4 gap-3"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
           >
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
+            <Text className="text-sm font-bold mb-0.5" style={{ color: colors.text }}>
               Value Breakdown
             </Text>
 
-            <View style={summaryStyles.valueRow}>
+            <View className="flex-row justify-between items-center py-[3px]">
               <Text
-                style={[
-                  summaryStyles.valueLabel,
-                  { color: colors.textSecondary },
-                ]}
+                className="text-[13px]"
+                style={{ color: colors.textSecondary }}
               >
                 Items subtotal
               </Text>
-              <Text style={[summaryStyles.valueAmount, { color: colors.text }]}>
+              <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
                 {fmt(stats.itemsSubtotal, stats.currency)}
               </Text>
             </View>
@@ -398,34 +387,31 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
             {/* Mandatory costs */}
             {stats.mandatoryCosts.length > 0 && (
               <>
-                <View style={summaryStyles.costGroupHeader}>
+                <View className="flex-row items-center gap-1.5 mt-1 mb-0.5">
                   <MaterialCommunityIcons
                     name="alert-circle-outline"
                     size={13}
                     color={colors.error}
                   />
                   <Text
-                    style={[
-                      summaryStyles.costGroupLabel,
-                      { color: colors.error },
-                    ]}
+                    className="text-xs font-semibold"
+                    style={{ color: colors.error }}
                   >
                     Mandatory costs ({stats.mandatoryCosts.length})
                   </Text>
                 </View>
                 {stats.mandatoryCosts.map((c) => (
-                  <View key={c.id} style={summaryStyles.costRow}>
+                  <View key={c.id} className="flex-row justify-between py-[3px] pl-2">
                     <Text
-                      style={[
-                        summaryStyles.costDesc,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-xs flex-1"
+                      style={{ color: colors.textSecondary }}
                       numberOfLines={1}
                     >
                       · {c.description}
                     </Text>
                     <Text
-                      style={[summaryStyles.costAmt, { color: colors.text }]}
+                      className="text-xs font-medium"
+                      style={{ color: colors.text }}
                     >
                       {fmt(c.amount, stats.currency)}
                     </Text>
@@ -437,37 +423,31 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
             {/* Optional costs */}
             {stats.optionalCosts.length > 0 && (
               <>
-                <View style={summaryStyles.costGroupHeader}>
+                <View className="flex-row items-center gap-1.5 mt-1 mb-0.5">
                   <MaterialCommunityIcons
                     name="information-outline"
                     size={13}
                     color={colors.info}
                   />
                   <Text
-                    style={[
-                      summaryStyles.costGroupLabel,
-                      { color: colors.info },
-                    ]}
+                    className="text-xs font-semibold"
+                    style={{ color: colors.info }}
                   >
                     Optional costs ({stats.optionalCosts.length})
                   </Text>
                 </View>
                 {stats.optionalCosts.map((c) => (
-                  <View key={c.id} style={summaryStyles.costRow}>
+                  <View key={c.id} className="flex-row justify-between py-[3px] pl-2">
                     <Text
-                      style={[
-                        summaryStyles.costDesc,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-xs flex-1"
+                      style={{ color: colors.textSecondary }}
                       numberOfLines={1}
                     >
                       · {c.description}
                     </Text>
                     <Text
-                      style={[
-                        summaryStyles.costAmt,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-xs font-medium"
+                      style={{ color: colors.textSecondary }}
                     >
                       {fmt(c.amount, stats.currency)}
                     </Text>
@@ -479,29 +459,26 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
             <Divider color={colors.border} />
 
             {/* Grand total */}
-            <View style={summaryStyles.grandTotalRow}>
+            <View className="flex-row justify-between items-end pt-1">
               <View>
                 <Text
-                  style={[
-                    summaryStyles.grandTotalLabel,
-                    { color: colors.textSecondary },
-                  ]}
+                  className="text-[13px] font-semibold"
+                  style={{ color: colors.textSecondary }}
                 >
                   Grand Total
                 </Text>
                 {stats.optionalTotal > 0 && (
                   <Text
-                    style={[
-                      summaryStyles.grandTotalNote,
-                      { color: colors.textSecondary },
-                    ]}
+                    className="text-[11px] mt-0.5"
+                    style={{ color: colors.textSecondary }}
                   >
                     excl. {fmt(stats.optionalTotal, stats.currency)} optional
                   </Text>
                 )}
               </View>
               <Text
-                style={[summaryStyles.grandTotalValue, { color: colors.text }]}
+                className="text-xl font-bold"
+                style={{ color: colors.text }}
               >
                 {fmt(stats.grandTotal, stats.currency)}
               </Text>
@@ -510,15 +487,13 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
 
           {/* ── Validity & delivery ─────────────────────────────────── */}
           <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-              },
-            ]}
+            className="rounded-[14px] border p-4 gap-3"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
           >
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
+            <Text className="text-sm font-bold mb-0.5" style={{ color: colors.text }}>
               Terms & Timeline
             </Text>
 
@@ -555,18 +530,17 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
 
             {/* RFQ validity progress bar */}
             <Divider color={colors.border} />
-            <View style={summaryStyles.validityBlock}>
-              <View style={summaryStyles.validityHeader}>
+            <View className="gap-1.5">
+              <View className="flex-row justify-between items-center">
                 <Text
-                  style={[
-                    summaryStyles.validityLabel,
-                    { color: colors.textSecondary },
-                  ]}
+                  className="text-xs font-medium"
+                  style={{ color: colors.textSecondary }}
                 >
                   Quote validity period
                 </Text>
                 <Text
-                  style={[summaryStyles.validityDays, { color: colors.text }]}
+                  className="text-xs font-semibold"
+                  style={{ color: colors.text }}
                 >
                   {stats.validityDays} days
                 </Text>
@@ -580,10 +554,8 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
                 height={7}
               />
               <Text
-                style={[
-                  summaryStyles.validityHint,
-                  { color: colors.textSecondary },
-                ]}
+                className="text-[11px]"
+                style={{ color: colors.textSecondary }}
               >
                 Based on 90-day benchmark
               </Text>
@@ -593,22 +565,18 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
           {/* ── Vendor comment preview ──────────────────────────────── */}
           {formData.vendorComment?.trim() ? (
             <View
-              style={[
-                styles.card,
-                {
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: colors.border,
-                },
-              ]}
+              className="rounded-[14px] border p-4 gap-3"
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+              }}
             >
-              <Text style={[styles.cardTitle, { color: colors.text }]}>
+              <Text className="text-sm font-bold mb-0.5" style={{ color: colors.text }}>
                 Your Comment
               </Text>
               <Text
-                style={[
-                  summaryStyles.commentText,
-                  { color: colors.textSecondary },
-                ]}
+                className="text-[13px] leading-5 italic"
+                style={{ color: colors.textSecondary }}
               >
                 {formData.vendorComment}
               </Text>
@@ -621,22 +589,18 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
 
         {/* ── Sticky action footer ────────────────────────────────────── */}
         <View
-          style={[
-            styles.footer,
-            {
-              backgroundColor: colors.background,
-              borderTopColor: colors.border,
-            },
-          ]}
+          className="flex-row gap-2.5 px-4 py-3.5 border-t"
+          style={{
+            backgroundColor: colors.background,
+            borderTopColor: colors.border,
+          }}
         >
           <TouchableOpacity
-            style={[
-              styles.draftButton,
-              {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
-              },
-            ]}
+            className="flex-1 flex-row items-center justify-center gap-2 py-3.5 rounded-xl border"
+            style={{
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+            }}
             onPress={onSaveDraft}
             disabled={isSaving}
             activeOpacity={0.7}
@@ -646,13 +610,14 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
               size={18}
               color={colors.text}
             />
-            <Text style={[styles.draftButtonText, { color: colors.text }]}>
+            <Text className="text-[15px] font-semibold" style={{ color: colors.text }}>
               Save Draft
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.publishButton, { backgroundColor: colors.text }]}
+            className="flex-[1.4] flex-row items-center justify-center gap-2 py-3.5 rounded-xl"
+            style={{ backgroundColor: colors.text }}
             onPress={onPublish}
             disabled={isSaving}
             activeOpacity={0.8}
@@ -663,10 +628,8 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
               color={colors.backgroundSecondary}
             />
             <Text
-              style={[
-                styles.publishButtonText,
-                { color: colors.backgroundSecondary },
-              ]}
+              className="text-[15px] font-semibold"
+              style={{ color: colors.backgroundSecondary }}
             >
               Submit Quote
             </Text>
@@ -676,165 +639,5 @@ const RxRfqResponseSummaryModal: React.FC<RxRfqResponseSummaryModalProps> = ({
     </Modal>
   );
 };
-
-// ─── styles ──────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    gap: 12,
-  },
-  headerBack: { padding: 4 },
-  headerCenter: { flex: 1 },
-  headerTitle: { fontSize: 17, fontWeight: "700" },
-  headerSub: { fontSize: 12, marginTop: 1 },
-  deadlineBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  deadlineBadgeText: { fontSize: 12, fontWeight: "600" },
-
-  scroll: { flex: 1 },
-  scrollContent: { padding: 16, gap: 12 },
-
-  card: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 16,
-    gap: 12,
-  },
-  cardTitle: { fontSize: 14, fontWeight: "700", marginBottom: 2 },
-
-  gaugeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-    paddingVertical: 4,
-  },
-  gaugeItem: { alignItems: "center", gap: 6, flex: 1 },
-  gaugeLabel: { fontSize: 12, fontWeight: "500", textAlign: "center" },
-  gaugeSub: { fontSize: 11, fontWeight: "400", textAlign: "center" },
-  gaugeDivider: { width: 1, height: 80, marginHorizontal: 8 },
-
-  footer: {
-    flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderTopWidth: 1,
-  },
-  draftButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  draftButtonText: { fontSize: 15, fontWeight: "600" },
-  publishButton: {
-    flex: 1.4,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  publishButtonText: { fontSize: 15, fontWeight: "600" },
-});
-
-const summaryStyles = StyleSheet.create({
-  divider: { height: StyleSheet.hairlineWidth, width: "100%" },
-
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 4,
-  },
-  metaLabel: { fontSize: 13, flex: 1 },
-  metaValue: { fontSize: 13, fontWeight: "500", maxWidth: "55%" },
-
-  altRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 2,
-  },
-  altIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 7,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  altText: { flex: 1, fontSize: 13 },
-  altPct: { fontSize: 12, fontWeight: "600" },
-
-  valueRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 3,
-  },
-  valueLabel: { fontSize: 13 },
-  valueAmount: { fontSize: 13, fontWeight: "500" },
-
-  costGroupHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    marginTop: 4,
-    marginBottom: 2,
-  },
-  costGroupLabel: { fontSize: 12, fontWeight: "600" },
-  costRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 3,
-    paddingLeft: 8,
-  },
-  costDesc: { fontSize: 12, flex: 1 },
-  costAmt: { fontSize: 12, fontWeight: "500" },
-
-  grandTotalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    paddingTop: 4,
-  },
-  grandTotalLabel: { fontSize: 13, fontWeight: "600" },
-  grandTotalNote: { fontSize: 11, marginTop: 2 },
-  grandTotalValue: { fontSize: 20, fontWeight: "700" },
-
-  validityBlock: { gap: 6 },
-  validityHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  validityLabel: { fontSize: 12, fontWeight: "500" },
-  validityDays: { fontSize: 12, fontWeight: "600" },
-  validityHint: { fontSize: 11 },
-
-  commentText: {
-    fontSize: 13,
-    lineHeight: 20,
-    fontStyle: "italic",
-  },
-});
 
 export default RxRfqResponseSummaryModal;

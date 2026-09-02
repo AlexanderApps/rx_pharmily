@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
   TextInput,
   Pressable,
   ScrollView,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -17,23 +16,17 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { toast } from "@/shared/hooks/use-toast";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
-import { FacilityType } from "@/features/profile/types/profile.types";
+import { FacilityType, FACILITY_TYPES } from "@/features/profile/types/profile.types";
 import LocationPicker from "@/shared/components/location-picker";
-
-const FACILITY_TYPES: FacilityType[] = [
-  "Retail Pharmacy",
-  "Hospital",
-  "Wholesale Distributor",
-  "Diagnostic Lab",
-  "Clinic",
-  "Other",
-];
+import ReferencePicker from "@/shared/components/forms/reference-picker";
+import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 
 export default function CreateFacilityScreen() {
   const { colors } = useTheme();
   const user = useProfileStore((state) => state.user);
-  const submitFacilityCreationRequest = useProfileStore((state) => state.submitFacilityCreationRequest);
-
+  const submitFacilityCreationRequest = useProfileStore(
+    (state) => state.submitFacilityCreationRequest,
+  );
   const isVerified = user.kyc.status === "verified";
 
   const [name, setName] = useState("");
@@ -42,6 +35,11 @@ export default function CreateFacilityScreen() {
   const [latitude, setLatitude] = useState<number | undefined>(undefined);
   const [longitude, setLongitude] = useState<number | undefined>(undefined);
   const [region, setRegion] = useState("");
+  const referenceRegions = useReferenceDataStore((state) => state.regions);
+  const regionOptions = useMemo(
+    () => referenceRegions.map((r) => ({ id: r.name, label: r.name })),
+    [referenceRegions],
+  );
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -77,25 +75,45 @@ export default function CreateFacilityScreen() {
 
   if (!isVerified) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={() => router.back()} style={styles.back}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <View
+          className="flex-row items-center gap-3 px-4 py-3 border-b"
+          style={{ borderBottomColor: colors.border }}
+        >
+          {Platform.OS !== "web" && (
+          <Pressable onPress={() => router.back()} className="p-1">
             <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
           </Pressable>
-          <Text style={[styles.title, { color: colors.text }]}>Create Facility</Text>
+          )}
+          <Text className="text-[17px] font-bold" style={{ color: colors.text }}>
+            Create Facility
+          </Text>
         </View>
-        <View style={styles.blockedWrap}>
-          <MaterialCommunityIcons name="shield-alert-outline" size={32} color={colors.warning} />
-          <Text style={[styles.blockedTitle, { color: colors.text }]}>Verification required</Text>
-          <Text style={[styles.blockedText, { color: colors.textSecondary }]}>
-            Your account needs to be verified before you can request a new facility. Submit your KYC
-            documents from your profile to get started.
+        <View className="flex-1 items-center justify-center p-8">
+          <MaterialCommunityIcons
+            name="shield-alert-outline"
+            size={32}
+            color={colors.warning}
+          />
+          <Text
+            className="text-[17px] font-bold mt-3.5 mb-2"
+            style={{ color: colors.text }}
+          >
+            Verification required
+          </Text>
+          <Text
+            className="text-[13px] text-center leading-5"
+            style={{ color: colors.textSecondary }}
+          >
+            Your account needs to be verified before you can request a new facility.
+            Submit your KYC documents from your profile to get started.
           </Text>
           <Pressable
             onPress={() => router.push("/profile/user-profile")}
-            style={[styles.submitButton, { backgroundColor: colors.primary, marginTop: 20 }]}
+            className="rounded-[10px] py-3.5 items-center mt-5 px-6"
+            style={{ backgroundColor: colors.primary }}
           >
-            <Text style={styles.submitButtonText}>Go to My Profile</Text>
+            <Text className="text-white text-[15px] font-bold">Go to My Profile</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -103,25 +121,51 @@ export default function CreateFacilityScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={() => router.back()} style={styles.back}>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+      >
+        {/* Header */}
+        <View
+          className="flex-row items-center gap-3 px-4 py-3 border-b"
+          style={{ borderBottomColor: colors.border }}
+        >
+          {Platform.OS !== "web" && (
+          <Pressable onPress={() => router.back()} className="p-1">
             <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
           </Pressable>
-          <Text style={[styles.title, { color: colors.text }]}>Create Facility</Text>
+          )}
+          <Text className="text-[17px] font-bold" style={{ color: colors.text }}>
+            Create Facility
+          </Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={[styles.noticeBox, { backgroundColor: colors.primary + "12" }]}>
-            <MaterialCommunityIcons name="information-outline" size={14} color={colors.primary} />
-            <Text style={[styles.noticeText, { color: colors.primary }]}>
-              An admin reviews every new facility before it's created. Once approved, you'll be its
-              Owner and can submit KYC documents to get it verified.
+        <ScrollView
+          contentContainerClassName="p-5"
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Notice */}
+          <View
+            className="flex-row items-start gap-2 rounded-[10px] p-3 mb-[18px]"
+            style={{ backgroundColor: colors.primary + "12" }}
+          >
+            <MaterialCommunityIcons
+              name="information-outline"
+              size={14}
+              color={colors.primary}
+            />
+            <Text
+              className="text-xs flex-1 leading-[17px]"
+              style={{ color: colors.primary }}
+            >
+              An admin reviews every new facility before it's created. Once approved,
+              you'll be its Owner and can submit KYC documents to get it verified.
             </Text>
           </View>
 
-          <Text style={[styles.label, { color: colors.text }]}>
+          {/* Facility Name */}
+          <Text className="text-xs font-semibold" style={{ color: colors.text }}>
             Facility Name <Text style={{ color: colors.error }}>*</Text>
           </Text>
           <TextInput
@@ -129,26 +173,42 @@ export default function CreateFacilityScreen() {
             onChangeText={setName}
             placeholder="Adenta Community Pharmacy"
             placeholderTextColor={colors.textSecondary}
-            style={[styles.input, { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }]}
+            className="border rounded-[10px] px-3.5 py-3 text-sm mt-1.5"
+            style={{
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+              color: colors.text,
+            }}
           />
 
-          <Text style={[styles.label, { color: colors.text, marginTop: 14 }]}>Type</Text>
-          <View style={styles.chipRow}>
+          {/* Type chips */}
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>
+            Type
+          </Text>
+          <View className="flex-row flex-wrap gap-2 mt-1.5">
             {FACILITY_TYPES.map((t) => (
               <Pressable
                 key={t}
                 onPress={() => setType(t)}
-                style={[
-                  styles.chip,
-                  { borderColor: colors.border, backgroundColor: type === t ? colors.primary : colors.backgroundElement },
-                ]}
+                className="px-3 py-2 rounded-full border"
+                style={{
+                  borderColor: colors.border,
+                  backgroundColor:
+                    type === t ? colors.primary : colors.backgroundElement,
+                }}
               >
-                <Text style={{ color: type === t ? "#fff" : colors.text, fontSize: 12, fontWeight: "600" }}>{t}</Text>
+                <Text
+                  className="text-xs font-semibold"
+                  style={{ color: type === t ? "#fff" : colors.text }}
+                >
+                  {t}
+                </Text>
               </Pressable>
             ))}
           </View>
 
-          <View style={{ marginTop: 14 }}>
+          {/* Location */}
+          <View className="mt-3.5">
             <LocationPicker
               label="Location"
               required
@@ -168,37 +228,59 @@ export default function CreateFacilityScreen() {
             />
           </View>
 
-          <Text style={[styles.label, { color: colors.text, marginTop: 14 }]}>
+          {/* Region */}
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>
             Region <Text style={{ color: colors.error }}>*</Text>
           </Text>
-          <TextInput
+          <ReferencePicker
+            title="Select Region"
+            options={regionOptions}
             value={region}
-            onChangeText={setRegion}
-            placeholder="Greater Accra"
-            placeholderTextColor={colors.textSecondary}
-            style={[styles.input, { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }]}
+            onChange={setRegion}
+            placeholder="Select a region"
+            emptyMessage="No regions set up yet."
+            searchable={false}
           />
 
-          <Text style={[styles.label, { color: colors.text, marginTop: 14 }]}>Address</Text>
+          {/* Address */}
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>
+            Address
+          </Text>
           <TextInput
             value={address}
             onChangeText={setAddress}
             placeholder="Street address"
             placeholderTextColor={colors.textSecondary}
-            style={[styles.input, { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }]}
+            className="border rounded-[10px] px-3.5 py-3 text-sm mt-1.5"
+            style={{
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+              color: colors.text,
+            }}
           />
 
-          <Text style={[styles.label, { color: colors.text, marginTop: 14 }]}>Phone</Text>
+          {/* Phone */}
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>
+            Phone
+          </Text>
           <TextInput
             value={phone}
             onChangeText={setPhone}
             placeholder="024xxxxxxx"
             placeholderTextColor={colors.textSecondary}
             keyboardType="phone-pad"
-            style={[styles.input, { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }]}
+            className="border rounded-[10px] px-3.5 py-3 text-sm mt-1.5"
+            style={{
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+              color: colors.text,
+            }}
           />
 
-          <Text style={[styles.label, { color: colors.text, marginTop: 14 }]}>Email</Text>
+          {/* Email */}
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>
+            Email
+          </Text>
           <TextInput
             value={email}
             onChangeText={setEmail}
@@ -206,54 +288,50 @@ export default function CreateFacilityScreen() {
             placeholderTextColor={colors.textSecondary}
             keyboardType="email-address"
             autoCapitalize="none"
-            style={[styles.input, { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }]}
+            className="border rounded-[10px] px-3.5 py-3 text-sm mt-1.5"
+            style={{
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+              color: colors.text,
+            }}
           />
 
-          <Text style={[styles.label, { color: colors.text, marginTop: 14 }]}>Registration Number</Text>
+          {/* Registration Number */}
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>
+            Registration Number
+          </Text>
           <TextInput
             value={registrationNumber}
             onChangeText={setRegistrationNumber}
             placeholder="Business registration number"
             placeholderTextColor={colors.textSecondary}
-            style={[styles.input, { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }]}
+            className="border rounded-[10px] px-3.5 py-3 text-sm mt-1.5"
+            style={{
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+              color: colors.text,
+            }}
           />
 
           <Pressable
             onPress={handleSubmit}
             disabled={submitting}
-            style={[styles.submitButton, { backgroundColor: colors.primary, opacity: submitting ? 0.6 : 1, marginTop: 24 }]}
+            className="rounded-[10px] py-3.5 items-center mt-6"
+            style={{
+              backgroundColor: colors.primary,
+              opacity: submitting ? 0.6 : 1,
+            }}
           >
-            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>Submit for Review</Text>}
+            {submitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text className="text-white text-[15px] font-bold">Submit for Review</Text>
+            )}
           </Pressable>
 
-          <View style={{ height: 24 }} />
+          <View className="h-6" />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-  },
-  back: { padding: 4 },
-  title: { fontSize: 17, fontWeight: "700" },
-  content: { padding: 20 },
-  noticeBox: { flexDirection: "row", alignItems: "flex-start", gap: 8, borderRadius: 10, padding: 12, marginBottom: 18 },
-  noticeText: { fontSize: 12, flex: 1, lineHeight: 17 },
-  label: { fontSize: 12, fontWeight: "600" },
-  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, marginTop: 6 },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 },
-  chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
-  submitButton: { borderRadius: 10, paddingVertical: 14, alignItems: "center" },
-  submitButtonText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  blockedWrap: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32 },
-  blockedTitle: { fontSize: 17, fontWeight: "700", marginTop: 14, marginBottom: 8 },
-  blockedText: { fontSize: 13, textAlign: "center", lineHeight: 20 },
-});

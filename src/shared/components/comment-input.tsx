@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 
@@ -29,25 +23,17 @@ const CommentInput: React.FC<CommentInputProps> = ({
   const isNearLimit = charCount > maxLength * 0.9;
 
   return (
-    <View style={styles.container}>
+    <View className="gap-2">
       <View
-        style={[
-          styles.inputContainer,
-          {
-            backgroundColor: isFocused
-              ? colors.backgroundSecondary
-              : colors.backgroundElement,
-            borderColor: isNearLimit
-              ? colors.warning
-              : isFocused
-                ? colors.border
-                : colors.border,
-          },
-        ]}
+        className="rounded-md border overflow-hidden min-h-[100px]"
+        style={{
+          backgroundColor: isFocused ? colors.backgroundSecondary : colors.backgroundElement,
+          borderColor: isNearLimit ? colors.warning : colors.border,
+        }}
       >
-        {/*<TextInput*/}
         <TextInput
-          style={[styles.input, { color: colors.text }]}
+          className="flex-1 p-3 text-sm"
+          style={{ color: colors.text, fontFamily: "System", textAlignVertical: "top" }}
           value={value}
           onChangeText={onChange}
           placeholder={placeholder}
@@ -61,7 +47,7 @@ const CommentInput: React.FC<CommentInputProps> = ({
 
         {value.length > 0 && (
           <TouchableOpacity
-            style={styles.clearButton}
+            className="absolute top-2 right-2 p-1"
             onPress={() => onChange("")}
           >
             <MaterialCommunityIcons
@@ -73,13 +59,10 @@ const CommentInput: React.FC<CommentInputProps> = ({
         )}
       </View>
 
-      <View style={styles.footer}>
+      <View className="items-end">
         <Text
-          style={[
-            styles.charCount,
-            isNearLimit && { color: colors.warning },
-            !isNearLimit && { color: colors.textSecondary },
-          ]}
+          className="text-xs font-medium"
+          style={{ color: isNearLimit ? colors.warning : colors.textSecondary }}
         >
           {charCount}/{maxLength}
         </Text>
@@ -88,36 +71,5 @@ const CommentInput: React.FC<CommentInputProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    gap: 8,
-  },
-  inputContainer: {
-    borderRadius: 6,
-    borderWidth: 1,
-    overflow: "hidden",
-    minHeight: 100,
-  },
-  input: {
-    flex: 1,
-    padding: 12,
-    fontSize: 14,
-    fontFamily: "System",
-    textAlignVertical: "top",
-  },
-  clearButton: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    padding: 4,
-  },
-  footer: {
-    alignItems: "flex-end",
-  },
-  charCount: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-});
-
 export default CommentInput;
+

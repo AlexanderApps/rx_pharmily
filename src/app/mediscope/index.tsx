@@ -1,5 +1,5 @@
 import React, { useMemo, useRef } from "react";
-import { View, Text, Pressable, StyleSheet, Animated } from "react-native";
+import { View, Text, Pressable, Animated, Platform} from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,6 +15,7 @@ import {
   convertToCardData,
   useMediscopeStore,
 } from "@/features/mediscope/hooks/use-mediscope-data";
+import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 
 export default function MediscopeScreen() {
   const { colors } = useTheme();
@@ -30,55 +31,113 @@ export default function MediscopeScreen() {
   const cards = useMemo(
     () =>
       [...requests]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )
         .map(convertToCardData),
     [requests],
   );
 
-  const publishedCount = requests.filter((r) => r.status === "published").length;
-  const fulfilledCount = requests.filter((r) => r.status === "fulfilled").length;
+  // "Overview" is the current user's own requests — createdBy ===
+  // user.id, the same comparison convertToCardData already uses for
+  // isOwner — not "any request my facility posted". "Recent Requests"/
+  // "Browse" below stay global on purpose, same as rxrfq's "Nearby
+  // Requests" and donations' "Recent Donations".
+  const myRequests = useMemo(() => {
+    const userId = useProfileStore.getState().user.id;
+    return requests.filter((r) => r.createdBy === userId);
+  }, [requests]);
+
+  const publishedCount = myRequests.filter((r) => r.status === "published").length;
+  const fulfilledCount = myRequests.filter((r) => r.status === "fulfilled").length;
+
+  // "My MediScope Requests" below: the current user's own most-recently-
+  // created requests, excluding ones that are settled (closed/cancelled).
+  // myRequests is already the raw (unresolved) data; cards is the
+  // already-resolved card view MediscopeRow expects — filtering the
+  // latter by an id set from the former gets both the right scope and
+  // correctly-populated cards.
+  const myRecentRequests = useMemo(() => {
+    const myIds = new Set(
+      myRequests
+        .filter((r) => r.status !== "closed" && r.status !== "cancelled")
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 3)
+        .map((r) => r.id),
+    );
+    return cards.filter((c) => myIds.has(c.id));
+  }, [myRequests, cards]);
 
   const openDetails = (id: string, isOwner: boolean) => {
     router.push({
-      pathname: isOwner ? "/mediscope/mediscope-details" : "/mediscope/mediscope-market-details",
+      pathname: isOwner
+        ? "/mediscope/mediscope-details"
+        : "/mediscope/mediscope-market-details",
       params: { id },
     });
   };
 
   return (
-    <ThemedView style={styles.flex1}>
-      <SafeAreaView style={styles.flex1} edges={["top", "left", "right"]}>
+    <ThemedView className="flex-1">
+      <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
         {/* Sticky Custom Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerLeftGroup}>
-              <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <View
+          className="border-b px-4 pb-3 pt-3"
+          style={{ borderBottomColor: colors.border, borderBottomWidth: 0.5 }}
+        >
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1 flex-row items-center">
+              {Platform.OS !== "web" && (
+              <Pressable onPress={() => router.back()} className="mr-3 p-1">
                 <Ionicons name="arrow-back" size={24} color={colors.text} />
               </Pressable>
+              )}
               <View>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>MediScope</Text>
-                <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+                <Text
+                  className="text-2xl font-bold"
+                  style={{ color: colors.text }}
+                >
+                  MediScope
+                </Text>
+                <Text
+                  className="mt-0.5 text-xs"
+                  style={{ color: colors.textSecondary }}
+                >
                   Find where a product is available
                 </Text>
               </View>
             </View>
 
-            <View style={styles.headerActions}>
+            <View className="flex-row items-center gap-2">
               <Animated.View style={{ opacity: headerSearchOpacity }}>
                 <Pressable
                   onPress={() => router.push("/mediscope/search-mediscope")}
-                  style={[styles.actionIconBtn, { backgroundColor: colors.backgroundSecondary }]}
+                  className="h-10 w-10 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: colors.backgroundSecondary }}
                 >
                   <Ionicons name="search-outline" size={20} color={colors.text} />
                 </Pressable>
               </Animated.View>
+
+              {/* Create — web only; native keeps the floating action
+                  button below instead. */}
+              {Platform.OS === "web" && (
+                <Pressable
+                  onPress={() => router.push("/mediscope/add-mediscope-request")}
+                  className="h-10 w-10 items-center justify-center rounded-xl cursor-pointer hover:opacity-90"
+                  style={{ backgroundColor: colors.primary }}
+                >
+                  <Ionicons name="add" size={22} color={colors.background} />
+                </Pressable>
+              )}
             </View>
           </View>
         </View>
 
         <Animated.ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={{ paddingBottom: 120 }}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
             { useNativeDriver: true },
@@ -86,31 +145,40 @@ export default function MediscopeScreen() {
           scrollEventThrottle={16}
         >
           {/* Search */}
-          <View style={styles.sectionPadding}>
+          <View className="mt-6 px-5">
             <Pressable
               onPress={() => router.push("/mediscope/search-mediscope")}
-              style={({ pressed }) => [
-                styles.searchBox,
-                {
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: colors.border,
-                  opacity: pressed ? 0.7 : 1,
-                },
-              ]}
+              className="flex-row items-center rounded-2xl border px-4 py-3 active:opacity-70"
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+              }}
             >
-              <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
-              <Text style={[styles.searchText, { color: colors.textSecondary }]}>
+              <Ionicons
+                name="search-outline"
+                size={20}
+                color={colors.textSecondary}
+              />
+              <Text
+                className="ml-3 flex-1 text-base"
+                style={{ color: colors.textSecondary }}
+              >
                 Search for a product...
               </Text>
             </Pressable>
           </View>
 
           {/* Stats */}
-          <View style={styles.sectionPadding}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Overview</Text>
-            <View style={styles.statsRow}>
+          <View className="mt-6 px-5">
+            <Text
+              className="mb-3 text-lg font-semibold"
+              style={{ color: colors.text }}
+            >
+              Overview
+            </Text>
+            <View className="flex-row gap-3">
               <StatCard
-                number={`${requests.length}`}
+                number={`${myRequests.length}`}
                 label="All Requests"
                 type="info"
                 colors={colors}
@@ -135,12 +203,17 @@ export default function MediscopeScreen() {
 
           {/* My requests preview */}
           <SectionListContainer
-            title="Recent Requests"
+            title="My MediScope Requests"
             backgroundColor={colors.backgroundSecondary}
             textColor={colors.text}
-            onViewAllPress={() => router.push("/mediscope/list-mediscope")}
+            onViewAllPress={() =>
+              router.push({
+                pathname: "/mediscope/list-mediscope",
+                params: { mine: "true" },
+              })
+            }
           >
-            {cards.slice(0, 3).map((item, index, slicedArray) => (
+            {myRecentRequests.map((item, index, slicedArray) => (
               <MediscopeRow
                 key={item.id}
                 item={item}
@@ -156,29 +229,59 @@ export default function MediscopeScreen() {
             textColor={colors.text}
             onViewAllPress={() => router.push("/mediscope/list-mediscope")}
           >
-            {cards.map((item) => (
-              <MediscopeHsCard key={item.id} item={item} onPress={() => openDetails(item.id, item.isOwner)} />
-            ))}
+            {cards
+              .filter((item) => item.status === "published")
+              .slice(0, 10)
+              .map((item) => (
+                <MediscopeHsCard
+                  key={item.id}
+                  item={item}
+                  onPress={() => openDetails(item.id, item.isOwner)}
+                />
+              ))}
           </HorizontalScrollContainer>
 
           {/* Quick Actions */}
-          <View style={styles.sectionPadding}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
-            <View style={styles.statsRow}>
+          <View className="mt-6 px-5">
+            <Text
+              className="mb-3 text-lg font-semibold"
+              style={{ color: colors.text }}
+            >
+              Quick Actions
+            </Text>
+            <View className="flex-row gap-3">
               <ActionButton
-                icon={<MaterialCommunityIcons name="magnify" size={22} color="#2563eb" />}
+                icon={
+                  <MaterialCommunityIcons
+                    name="magnify"
+                    size={22}
+                    color="#2563eb"
+                  />
+                }
                 label="Browse"
                 colors={colors}
                 onPress={() => router.push("/mediscope/list-mediscope")}
               />
               <ActionButton
-                icon={<MaterialCommunityIcons name="plus-box-outline" size={22} color="#16a34a" />}
+                icon={
+                  <MaterialCommunityIcons
+                    name="plus-box-outline"
+                    size={22}
+                    color="#16a34a"
+                  />
+                }
                 label="New Request"
                 colors={colors}
                 onPress={() => router.push("/mediscope/add-mediscope-request")}
               />
               <ActionButton
-                icon={<MaterialCommunityIcons name="magnify-scan" size={22} color="#9333ea" />}
+                icon={
+                  <MaterialCommunityIcons
+                    name="magnify-scan"
+                    size={22}
+                    color="#9333ea"
+                  />
+                }
                 label="Search"
                 colors={colors}
                 onPress={() => router.push("/mediscope/search-mediscope")}
@@ -187,63 +290,25 @@ export default function MediscopeScreen() {
           </View>
         </Animated.ScrollView>
 
-        {/* Floating Action Button */}
+        {/* Floating Action Button — native only; web uses the header
+            Create button instead. */}
+        {Platform.OS !== "web" && (
         <Pressable
           onPress={() => router.push("/mediscope/add-mediscope-request")}
-          style={({ pressed }) => [
-            styles.fab,
-            { backgroundColor: colors.primary },
-            pressed && { opacity: 0.9 },
-          ]}
+          className="absolute bottom-8 right-6 h-16 w-16 items-center justify-center rounded-full shadow-lg active:opacity-90 cursor-pointer hover:opacity-90"
+          style={{
+            backgroundColor: colors.primary,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 8,
+          }}
         >
           <Ionicons name="add" size={30} color={colors.background} />
         </Pressable>
+        )}
       </SafeAreaView>
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex1: { flex: 1 },
-  scrollContent: { paddingBottom: 120 },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 0.5,
-  },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  headerLeftGroup: { flexDirection: "row", alignItems: "center", flex: 1 },
-  backButton: { marginRight: 12, padding: 4 },
-  headerTitle: { fontSize: 24, fontWeight: "700" },
-  headerSubtitle: { fontSize: 12, marginTop: 2 },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
-  actionIconBtn: { width: 40, height: 40, borderRadius: 12, justifyContent: "center", alignItems: "center" },
-  sectionPadding: { paddingHorizontal: 20, marginTop: 24 },
-  sectionTitle: { fontSize: 18, fontWeight: "600", marginBottom: 12 },
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  searchText: { flex: 1, marginLeft: 12, fontSize: 16 },
-  statsRow: { flexDirection: "row", gap: 12 },
-  fab: {
-    position: "absolute",
-    right: 24,
-    bottom: 32,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-});

@@ -5,7 +5,6 @@ import {
   TextInput,
   Pressable,
   ScrollView,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -14,6 +13,7 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import ScreenHeader from "@/shared/components/screen-header";
 import { useHelpStore } from "@/features/help/hooks/use-help-data";
 import {
   PharmacistQuestionCategory,
@@ -43,7 +43,7 @@ export default function NewQuestionScreen() {
   const canSubmit = question.trim().length > 0 && !isUrgentCategory;
 
   const handleSubmit = async () => {
-    if (isUrgentCategory) return; // safety net — submission is disabled for this category anyway
+    if (isUrgentCategory) return; 
     if (!question.trim()) {
       Alert.alert("Add your question", "Please describe what you'd like to ask.");
       return;
@@ -62,18 +62,17 @@ export default function NewQuestionScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={() => router.back()} style={styles.back}>
-            <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-          </Pressable>
-          <Text style={[styles.title, { color: colors.text }]}>Ask a Question</Text>
-        </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
+        
+        {/* Navigation Top Header Bar */}
+        <ScreenHeader title="Ask a Question" />
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Text style={[styles.label, { color: colors.text }]}>What's this about?</Text>
-          <View style={styles.chipRow}>
+        <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
+          
+          {/* Main Category Selection Chips */}
+          <Text className="text-xs font-semibold" style={{ color: colors.text }}>What's this about?</Text>
+          <View className="flex-row flex-wrap gap-2 mt-2">
             {CATEGORIES.map((option) => {
               const active = category === option;
               const urgent = URGENT_PHARMACIST_CATEGORIES.includes(option);
@@ -81,18 +80,16 @@ export default function NewQuestionScreen() {
                 <Pressable
                   key={option}
                   onPress={() => setCategory(option)}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor: active
-                        ? urgent
-                          ? colors.error
-                          : colors.primary
-                        : colors.backgroundElement,
-                    },
-                  ]}
+                  className="px-3 py-2 rounded-full"
+                  style={{
+                    backgroundColor: active
+                      ? urgent
+                        ? colors.error
+                        : colors.primary
+                      : colors.backgroundElement,
+                  }}
                 >
-                  <Text style={[styles.chipText, { color: active ? "#fff" : colors.textSecondary }]}>
+                  <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
                     {option}
                   </Text>
                 </Pressable>
@@ -100,13 +97,15 @@ export default function NewQuestionScreen() {
             })}
           </View>
 
+          {/* Conditional Layout Content Based On Urgency Flag */}
           {isUrgentCategory ? (
-            <View style={{ marginTop: 16 }}>
+            <View className="mt-4">
               <EmergencyBanner variant="full" />
             </View>
           ) : (
             <>
-              <Text style={[styles.label, { color: colors.text, marginTop: 16 }]}>
+              {/* Optional Medication Name Input */}
+              <Text className="text-xs font-semibold mt-4" style={{ color: colors.text }}>
                 Medication name (optional)
               </Text>
               <TextInput
@@ -114,13 +113,12 @@ export default function NewQuestionScreen() {
                 onChangeText={setMedicationName}
                 placeholder="e.g. Amoxicillin"
                 placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.input,
-                  { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-                ]}
+                className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+                style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
               />
 
-              <Text style={[styles.label, { color: colors.text, marginTop: 16 }]}>
+              {/* Required Core Question Query Field */}
+              <Text className="text-xs font-semibold mt-4" style={{ color: colors.text }}>
                 Your question <Text style={{ color: colors.error }}>*</Text>
               </Text>
               <TextInput
@@ -128,19 +126,18 @@ export default function NewQuestionScreen() {
                 onChangeText={setQuestion}
                 placeholder="Describe what you'd like to know..."
                 placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.input,
-                  styles.textArea,
-                  { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-                ]}
+                className="border rounded-lg px-3 py-2.5 text-sm mt-1.5 min-h-[110px]"
+                style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
                 multiline
                 textAlignVertical="top"
               />
 
-              <View style={{ marginTop: 16 }}>
+              {/* Inline Safeguard Banner */}
+              <View className="mt-4">
                 <EmergencyBanner variant="inline" />
               </View>
 
+              {/* Submission Control Trigger Component */}
               <SubmitButton
                 label="Submit Question"
                 onPress={handleSubmit}
@@ -150,36 +147,9 @@ export default function NewQuestionScreen() {
             </>
           )}
 
-          <View style={{ height: 24 }} />
+          <View className="h-6" />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  content: { padding: 16 },
-  label: { fontSize: 12, fontWeight: "600" },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20 },
-  chipText: { fontSize: 12, fontWeight: "600" },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    fontSize: 14,
-    marginTop: 6,
-  },
-  textArea: { minHeight: 110 },
-});

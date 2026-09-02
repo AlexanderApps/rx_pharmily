@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
 import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
 
 export interface RadialGaugeProps {
@@ -41,15 +41,7 @@ const ArcGauge: React.FC<RadialGaugeProps> = ({
     .substring(2, 9)}`;
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          width: size,
-          height: size,
-        },
-      ]}
-    >
+    <View className="items-center justify-center" style={{ width: size, height: size }}>
       <Svg width={size} height={size}>
         {useGradient && gradientColors && (
           <Defs>
@@ -95,27 +87,13 @@ const ArcGauge: React.FC<RadialGaugeProps> = ({
         />
       </Svg>
 
-      <View style={styles.centerContent}>
-        <Text
-          style={[
-            styles.label,
-            {
-              color: textColor,
-            },
-          ]}
-        >
+      <View className="absolute items-center justify-center">
+        <Text className="text-base font-bold" style={{ color: textColor }}>
           {label}
         </Text>
 
         {sublabel ? (
-          <Text
-            style={[
-              styles.sublabel,
-              {
-                color: subtextColor,
-              },
-            ]}
-          >
+          <Text className="text-[11px] mt-0.5 text-center" style={{ color: subtextColor }}>
             {sublabel}
           </Text>
         ) : null}
@@ -125,24 +103,3 @@ const ArcGauge: React.FC<RadialGaugeProps> = ({
 };
 
 export default ArcGauge;
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  centerContent: {
-    position: "absolute",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  sublabel: {
-    fontSize: 11,
-    marginTop: 2,
-    textAlign: "center",
-  },
-});

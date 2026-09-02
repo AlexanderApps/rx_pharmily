@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import Skeleton from "@/shared/components/skeleton";
 
 interface DetailSkeletonProps {
@@ -17,16 +17,16 @@ interface DetailSkeletonProps {
 // something that visibly means "wait," not "there's nothing here."
 const DetailSkeleton: React.FC<DetailSkeletonProps> = ({ rows = 4 }) => {
   return (
-    <View style={styles.container}>
+    <View className="p-4">
       <Skeleton width="60%" height={22} borderRadius={6} />
-      <View style={{ height: 10 }} />
+      <View className="h-2.5" />
       <Skeleton width="40%" height={14} borderRadius={6} />
-      <View style={{ height: 24 }} />
+      <View className="h-6" />
 
       {Array.from({ length: rows }).map((_, i) => (
-        <View key={i} style={styles.row}>
+        <View key={i} className="flex-row items-center gap-3 mb-4">
           <Skeleton width={40} height={40} borderRadius={10} />
-          <View style={{ flex: 1, gap: 8 }}>
+          <View className="flex-1 gap-2">
             <Skeleton width="70%" height={14} borderRadius={6} />
             <Skeleton width="45%" height={12} borderRadius={6} />
           </View>
@@ -38,7 +38,3 @@ const DetailSkeleton: React.FC<DetailSkeletonProps> = ({ rows = 4 }) => {
 
 export default DetailSkeleton;
 
-const styles = StyleSheet.create({
-  container: { padding: 16 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
-});

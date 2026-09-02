@@ -1,9 +1,11 @@
 import React, { useMemo } from "react";
-import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
+import { View, Text, FlatList, Pressable } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import EmptyState from "@/shared/components/empty-state";
+import ScreenHeader from "@/shared/components/screen-header";
 import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
 import { AppNotification } from "@/features/notifications/types/notifications.types";
 import NotificationListItem from "@/features/notifications/components/notification-list-item";
@@ -29,38 +31,33 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>Notifications</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {unreadCount > 0 ? `${unreadCount} unread` : "You're all caught up"}
-          </Text>
-        </View>
-        <Pressable onPress={() => router.push("/notifications/settings")} style={styles.back}>
-          <MaterialCommunityIcons name="cog-outline" size={20} color={colors.text} />
-        </Pressable>
-      </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Top Header Component section */}
+      <ScreenHeader
+        title="Notifications"
+        subtitle={unreadCount > 0 ? `${unreadCount} unread` : "You're all caught up"}
+        actions={
+          <Pressable onPress={() => router.push("/notifications/settings")} className="p-1.5">
+            <MaterialCommunityIcons name="cog-outline" size={20} color={colors.text} />
+          </Pressable>
+        }
+      />
 
+      {/* Conditional Batch Action Command */}
       {unreadCount > 0 && (
-        <Pressable onPress={markAllRead} style={styles.markAllRow}>
-          <Text style={[styles.markAllText, { color: colors.primary }]}>Mark all as read</Text>
+        <Pressable onPress={markAllRead} className="px-4 pt-3">
+          <Text className="text-[13px] font-semibold" style={{ color: colors.primary }}>Mark all as read</Text>
         </Pressable>
       )}
 
+      {/* Main Container FlatList Area */}
       <FlatList
         data={sorted}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+        contentContainerStyle={{ padding: 16, flexGrow: 1 }}
+        ItemSeparatorComponent={() => <View className="h-2" />}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <MaterialCommunityIcons name="bell-off-outline" size={36} color={colors.textSecondary} />
-            <Text style={{ color: colors.textSecondary, fontSize: 13 }}>No notifications yet.</Text>
-          </View>
+          <EmptyState icon="bell-off-outline" message="No notifications yet." />
         }
         renderItem={({ item }) => (
           <NotificationListItem notification={item} onPress={handlePress} onDelete={deleteNotification} />
@@ -69,21 +66,3 @@ export default function NotificationsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: 1 },
-  markAllRow: { paddingHorizontal: 16, paddingTop: 12 },
-  markAllText: { fontSize: 13, fontWeight: "600" },
-  listContent: { padding: 16, flexGrow: 1 },
-  empty: { alignItems: "center", justifyContent: "center", gap: 10, paddingTop: 80 },
-});

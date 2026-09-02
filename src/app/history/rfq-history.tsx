@@ -1,4 +1,3 @@
-import { StyleSheet } from "react-native";
 import { ThemedText } from "@/shared/components/themed-text";
 import { ThemedView } from "@/shared/components/themed-view";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,9 +12,10 @@ export default function RfqHistoryScreen() {
     // You can handle form submission updates or validation logic here
     console.log("Selected timestamp:", newDate.getTime());
   };
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <ThemedView className="flex-1 justify-center">
+      <SafeAreaView className="flex-1">
         <ThemedView>
           <ThemedText>Event Date</ThemedText>
 
@@ -33,13 +33,3 @@ export default function RfqHistoryScreen() {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  safeArea: {
-    flex: 1,
-  },
-});

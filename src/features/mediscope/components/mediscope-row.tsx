@@ -1,9 +1,10 @@
 import React from "react";
-import { StyleSheet, Text, View, Pressable } from "react-native";
+import { Text, View, Pressable } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { format } from "timeago.js";
 import { MediscopeCardData } from "@/features/mediscope/types/mediscope.types";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { noSelectStyle } from "@/shared/constants/text-selection";
 import LoadingImage from "@/shared/components/loading-image";
 
 interface MediscopeRowProps {
@@ -28,34 +29,32 @@ export const MediscopeRow = ({ item, isLastItem, onPress }: MediscopeRowProps) =
   return (
     <Pressable
       onPress={() => onPress?.(item)}
-      style={[
-        styles.row,
-        !isLastItem && { borderBottomWidth: 0.5, borderBottomColor: colors.border },
-      ]}
+      className={`p-4 active:opacity-70 ${onPress ? "cursor-pointer hover:opacity-90" : ""}`}
+      style={!isLastItem ? { borderBottomWidth: 0.5, borderBottomColor: colors.border } : undefined}
     >
-      <View style={styles.inner}>
+      <View className="flex-row items-start">
         {item.imageUrl ? (
-          <LoadingImage source={{ uri: item.imageUrl }} style={styles.thumb} />
+          <LoadingImage source={{ uri: item.imageUrl }} style={{ width: 48, height: 48, borderRadius: 12 }} />
         ) : (
-          <View style={[styles.thumb, styles.thumbPlaceholder, { backgroundColor: colors.backgroundElement }]}>
+          <View className="w-12 h-12 rounded-xl justify-center items-center" style={{ backgroundColor: colors.backgroundElement }}>
             <MaterialCommunityIcons name="pill" size={22} color={colors.secondary} />
           </View>
         )}
 
-        <View style={styles.meta}>
-          <Text style={[styles.product, { color: colors.text }]} numberOfLines={1}>
+        <View className="flex-1 ml-3 gap-0.5">
+          <Text className="text-[15px] font-semibold" style={{ color: colors.text }} numberOfLines={1}>
             {item.product}
           </Text>
-          <Text style={[styles.facility, { color: colors.textSecondary }]} numberOfLines={1}>
+          <Text className="text-[13px] mt-0.5" style={{ color: colors.textSecondary }} numberOfLines={1}>
             {item.facilityName} · {item.facilityLocation}
           </Text>
         </View>
 
-        <View style={styles.statusBlock}>
-          <View style={[styles.badge, { backgroundColor: statusColor + "20" }]}>
-            <Text style={[styles.badgeText, { color: statusColor }]}>{item.status}</Text>
+        <View className="items-end justify-between min-h-12">
+          <View className="px-2.5 py-1 rounded-full" style={{ backgroundColor: statusColor + "20" }}>
+            <Text className="text-[11px] font-bold capitalize" style={{ color: statusColor, ...noSelectStyle }}>{item.status}</Text>
           </View>
-          <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>
+          <Text className="text-xs" style={{ color: colors.textSecondary, ...noSelectStyle }}>
             {format(item.createdAt)}
           </Text>
         </View>
@@ -64,16 +63,3 @@ export const MediscopeRow = ({ item, isLastItem, onPress }: MediscopeRowProps) =
   );
 };
 
-const styles = StyleSheet.create({
-  row: { padding: 16 },
-  inner: { flexDirection: "row", alignItems: "flex-start" },
-  thumb: { width: 48, height: 48, borderRadius: 12 },
-  thumbPlaceholder: { justifyContent: "center", alignItems: "center" },
-  meta: { flex: 1, marginLeft: 12, gap: 2 },
-  product: { fontSize: 15, fontWeight: "600" },
-  facility: { fontSize: 13, marginTop: 2 },
-  statusBlock: { alignItems: "flex-end", justifyContent: "space-between", minHeight: 48 },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
-  badgeText: { fontSize: 11, fontWeight: "700", textTransform: "capitalize" },
-  timeAgo: { fontSize: 12 },
-});

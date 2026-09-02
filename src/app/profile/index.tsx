@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
+import { View, Text, ScrollView, Pressable, Platform} from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -23,7 +23,9 @@ export default function ProfileHubScreen() {
   // store changed on every render, which is an infinite loop.
   const myFacilities = useMemo(() => {
     const myIds = new Set(
-      facilityMemberships.filter((m) => m.userId === user.id).map((m) => m.facilityId),
+      facilityMemberships
+        .filter((m) => m.userId === user.id)
+        .map((m) => m.facilityId),
     );
     return facilities.filter((f) => myIds.has(f.id));
   }, [facilities, facilityMemberships, user.id]);
@@ -44,64 +46,118 @@ export default function ProfileHubScreen() {
   };
 
   return (
-    <ThemedView style={styles.flex1}>
-      <SafeAreaView style={styles.flex1} edges={["top", "left", "right"]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+    <ThemedView className="flex-1">
+      <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
+        {/* Header */}
+        <View
+          className="flex-row items-center gap-3 px-4 pt-3 pb-4 border-b"
+          style={{ borderBottomColor: colors.border }}
+        >
+          {Platform.OS !== "web" && (
+          <Pressable onPress={() => router.back()} className="p-1">
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </Pressable>
+          )}
           <View>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Profiles</Text>
-            <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+            <Text className="text-[22px] font-bold" style={{ color: colors.text }}>
+              Profiles
+            </Text>
+            <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>
               Identity, facility, and organization details
             </Text>
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerClassName="p-4 gap-2.5"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* User card */}
           <Pressable
             onPress={() => router.push(userCard.route as any)}
-            style={[
-              styles.card,
-              { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, shadowColor: colors.text },
-            ]}
+            className="flex-row items-center gap-3.5 rounded-2xl border p-3.5 shadow-sm"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+              shadowColor: colors.text,
+            }}
           >
-            <View style={[styles.iconWrap, { backgroundColor: userCard.color + "18" }]}>
-              <MaterialCommunityIcons name={userCard.icon} size={24} color={userCard.color} />
+            <View
+              className="w-[46px] h-[46px] rounded-[13px] items-center justify-center"
+              style={{ backgroundColor: userCard.color + "18" }}
+            >
+              <MaterialCommunityIcons
+                name={userCard.icon}
+                size={24}
+                color={userCard.color}
+              />
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.cardTitle, { color: colors.text }]}>{userCard.title}</Text>
-              <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+            <View className="flex-1">
+              <Text className="text-[15px] font-bold" style={{ color: colors.text }}>
+                {userCard.title}
+              </Text>
+              <Text
+                className="text-xs mt-0.5"
+                style={{ color: colors.textSecondary }}
+                numberOfLines={1}
+              >
                 {userCard.subtitle}
               </Text>
             </View>
             <KycStatusBadge status={userCard.kyc} compact />
           </Pressable>
 
-          <View style={[styles.sectionHeaderRow, { marginTop: 14, marginBottom: 2 }]}>
-            <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 0, marginBottom: 0 }]}>
+          {/* Facilities section */}
+          <View className="flex-row items-center justify-between mt-3.5 mb-0.5">
+            <Text className="text-[13px] font-bold" style={{ color: colors.text }}>
               My Facilities ({myFacilities.length})
             </Text>
-            <Pressable onPress={() => router.push("/profile/find-facility")} style={styles.findLink}>
+            <Pressable
+              onPress={() => router.push("/profile/find-facility")}
+              className="flex-row items-center gap-1"
+            >
               <MaterialCommunityIcons name="magnify" size={14} color={colors.primary} />
-              <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "700" }}>Find a Facility</Text>
+              <Text className="text-xs font-bold" style={{ color: colors.primary }}>
+                Find a Facility
+              </Text>
             </Pressable>
           </View>
+
           {myFacilities.map((f) => (
             <Pressable
               key={f.id}
-              onPress={() => router.push({ pathname: "/profile/facility-profile", params: { id: f.id } })}
-              style={[
-                styles.card,
-                { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, shadowColor: colors.text },
-              ]}
+              onPress={() =>
+                router.push({
+                  pathname: "/profile/facility-profile",
+                  params: { id: f.id },
+                })
+              }
+              className="flex-row items-center gap-3.5 rounded-2xl border p-3.5 shadow-sm"
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+                shadowColor: colors.text,
+              }}
             >
-              <View style={[styles.iconWrap, { backgroundColor: "#16a34a18" }]}>
-                <MaterialCommunityIcons name="hospital-building" size={24} color="#16a34a" />
+              <View
+                className="w-[46px] h-[46px] rounded-[13px] items-center justify-center"
+                style={{ backgroundColor: "#16a34a18" }}
+              >
+                <MaterialCommunityIcons
+                  name="hospital-building"
+                  size={24}
+                  color="#16a34a"
+                />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.cardTitle, { color: colors.text }]}>{f.name}</Text>
-                <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+              <View className="flex-1">
+                <Text className="text-[15px] font-bold" style={{ color: colors.text }}>
+                  {f.name}
+                </Text>
+                <Text
+                  className="text-xs mt-0.5"
+                  style={{ color: colors.textSecondary }}
+                  numberOfLines={1}
+                >
                   {f.location}
                 </Text>
               </View>
@@ -109,30 +165,49 @@ export default function ProfileHubScreen() {
             </Pressable>
           ))}
 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          {/* Organizations section */}
+          <Text className="text-[13px] font-bold mt-3.5 mb-0.5" style={{ color: colors.text }}>
             My Organizations ({myOrganizations.length})
           </Text>
+
           {myOrganizations.length === 0 ? (
-            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 8 }}>
+            <Text className="text-[13px] mb-2" style={{ color: colors.textSecondary }}>
               You don't administer any organization yet.
             </Text>
           ) : (
             myOrganizations.map((o) => (
               <Pressable
                 key={o.id}
-                onPress={() => router.push({ pathname: "/profile/organization-profile", params: { id: o.id } })}
-                style={[
-                  styles.card,
-                  { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, shadowColor: colors.text },
-                ]}
+                onPress={() =>
+                  router.push({
+                    pathname: "/profile/organization-profile",
+                    params: { id: o.id },
+                  })
+                }
+                className="flex-row items-center gap-3.5 rounded-2xl border p-3.5 shadow-sm"
+                style={{
+                  backgroundColor: colors.backgroundSecondary,
+                  borderColor: colors.border,
+                  shadowColor: colors.text,
+                }}
               >
-                <View style={[styles.iconWrap, { backgroundColor: "#9333ea18" }]}>
+                <View
+                  className="w-[46px] h-[46px] rounded-[13px] items-center justify-center"
+                  style={{ backgroundColor: "#9333ea18" }}
+                >
                   <MaterialCommunityIcons name="domain" size={24} color="#9333ea" />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardTitle, { color: colors.text }]}>{o.name}</Text>
-                  <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {o.facilityIds.length} facilit{o.facilityIds.length === 1 ? "y" : "ies"}
+                <View className="flex-1">
+                  <Text className="text-[15px] font-bold" style={{ color: colors.text }}>
+                    {o.name}
+                  </Text>
+                  <Text
+                    className="text-xs mt-0.5"
+                    style={{ color: colors.textSecondary }}
+                    numberOfLines={1}
+                  >
+                    {o.facilityIds.length} facilit
+                    {o.facilityIds.length === 1 ? "y" : "ies"}
                   </Text>
                 </View>
                 <KycStatusBadge status={o.kyc.status} compact />
@@ -140,52 +215,125 @@ export default function ProfileHubScreen() {
             ))
           )}
 
+          {/* Create actions */}
           <Pressable
             onPress={() => router.push("/profile/create-facility")}
-            style={[styles.row, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+            className="flex-row items-center gap-2.5 rounded-xl border p-3.5"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
           >
-            <MaterialCommunityIcons name="hospital-box-outline" size={18} color={colors.text} />
-            <Text style={[styles.rowText, { color: colors.text }]}>Create Facility</Text>
-            <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textSecondary} />
+            <MaterialCommunityIcons
+              name="hospital-box-outline"
+              size={18}
+              color={colors.text}
+            />
+            <Text className="flex-1 text-[13px] font-semibold" style={{ color: colors.text }}>
+              Create Facility
+            </Text>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={18}
+              color={colors.textSecondary}
+            />
           </Pressable>
 
           <Pressable
             onPress={() => router.push("/profile/create-organization")}
-            style={[styles.row, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+            className="flex-row items-center gap-2.5 rounded-xl border p-3.5"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
           >
             <MaterialCommunityIcons name="domain-plus" size={18} color={colors.text} />
-            <Text style={[styles.rowText, { color: colors.text }]}>Create Organization</Text>
-            <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textSecondary} />
+            <Text className="flex-1 text-[13px] font-semibold" style={{ color: colors.text }}>
+              Create Organization
+            </Text>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={18}
+              color={colors.textSecondary}
+            />
           </Pressable>
 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Templates</Text>
+          {/* Templates */}
+          <Text className="text-[13px] font-bold mt-3.5 mb-0.5" style={{ color: colors.text }}>
+            Templates
+          </Text>
 
           <Pressable
             onPress={() => router.push("/profile/cover-letters")}
-            style={[styles.row, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+            className="flex-row items-center gap-2.5 rounded-xl border p-3.5"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
           >
-            <MaterialCommunityIcons name="file-account-outline" size={18} color={colors.text} />
-            <Text style={[styles.rowText, { color: colors.text }]}>Cover Letter Templates</Text>
-            <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textSecondary} />
+            <MaterialCommunityIcons
+              name="file-account-outline"
+              size={18}
+              color={colors.text}
+            />
+            <Text className="flex-1 text-[13px] font-semibold" style={{ color: colors.text }}>
+              Cover Letter Templates
+            </Text>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={18}
+              color={colors.textSecondary}
+            />
           </Pressable>
 
           <Pressable
             onPress={() => router.push("/profile/price-templates")}
-            style={[styles.row, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+            className="flex-row items-center gap-2.5 rounded-xl border p-3.5"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
           >
-            <MaterialCommunityIcons name="file-table-outline" size={18} color={colors.text} />
-            <Text style={[styles.rowText, { color: colors.text }]}>Price Templates</Text>
-            <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textSecondary} />
+            <MaterialCommunityIcons
+              name="file-table-outline"
+              size={18}
+              color={colors.text}
+            />
+            <Text className="flex-1 text-[13px] font-semibold" style={{ color: colors.text }}>
+              Price Templates
+            </Text>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={18}
+              color={colors.textSecondary}
+            />
           </Pressable>
 
           {isAdmin && (
             <Pressable
               onPress={() => router.push("/profile/kyc-review")}
-              style={[styles.row, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, marginTop: 20 }]}
+              className="flex-row items-center gap-2.5 rounded-xl border p-3.5 mt-5"
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+              }}
             >
-              <MaterialCommunityIcons name="shield-search" size={18} color={colors.text} />
-              <Text style={[styles.rowText, { color: colors.text }]}>KYC Review Queue</Text>
-              <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textSecondary} />
+              <MaterialCommunityIcons
+                name="shield-search"
+                size={18}
+                color={colors.text}
+              />
+              <Text
+                className="flex-1 text-[13px] font-semibold"
+                style={{ color: colors.text }}
+              >
+                KYC Review Queue
+              </Text>
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={18}
+                color={colors.textSecondary}
+              />
             </Pressable>
           )}
         </ScrollView>
@@ -193,51 +341,3 @@ export default function ProfileHubScreen() {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex1: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
-    borderBottomWidth: 0.5,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 22, fontWeight: "700" },
-  headerSubtitle: { fontSize: 12, marginTop: 2 },
-  scrollContent: { padding: 16, gap: 10 },
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 14,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  iconWrap: { width: 46, height: 46, borderRadius: 13, alignItems: "center", justifyContent: "center" },
-  cardTitle: { fontSize: 15, fontWeight: "700" },
-  cardSubtitle: { fontSize: 12, marginTop: 2 },
-  sectionTitle: { fontSize: 13, fontWeight: "700", marginTop: 14, marginBottom: 2 },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  findLink: { flexDirection: "row", alignItems: "center", gap: 4 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 14,
-  },
-  rowText: { flex: 1, fontSize: 13, fontWeight: "600" },
-});

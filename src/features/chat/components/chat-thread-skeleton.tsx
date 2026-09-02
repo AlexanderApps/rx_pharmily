@@ -1,16 +1,16 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import Skeleton from "@/shared/components/skeleton";
 
 const ROW_WIDTHS = [140, 190, 110, 160, 130];
 
 const ChatThreadSkeleton: React.FC = () => {
   return (
-    <View style={styles.container}>
+    <View className="flex-1 justify-end px-2.5 pb-3 gap-2.5">
       {ROW_WIDTHS.map((width, i) => (
         <View
           key={i}
-          style={[styles.row, { justifyContent: i % 2 === 0 ? "flex-start" : "flex-end" }]}
+          className={`flex-row ${i % 2 === 0 ? "justify-start" : "justify-end"}`}
         >
           <Skeleton width={width} height={38} borderRadius={18} />
         </View>
@@ -20,8 +20,3 @@ const ChatThreadSkeleton: React.FC = () => {
 };
 
 export default ChatThreadSkeleton;
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "flex-end", paddingHorizontal: 10, paddingBottom: 12, gap: 10 },
-  row: { flexDirection: "row" },
-});

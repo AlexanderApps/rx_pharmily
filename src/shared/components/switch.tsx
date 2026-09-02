@@ -1,5 +1,5 @@
 import React from "react";
-import { Animated, Pressable, StyleSheet, ViewStyle } from "react-native";
+import { Animated, Pressable, ViewStyle } from "react-native";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 
@@ -68,8 +68,8 @@ export default function ModernSwitch({
     <Pressable
       disabled={disabled}
       onPress={() => onValueChange(!value)}
+      className="justify-center px-[3px]"
       style={[
-        styles.container,
         {
           width: current.width,
           height: current.height,
@@ -82,7 +82,13 @@ export default function ModernSwitch({
     >
       <Animated.View
         style={[
-          styles.thumb,
+          {
+            elevation: 3,
+            shadowColor: "#000",
+            shadowOpacity: 0.15,
+            shadowRadius: 4,
+            shadowOffset: { width: 0, height: 2 },
+          },
           {
             width: current.thumb,
             height: current.thumb,
@@ -96,19 +102,3 @@ export default function ModernSwitch({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    justifyContent: "center",
-    paddingHorizontal: 3,
-  },
-  thumb: {
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-  },
-});

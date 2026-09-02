@@ -3,7 +3,6 @@ import {
   Animated,
   Modal,
   Pressable,
-  StyleSheet,
   TouchableWithoutFeedback,
   View,
   ViewStyle,
@@ -90,25 +89,21 @@ export default function MoreMenu({
               closeMenu();
               item.onPress?.();
             }}
-            style={({ pressed }) => [
-              styles.menuItem,
-              {
-                opacity: item.disabled ? 0.4 : 1,
-                backgroundColor: pressed ? pressedColor : "transparent",
-              },
-            ]}
+            className="min-h-[50px] px-4 rounded-[14px] mx-1.5 flex-row items-center"
+            style={({ pressed }) => ({
+              opacity: item.disabled ? 0.4 : 1,
+              backgroundColor: pressed ? pressedColor : "transparent",
+            })}
           >
-            <View style={styles.menuItemLeft}>
+            <View className="flex-row items-center gap-3">
               {item.icon && (
                 <Ionicons name={item.icon} size={18} color={destructiveColor} />
               )}
 
               <Animated.Text
                 style={[
-                  styles.menuText,
-                  {
-                    color: destructiveColor,
-                  },
+                  { fontSize: 15, fontWeight: "500" },
+                  { color: destructiveColor },
                 ]}
               >
                 {item.label}
@@ -122,7 +117,11 @@ export default function MoreMenu({
 
   return (
     <>
-      <Pressable onPress={openMenu} style={[styles.triggerButton, style]}>
+      <Pressable
+        onPress={openMenu}
+        className="w-[42px] h-[42px] rounded-[14px] justify-center items-center"
+        style={style}
+      >
         <Ionicons
           name="ellipsis-vertical"
           size={iconSize}
@@ -132,11 +131,19 @@ export default function MoreMenu({
 
       <Modal visible={visible} transparent animationType="none">
         <TouchableWithoutFeedback onPress={closeMenu}>
-          <View style={styles.overlay}>
+          <View className="flex-1 justify-start items-end pt-20 pr-4">
             <TouchableWithoutFeedback>
               <Animated.View
                 style={[
-                  styles.menuContainer,
+                  {
+                    borderRadius: 20,
+                    paddingVertical: 8,
+                    shadowColor: "#000",
+                    shadowOpacity: 0.12,
+                    shadowRadius: 16,
+                    shadowOffset: { width: 0, height: 10 },
+                    elevation: 8,
+                  },
                   {
                     width: menuWidth,
                     opacity: opacityAnim,
@@ -155,56 +162,3 @@ export default function MoreMenu({
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: "flex-start",
-    alignItems: "flex-end",
-    paddingTop: 80,
-    paddingRight: 16,
-  },
-
-  triggerButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  menuContainer: {
-    borderRadius: 20,
-    paddingVertical: 8,
-
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-
-    elevation: 8,
-  },
-
-  menuItem: {
-    minHeight: 50,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    marginHorizontal: 6,
-
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  menuItemLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-
-  menuText: {
-    fontSize: 15,
-    fontWeight: "500",
-  },
-});

@@ -88,7 +88,7 @@ type CatalogStore = {
   // User-facing: request a medication be added to the formulary. Nothing
   // is added to the catalog until an admin/superadmin reviews it, and
   // even approval doesn't add it — see mergeFormularyRequest.
-  submitFormularyRequest: (data: FormularyRequestFormData) => Promise<void>;
+  submitFormularyRequest: (data: FormularyRequestFormData) => Promise<boolean>;
   // Approve/reject are the review step, both with an optional/required
   // comment. Approving does NOT touch the products table — it only
   // marks the request ready for the separate merge step below.
@@ -244,9 +244,10 @@ export const useCatalogStore = create<CatalogStore>((set, get) => ({
       .single();
     if (error || !row) {
       console.warn("[catalog] submitFormularyRequest failed:", error?.message);
-      return;
+      return false;
     }
     set((state) => ({ formularyRequests: [mapFormularyRequestRow(row), ...state.formularyRequests] }));
+    return true;
   },
 
   approveFormularyRequest: async (id, comment) => {

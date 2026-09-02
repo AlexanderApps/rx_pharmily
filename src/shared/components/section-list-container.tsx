@@ -1,5 +1,6 @@
 import React from "react";
-import { StyleSheet, Text, View, Pressable } from "react-native";
+import { Text, View, Pressable } from "react-native";
+import { noSelectStyle } from "@/shared/constants/text-selection";
 
 interface SectionListContainerProps {
   title: string;
@@ -19,64 +20,30 @@ export const SectionListContainer = ({
   children,
 }: SectionListContainerProps) => {
   return (
-    <View style={styles.sectionPadding}>
-      <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.sectionTitle, { color: textColor }]}>{title}</Text>
+    <View className="px-5 mt-6">
+      <View className="flex-row justify-between items-center mb-3">
+        <Text className="text-lg font-semibold" style={{ color: textColor }}>{title}</Text>
         {onViewAllPress && (
-          <Pressable 
+          <Pressable
             onPress={onViewAllPress}
             // 1. Catches inaccurate tap targets outside the visual box
-            hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }} 
-            // 2. Active opacity dim feedback on user press
-            style={({ pressed }) => [
-              styles.viewAllButton,
-              pressed && styles.pressedState
-            ]}
+            hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
+            // 2. Active opacity dim feedback on user press — static
+            // className rather than the function-form style prop, which
+            // intermittently failed to actually commit on Android
+            // elsewhere in this app (see poll-view.tsx's fix earlier
+            // this session).
+            className="py-1.5 px-2.5 items-center justify-center active:opacity-60 cursor-pointer hover:opacity-80"
           >
-            <Text style={styles.viewAllText}>
+            <Text className="text-sm font-semibold text-[#16a34a]" style={noSelectStyle}>
               {viewAllText}
             </Text>
           </Pressable>
         )}
       </View>
 
-      <View style={[styles.cardWrapper, { backgroundColor }]}>{children}</View>
+      <View className="rounded-3xl overflow-hidden" style={{ backgroundColor }}>{children}</View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  sectionPadding: {
-    paddingHorizontal: 20,
-    marginTop: 24,
-  },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    // Removed marginBottom here so title aligns perfectly vertically with the action button text
-  },
-  viewAllButton: {
-    paddingVertical: 6,   // Creates a taller physical footprint for thumb tracking
-    paddingHorizontal: 10, // Creates a wider physical footprint for thumb tracking
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pressedState: {
-    opacity: 0.6,
-  },
-  viewAllText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#16a34a",
-  },
-  cardWrapper: {
-    borderRadius: 24,
-    overflow: "hidden",
-  },
-});

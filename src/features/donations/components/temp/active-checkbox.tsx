@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Text, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 
@@ -18,28 +18,23 @@ const ActiveCheckbox: React.FC<ActiveCheckboxProps> = ({
 
   return (
     <Pressable
-      style={({ pressed }) => [
-        styles.container,
-        {
-          backgroundColor: value
-            ? colors.success + "15"
-            : colors.backgroundElement,
-          borderColor: value ? colors.success : colors.border,
-          opacity: pressed ? 0.9 : 1,
-        },
-      ]}
+      className="flex-row items-center px-4 py-3.5 rounded-lg border-[1.5px]"
+      style={({ pressed }) => ({
+        backgroundColor: value
+          ? colors.success + "15"
+          : colors.backgroundElement,
+        borderColor: value ? colors.success : colors.border,
+        opacity: pressed ? 0.9 : 1,
+      })}
       onPress={() => onChange(!value)}
     >
       {/* Checkbox (Matches previous square checkbox style guide) */}
       <View
-        style={[
-          styles.checkbox,
-          { borderColor: colors.border },
-          value && {
-            backgroundColor: colors.success,
-            borderColor: colors.success,
-          },
-        ]}
+        className="w-5 h-5 rounded items-center justify-center border-[1.5px] mr-3"
+        style={{
+          borderColor: value ? colors.success : colors.border,
+          backgroundColor: value ? colors.success : "transparent",
+        }}
       >
         {value && (
           <MaterialCommunityIcons
@@ -52,19 +47,18 @@ const ActiveCheckbox: React.FC<ActiveCheckboxProps> = ({
 
       {/* Label Text */}
       <Text
-        style={[
-          styles.label,
-          { color: value ? colors.success : colors.textSecondary },
-        ]}
+        className="text-sm font-semibold flex-1"
+        style={{ color: value ? colors.success : colors.textSecondary }}
       >
         {label}
       </Text>
 
       {/* Modern Pill Badge */}
       {value && (
-        <View style={[styles.badge, { backgroundColor: colors.success }]}>
+        <View className="px-2 py-1 rounded-md" style={{ backgroundColor: colors.success }}>
           <Text
-            style={[styles.badgeText, { color: colors.backgroundSecondary }]}
+            className="text-[10px] font-bold uppercase tracking-[0.5px]"
+            style={{ color: colors.backgroundSecondary }}
           >
             Active
           </Text>
@@ -74,40 +68,5 @@ const ActiveCheckbox: React.FC<ActiveCheckboxProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16, // Increased padding slightly for standard layout balance
-    paddingVertical: 14,
-    borderRadius: 8, // Rounded up slightly to align with modern card patterns
-    borderWidth: 1.5,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    flex: 1,
-  },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6, // Changed from hard-box 3 to a cleaner hybrid pill layout
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-});
-
 export default ActiveCheckbox;
+

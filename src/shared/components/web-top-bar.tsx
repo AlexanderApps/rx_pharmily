@@ -1,21 +1,25 @@
 import React, { useMemo } from "react";
-import { View, Pressable, TextInput } from "react-native";
+import { View, Text, Pressable, TextInput } from "react-native";
 import { router } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
+import { noSelectStyle } from "@/shared/constants/text-selection";
+import { openGlobalSearch } from "@/shared/hooks/use-global-search";
 
 const WebTopBar: React.FC = () => {
   const { colors } = useTheme();
   const notifications = useNotificationStore((state) => state.notifications);
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
+  const isMac = typeof navigator !== "undefined" && /Mac/.test(navigator.platform ?? "");
 
   return (
     <View
       className="h-16 flex-row items-center justify-between px-6"
       style={{ backgroundColor: colors.background, borderBottomWidth: 1, borderBottomColor: colors.border }}
     >
-      <View
+      <Pressable
+        onPress={openGlobalSearch}
         className="h-9 w-full max-w-sm flex-row items-center gap-2 rounded-lg px-3"
         style={{ backgroundColor: colors.backgroundElement }}
       >
@@ -23,10 +27,15 @@ const WebTopBar: React.FC = () => {
         <TextInput
           placeholder="Search RxRFQs, donations, jobs..."
           placeholderTextColor={colors.textSecondary}
+          editable={false}
+          pointerEvents="none"
           className="flex-1 text-[13px]"
           style={{ color: colors.text, outline: "none" as any }}
         />
-      </View>
+        <View className="rounded px-1.5 py-0.5" style={{ backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 10, ...noSelectStyle }}>{isMac ? "⌘K" : "Ctrl+K"}</Text>
+        </View>
+      </Pressable>
 
       <View className="flex-row items-center gap-3">
         <Pressable

@@ -1,9 +1,10 @@
 import React from "react";
-import { StyleSheet, Text, View, Pressable } from "react-native";
+import { Text, View, Pressable } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { format } from "timeago.js";
 import { MediscopeCardData } from "@/features/mediscope/types/mediscope.types";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { noSelectStyle } from "@/shared/constants/text-selection";
 import LoadingImage from "@/shared/components/loading-image";
 import MediscopeNamePlaceholder from "@/features/mediscope/components/mediscope-name-placeholder";
 
@@ -12,83 +13,90 @@ interface MediscopeHsCardProps {
   onPress?: (item: MediscopeCardData) => void;
 }
 
+const CARD_HEIGHT = 210;
+const IMAGE_HEIGHT = 126; // ~60%
+const DETAILS_HEIGHT = 84; // ~40%
+
 export const MediscopeHsCard = ({ item, onPress }: MediscopeHsCardProps) => {
   const { colors } = useTheme();
 
   return (
     <Pressable
       onPress={() => onPress?.(item)}
-      style={({ pressed }) => [
-        styles.card,
-        {
-          backgroundColor: colors.backgroundSecondary,
-          borderColor: colors.border,
-          opacity: pressed ? 0.75 : 1,
-        },
-      ]}
+      className={`mr-3 w-[200px] overflow-hidden rounded-[18px] border active:opacity-75 ${
+        onPress ? "cursor-pointer hover:opacity-90" : ""
+      }`}
+      style={{
+        height: CARD_HEIGHT,
+        backgroundColor: colors.backgroundSecondary,
+        borderColor: colors.border,
+        borderWidth: 0.5,
+      }}
     >
+      {/* Image — ~60% */}
       {item.imageUrl ? (
-        <LoadingImage source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
+        <LoadingImage
+          source={{ uri: item.imageUrl }}
+          style={{ width: "100%", height: IMAGE_HEIGHT }}
+          resizeMode="cover"
+        />
       ) : (
-        <MediscopeNamePlaceholder product={item.product} style={styles.image} fontSize={13} />
+        <MediscopeNamePlaceholder
+          product={item.product}
+          style={{ width: "100%", height: IMAGE_HEIGHT }}
+          fontSize={13}
+        />
       )}
 
-      <View style={styles.body}>
-        <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
-          {item.product}
-        </Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={1}>
-          {item.facilityName}
-        </Text>
-      </View>
-
-      <View style={styles.meta}>
-        <View style={styles.iconRow}>
-          <Ionicons name="time-outline" size={13} color={colors.textSecondary} />
-          <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-            {format(item.createdAt)}
+      {/* Details — ~40% */}
+      <View
+        className="justify-between px-3.5 py-2"
+        style={{ height: DETAILS_HEIGHT }}
+      >
+        <View className="gap-0.5">
+          <Text
+            className="text-sm font-semibold"
+            style={{ color: colors.text }}
+            numberOfLines={1}
+          >
+            {item.product}
+          </Text>
+          <Text
+            className="text-xs"
+            style={{ color: colors.textSecondary }}
+            numberOfLines={1}
+          >
+            {item.facilityName}
           </Text>
         </View>
-        <View
-          style={[styles.badge, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}
-        >
-          <MaterialCommunityIcons name="reply-all-outline" size={13} color={colors.textSecondary} />
-          <Text style={[styles.badgeText, { color: colors.text }]}>{item.responseCount}</Text>
+
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center gap-1.5">
+            <Ionicons name="time-outline" size={13} color={colors.textSecondary} />
+            <Text className="text-[11px]" style={{ color: colors.textSecondary, ...noSelectStyle }}>
+              {format(item.createdAt)}
+            </Text>
+          </View>
+
+          <View
+            className="flex-row items-center gap-1 rounded-full border px-2.5 py-0.5"
+            style={{
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+              borderWidth: 0.5,
+            }}
+          >
+            <MaterialCommunityIcons
+              name="reply-all-outline"
+              size={13}
+              color={colors.textSecondary}
+            />
+            <Text className="text-[11px] font-medium" style={{ color: colors.text, ...noSelectStyle }}>
+              {item.responseCount}
+            </Text>
+          </View>
         </View>
       </View>
     </Pressable>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    width: 200,
-    borderRadius: 18,
-    borderWidth: 0.5,
-    marginRight: 12,
-    overflow: "hidden",
-  },
-  image: { width: "100%", height: 100 },
-  body: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4, gap: 2 },
-  title: { fontSize: 14, fontWeight: "600" },
-  subtitle: { fontSize: 12 },
-  meta: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  iconRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  metaText: { fontSize: 11 },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    borderRadius: 20,
-    borderWidth: 0.5,
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-  },
-  badgeText: { fontSize: 11, fontWeight: "500" },
-});

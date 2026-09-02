@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, Modal, FlatList, Alert } from "react-native";
+import { View, Text, TextInput, Pressable, Modal, FlatList, Alert } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
@@ -55,33 +55,33 @@ const ProductPicker: React.FC<ProductPickerProps> = ({
     <View>
       <Pressable
         onPress={() => setOpen(true)}
-        style={[
-          styles.trigger,
-          { backgroundColor: colors.backgroundElement, borderColor: error ? colors.error : colors.border },
-        ]}
+        className="flex-row items-center justify-between border rounded-lg px-3 py-[11px]"
+        style={{ backgroundColor: colors.backgroundElement, borderColor: error ? colors.error : colors.border }}
       >
         <Text
-          style={[styles.triggerText, { color: selected ? colors.text : colors.textSecondary }]}
+          className="text-sm flex-1"
+          style={{ color: selected ? colors.text : colors.textSecondary }}
           numberOfLines={1}
         >
           {selected ? selected.name : placeholder}
         </Text>
         <MaterialCommunityIcons name="chevron-down" size={18} color={colors.textSecondary} />
       </Pressable>
-      {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
+      {error && <Text className="text-xs mt-1" style={{ color: colors.error }}>{error}</Text>}
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <View style={styles.overlay}>
-          <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
-          <View style={[styles.sheet, { backgroundColor: colors.backgroundSecondary }]}>
-            <View style={[styles.searchBox, { backgroundColor: colors.backgroundElement }]}>
+        <View className="flex-1 items-center justify-center p-6">
+          <Pressable className="absolute inset-0 bg-[rgba(0,0,0,0.5)]" onPress={() => setOpen(false)} />
+          <View className="w-full max-w-[480px] rounded-2xl p-3.5 gap-2" style={{ backgroundColor: colors.backgroundSecondary }}>
+            <View className="flex-row items-center gap-2 rounded-[10px] px-3 py-[9px]" style={{ backgroundColor: colors.backgroundElement }}>
               <MaterialCommunityIcons name="magnify" size={16} color={colors.textSecondary} />
               <TextInput
                 value={search}
                 onChangeText={setSearch}
                 placeholder="Search products..."
                 placeholderTextColor={colors.textSecondary}
-                style={[styles.searchInput, { color: colors.text }]}
+                className="flex-1 text-sm p-0"
+                style={{ color: colors.text }}
                 autoFocus
               />
             </View>
@@ -90,14 +90,16 @@ const ProductPicker: React.FC<ProductPickerProps> = ({
               data={results}
               keyExtractor={(item) => item.id}
               style={{ maxHeight: 360 }}
+              keyboardShouldPersistTaps="handled"
               ListFooterComponent={
                 search.trim().length > 0 && !exactMatchExists ? (
                   <Pressable
                     onPress={handleRequestNew}
-                    style={[styles.resultRow, { backgroundColor: colors.backgroundElement }]}
+                    className="flex-row items-center justify-between gap-2 px-2.5 py-3 rounded-lg"
+                    style={{ backgroundColor: colors.backgroundElement }}
                   >
                     <MaterialCommunityIcons name="clipboard-plus-outline" size={16} color={colors.primary} />
-                    <Text style={[styles.resultText, { color: colors.primary }]} numberOfLines={1}>
+                    <Text className="text-[13px] flex-1" style={{ color: colors.primary }} numberOfLines={1}>
                       Request "{search.trim()}" be added to the catalog
                     </Text>
                   </Pressable>
@@ -106,16 +108,14 @@ const ProductPicker: React.FC<ProductPickerProps> = ({
               renderItem={({ item }) => (
                 <Pressable
                   onPress={() => handleSelect(item.id)}
-                  style={[
-                    styles.resultRow,
-                    { backgroundColor: item.id === value ? colors.backgroundSelected : "transparent" },
-                  ]}
+                  className="flex-row items-center justify-between gap-2 px-2.5 py-3 rounded-lg"
+                  style={{ backgroundColor: item.id === value ? colors.backgroundSelected : "transparent" }}
                 >
-                  <Text style={[styles.resultText, { color: colors.text }]} numberOfLines={1}>
+                  <Text className="text-[13px] flex-1" style={{ color: colors.text }} numberOfLines={1}>
                     {item.name}
                   </Text>
                   {item.category && (
-                    <Text style={[styles.resultCategory, { color: colors.textSecondary }]}>{item.category}</Text>
+                    <Text className="text-[10px]" style={{ color: colors.textSecondary }}>{item.category}</Text>
                   )}
                 </Pressable>
               )}
@@ -129,39 +129,3 @@ const ProductPicker: React.FC<ProductPickerProps> = ({
 
 export default ProductPicker;
 
-const styles = StyleSheet.create({
-  trigger: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-  },
-  triggerText: { fontSize: 14, flex: 1 },
-  errorText: { fontSize: 12, marginTop: 4 },
-  overlay: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.5)" },
-  sheet: { width: "100%", maxWidth: 480, borderRadius: 16, padding: 14, gap: 8 },
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-  },
-  searchInput: { flex: 1, fontSize: 14, padding: 0 },
-  resultRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  resultText: { fontSize: 13, flex: 1 },
-  resultCategory: { fontSize: 10 },
-});

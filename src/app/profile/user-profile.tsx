@@ -5,7 +5,6 @@ import {
   TextInput,
   Pressable,
   ScrollView,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   Switch,
@@ -14,10 +13,16 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import ScreenHeader from "@/shared/components/screen-header";
 import LocationPicker from "@/shared/components/location-picker";
+import { useUserFieldAccess } from "@/features/profile/hooks/use-user-field-access";
+import AvatarUpload from "@/shared/components/avatar-upload";
+import LoadingImage from "@/shared/components/loading-image";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { UserRole } from "@/features/profile/types/profile.types";
 import KycSection from "@/features/profile/components/kyc-section";
+import ReferencePicker from "@/shared/components/forms/reference-picker";
+import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 
 const ROLES: UserRole[] = [
   "Pharmacist",
@@ -58,8 +63,17 @@ export default function UserProfileScreen() {
   const [licenseNumber, setLicenseNumber] = useState(user.licenseNumber ?? "");
   const [bio, setBio] = useState(user.bio ?? "");
   const [location, setLocation] = useState(user.location ?? "");
+  const [region, setRegion] = useState(user.region ?? "");
   const [latitude, setLatitude] = useState<number | undefined>(user.latitude);
   const [longitude, setLongitude] = useState<number | undefined>(user.longitude);
+  const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
+  const referenceRegions = useReferenceDataStore((state) => state.regions);
+  const regionOptions = useMemo(
+    () => referenceRegions.map((r) => ({ id: r.name, label: r.name })),
+    [referenceRegions],
+  );
+
+  const { role: viewerRole, canSee } = useUserFieldAccess(user);
 
   const initials = user.fullName
     .split(" ")
@@ -77,8 +91,10 @@ export default function UserProfileScreen() {
       licenseNumber: licenseNumber.trim() || undefined,
       bio: bio.trim() || undefined,
       location: location.trim() || undefined,
+      region: region.trim() || undefined,
       latitude,
       longitude,
+      avatarUrl,
     });
     setEditing(false);
   };
@@ -86,33 +102,50 @@ export default function UserProfileScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={() => router.back()} style={styles.back}>
-            <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-          </Pressable>
-          <Text style={[styles.title, { color: colors.text }]}>My Profile</Text>
-          <Pressable onPress={() => (editing ? handleSave() : setEditing(true))} style={styles.back}>
-            <MaterialCommunityIcons
-              name={editing ? "check" : "pencil-outline"}
-              size={20}
-              color={editing ? colors.primary : colors.text}
-            />
-          </Pressable>
-        </View>
+        <ScreenHeader
+          title="My Profile"
+          centered
+          actions={
+            <Pressable onPress={() => (editing ? handleSave() : setEditing(true))} className="p-1.5">
+              <MaterialCommunityIcons
+                name={editing ? "check" : "pencil-outline"}
+                size={20}
+                color={editing ? colors.primary : colors.text}
+              />
+            </Pressable>
+          }
+        />
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.avatarRow}>
-            <View style={[styles.avatar, { backgroundColor: user.avatarColor }]}>
-              <Text style={styles.avatarText}>{initials}</Text>
-            </View>
+        <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
+          <View className="items-center mb-2">
+            {editing ? (
+              <AvatarUpload
+                imageUri={avatarUrl}
+                onImageSelected={setAvatarUrl}
+                fallbackColor={user.avatarColor}
+                fallbackContent={initials}
+                size={72}
+                uploadContext="avatars"
+              />
+            ) : avatarUrl ? (
+              <LoadingImage source={{ uri: avatarUrl }} style={{ width: 72, height: 72 }} borderRadius={36} />
+            ) : (
+              <View className="w-[72px] h-[72px] rounded-full items-center justify-center" style={{ backgroundColor: user.avatarColor }}>
+                <Text className="text-white text-2xl font-bold">{initials}</Text>
+              </View>
+            )}
           </View>
 
           <Field label="Full Name" editing={editing} value={fullName} onChange={setFullName} colors={colors} />
-          <Field label="Email" editing={editing} value={email} onChange={setEmail} colors={colors} keyboardType="email-address" />
-          <Field label="Phone" editing={editing} value={phone} onChange={setPhone} colors={colors} keyboardType="phone-pad" />
+          {canSee("email") && (
+            <Field label="Email" editing={editing} value={email} onChange={setEmail} colors={colors} keyboardType="email-address" />
+          )}
+          {canSee("phone") && (
+            <Field label="Phone" editing={editing} value={phone} onChange={setPhone} colors={colors} keyboardType="phone-pad" />
+          )}
 
           <View style={{ marginTop: 14 }}>
-            <Text style={[styles.label, { color: colors.text }]}>Location</Text>
+            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Location</Text>
             {editing ? (
               <LocationPicker
                 value={location}
@@ -130,7 +163,7 @@ export default function UserProfileScreen() {
               />
             ) : (
               <>
-                <Text style={[styles.value, { color: colors.text, marginTop: 4 }]}>{location || "-"}</Text>
+                <Text className="text-sm mt-1" style={{ color: colors.text }}>{location || "-"}</Text>
                 {latitude !== undefined && longitude !== undefined && (
                   <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
                     GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
@@ -140,18 +173,36 @@ export default function UserProfileScreen() {
             )}
           </View>
 
-          <Text style={[styles.label, { color: colors.text, marginTop: 14 }]}>Role</Text>
+          <View style={{ marginTop: 14 }}>
+            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Region</Text>
+            {editing ? (
+              <ReferencePicker
+                title="Select Region"
+                options={regionOptions}
+                value={region}
+                onChange={setRegion}
+                placeholder="Select a region"
+                emptyMessage="No regions set up yet."
+                searchable={false}
+              />
+            ) : (
+              <Text className="text-sm mt-1" style={{ color: colors.text }}>{region || "-"}</Text>
+            )}
+          </View>
+
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>Role</Text>
           {editing ? (
-            <View style={styles.chipRow}>
+            <View className="flex-row flex-wrap gap-2 mt-1.5">
               {ROLES.map((option) => {
                 const active = role === option;
                 return (
                   <Pressable
                     key={option}
                     onPress={() => setRole(option)}
-                    style={[styles.chip, { backgroundColor: active ? colors.primary : colors.backgroundElement }]}
+                    className="px-3 py-2 rounded-full"
+                    style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
                   >
-                    <Text style={[styles.chipText, { color: active ? "#fff" : colors.textSecondary }]}>
+                    <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
                       {option}
                     </Text>
                   </Pressable>
@@ -159,16 +210,18 @@ export default function UserProfileScreen() {
               })}
             </View>
           ) : (
-            <Text style={[styles.value, { color: colors.text, marginTop: 4 }]}>{user.role}</Text>
+            <Text className="text-sm mt-1" style={{ color: colors.text }}>{user.role}</Text>
           )}
 
-          <Field
-            label="License Number"
-            editing={editing}
-            value={licenseNumber}
-            onChange={setLicenseNumber}
-            colors={colors}
-          />
+          {canSee("licenseNumber") && (
+            <Field
+              label="License Number"
+              editing={editing}
+              value={licenseNumber}
+              onChange={setLicenseNumber}
+              colors={colors}
+            />
+          )}
           <Field
             label="Bio"
             editing={editing}
@@ -178,9 +231,9 @@ export default function UserProfileScreen() {
             multiline
           />
 
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <View className="h-px my-[18px]" style={{ backgroundColor: colors.border }} />
 
-          <Text style={[styles.label, { color: colors.text, marginBottom: 8 }]}>
+          <Text className="text-xs font-semibold mb-2" style={{ color: colors.text }}>
             My Facilities ({myFacilities.length})
           </Text>
           {myFacilities.length === 0 ? (
@@ -195,10 +248,11 @@ export default function UserProfileScreen() {
                   onPress={() =>
                     router.push({ pathname: "/profile/facility-profile", params: { id: f.id } })
                   }
-                  style={[styles.facilityRow, { backgroundColor: colors.backgroundElement }]}
+                  className="flex-row items-center gap-2 rounded-[10px] p-2.5"
+                  style={{ backgroundColor: colors.backgroundElement }}
                 >
                   <MaterialCommunityIcons name="hospital-building" size={16} color={colors.textSecondary} />
-                  <Text style={[styles.value, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+                  <Text className="text-sm flex-1" style={{ color: colors.text }} numberOfLines={1}>
                     {f.name}
                   </Text>
                   <MaterialCommunityIcons name="chevron-right" size={16} color={colors.textSecondary} />
@@ -207,23 +261,23 @@ export default function UserProfileScreen() {
             </View>
           )}
 
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <View className="h-px my-[18px]" style={{ backgroundColor: colors.border }} />
 
-          <Text style={[styles.label, { color: colors.text, marginBottom: 4 }]}>Public Profile</Text>
-          <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+          <Text className="text-xs font-semibold mb-1" style={{ color: colors.text }}>Public Profile</Text>
+          <Text className="text-xs leading-[17px] mb-2.5" style={{ color: colors.textSecondary }}>
             Anyone can see your name, avatar, and role when they tap your avatar. Email and phone
             are hidden unless you turn them on.
           </Text>
-          <View style={styles.toggleRow}>
-            <Text style={[styles.toggleLabel, { color: colors.text }]}>Show email publicly</Text>
+          <View className="flex-row items-center justify-between py-2">
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>Show email publicly</Text>
             <Switch
               value={user.publicVisibility.showEmail}
               onValueChange={(value) => updateUserVisibility({ showEmail: value })}
               trackColor={{ true: colors.primary }}
             />
           </View>
-          <View style={styles.toggleRow}>
-            <Text style={[styles.toggleLabel, { color: colors.text }]}>Show phone publicly</Text>
+          <View className="flex-row items-center justify-between py-2">
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>Show phone publicly</Text>
             <Switch
               value={user.publicVisibility.showPhone}
               onValueChange={(value) => updateUserVisibility({ showPhone: value })}
@@ -231,7 +285,7 @@ export default function UserProfileScreen() {
             />
           </View>
 
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <View className="h-px my-[18px]" style={{ backgroundColor: colors.border }} />
 
           <KycSection
             entityType="user"
@@ -271,69 +325,19 @@ function Field({
 }) {
   return (
     <View style={{ marginTop: 14 }}>
-      <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+      <Text className="text-xs font-semibold" style={{ color: colors.text }}>{label}</Text>
       {editing ? (
         <TextInput
           value={value}
           onChangeText={onChange}
           keyboardType={keyboardType}
           multiline={multiline}
-          style={[
-            styles.input,
-            multiline && styles.textArea,
-            { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-          ]}
+          className={`border rounded-lg px-3 py-2.5 text-sm mt-1.5${multiline ? " min-h-[70px]" : ""}`}
+          style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
         />
       ) : (
-        <Text style={[styles.value, { color: colors.text, marginTop: 4 }]}>{value || "-"}</Text>
+        <Text className="text-sm mt-1" style={{ color: colors.text }}>{value || "-"}</Text>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700", flex: 1, textAlign: "center" },
-  content: { padding: 16 },
-  avatarRow: { alignItems: "center", marginBottom: 8 },
-  avatar: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center" },
-  avatarText: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  label: { fontSize: 12, fontWeight: "600" },
-  value: { fontSize: 14 },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    marginTop: 6,
-  },
-  textArea: { minHeight: 70 },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 },
-  chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20 },
-  chipText: { fontSize: 12, fontWeight: "600" },
-  divider: { height: 1, marginVertical: 18 },
-  helperText: { fontSize: 12, lineHeight: 17, marginBottom: 10 },
-  toggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-  },
-  toggleLabel: { fontSize: 13, fontWeight: "500" },
-  facilityRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: 10,
-    padding: 10,
-  },
-});

@@ -5,7 +5,6 @@ import {
   TextInput,
   FlatList,
   Pressable,
-  StyleSheet,
   Alert,
   Modal,
   KeyboardAvoidingView,
@@ -15,17 +14,22 @@ import { router, Redirect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import ScreenHeader from "@/shared/components/screen-header";
 import { confirm } from "@/shared/hooks/use-confirm";
 import { toast } from "@/shared/hooks/use-toast";
+import StatusFilterTabs from "@/shared/components/status-filter-tabs";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { isAdminRole, isSuperadminRole } from "@/features/auth/types/auth.types";
 import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
 import { Product } from "@/features/catalog/types/catalog.types";
+import ReferencePicker from "@/shared/components/forms/reference-picker";
+import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 
 export default function AdminProductsScreen() {
   const { colors } = useTheme();
   const isAdmin = useAuthStore((state) => isAdminRole(state.profile?.accountRole));
   const isSuperadmin = useAuthStore((state) => isSuperadminRole(state.profile?.accountRole));
+
   const products = useCatalogStore((state) => state.products);
   const fetchProducts = useCatalogStore((state) => state.fetchProducts);
   const addProduct = useCatalogStore((state) => state.addProduct);
@@ -36,15 +40,28 @@ export default function AdminProductsScreen() {
   const mergeProducts = useCatalogStore((state) => state.mergeProducts);
 
   const [search, setSearch] = useState("");
-  const [showDeleted, setShowDeleted] = useState(false);
+  const [productFilter, setProductFilter] = useState<"active" | "deleted" | "all">("active");
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [defaultUnit, setDefaultUnit] = useState("");
+  const referenceCategories = useReferenceDataStore((state) => state.categories);
+  const referenceUnits = useReferenceDataStore((state) => state.units);
+  const categoryOptions = useMemo(
+    () => referenceCategories.map((c) => ({ id: c.name, label: c.name })),
+    [referenceCategories],
+  );
+  const unitOptions = useMemo(
+    () =>
+      referenceUnits.map((u) => ({
+        id: u.name,
+        label: u.abbreviation ? `${u.name} (${u.abbreviation})` : u.name,
+      })),
+    [referenceUnits],
+  );
   const [atcCode, setAtcCode] = useState("");
   const [description, setDescription] = useState("");
-
   const [mergeTarget, setMergeTarget] = useState<Product | null>(null);
   const [mergeSearch, setMergeSearch] = useState("");
 
@@ -52,8 +69,8 @@ export default function AdminProductsScreen() {
   // loaded — the default fetch (used everywhere else in the app) filters
   // them out at the query level, not just in this screen's own display.
   useEffect(() => {
-    if (isSuperadmin) fetchProducts(showDeleted);
-  }, [showDeleted, isSuperadmin]);
+    if (isSuperadmin) fetchProducts(productFilter !== "active");
+  }, [productFilter, isSuperadmin]);
 
   if (!isAdmin) {
     return <Redirect href="/(tabs)/account" />;
@@ -61,12 +78,18 @@ export default function AdminProductsScreen() {
 
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const sorted = [...products].sort((a, b) => a.name.localeCompare(b.name));
+    const byStatus = products.filter((p) => {
+      if (productFilter === "active") return !p.deletedAt;
+      if (productFilter === "deleted") return !!p.deletedAt;
+      return true;
+    });
+    const sorted = [...byStatus].sort((a, b) => a.name.localeCompare(b.name));
     if (!q) return sorted;
     return sorted.filter(
-      (p) => p.name.toLowerCase().includes(q) || (p.category ?? "").toLowerCase().includes(q),
+      (p) =>
+        p.name.toLowerCase().includes(q) || (p.category ?? "").toLowerCase().includes(q),
     );
-  }, [products, search]);
+  }, [products, search, productFilter]);
 
   const mergeCandidates = useMemo(() => {
     if (!mergeTarget) return [];
@@ -171,60 +194,62 @@ export default function AdminProductsScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>Product Catalog</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {products.length} products
-          </Text>
-        </View>
-        <Pressable onPress={openNew} style={[styles.newButton, { backgroundColor: colors.primary }]}>
-          <MaterialCommunityIcons name="plus" size={20} color="#fff" />
-        </Pressable>
-      </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Header */}
+      <ScreenHeader
+        title="Product Catalog"
+        subtitle={`${products.length} products`}
+        actions={
+          <Pressable
+            onPress={openNew}
+            className="w-[34px] h-[34px] rounded-[10px] items-center justify-center"
+            style={{ backgroundColor: colors.primary }}
+          >
+            <MaterialCommunityIcons name="plus" size={20} color="#fff" />
+          </Pressable>
+        }
+      />
 
-      <View style={styles.searchWrap}>
-        <View style={[styles.searchBox, { backgroundColor: colors.backgroundElement }]}>
+      {/* Search */}
+      <View className="flex-row items-center gap-2 px-4 pt-3 pb-1">
+        <View
+          className="flex-1 flex-row items-center gap-2 rounded-[10px] px-3 py-2"
+          style={{ backgroundColor: colors.backgroundElement }}
+        >
           <MaterialCommunityIcons name="magnify" size={17} color={colors.textSecondary} />
           <TextInput
             value={search}
             onChangeText={setSearch}
             placeholder="Search products or categories..."
             placeholderTextColor={colors.textSecondary}
-            style={[styles.searchInput, { color: colors.text }]}
+            className="flex-1 text-sm p-0"
+            style={{ color: colors.text }}
           />
         </View>
-        {isSuperadmin && (
-          <Pressable
-            onPress={() => setShowDeleted((v) => !v)}
-            style={[
-              styles.deletedToggle,
-              { backgroundColor: showDeleted ? colors.error + "18" : colors.backgroundElement },
-            ]}
-          >
-            <MaterialCommunityIcons
-              name={showDeleted ? "eye-off-outline" : "trash-can-outline"}
-              size={14}
-              color={showDeleted ? colors.error : colors.textSecondary}
-            />
-            <Text style={[styles.deletedToggleText, { color: showDeleted ? colors.error : colors.textSecondary }]}>
-              {showDeleted ? "Hide deleted" : "Show deleted"}
-            </Text>
-          </Pressable>
-        )}
       </View>
+
+      {isSuperadmin && (
+        <StatusFilterTabs
+          options={[
+            { key: "active", label: "Active" },
+            { key: "deleted", label: "Deleted" },
+            { key: "all", label: "All" },
+          ]}
+          selected={productFilter}
+          onSelect={(key) => setProductFilter(key as typeof productFilter)}
+        />
+      )}
 
       <FlatList
         data={results}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+        contentContainerClassName="p-4"
+        ItemSeparatorComponent={() => <View className="h-2" />}
         ListEmptyComponent={
-          <Text style={{ color: colors.textSecondary, textAlign: "center", marginTop: 24 }}>
+          <Text
+            className="text-center mt-6"
+            style={{ color: colors.textSecondary }}
+          >
             No matching products.
           </Text>
         }
@@ -232,40 +257,70 @@ export default function AdminProductsScreen() {
           const isDeleted = !!item.deletedAt;
           return (
             <View
-              style={[
-                styles.row,
-                { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, opacity: isDeleted ? 0.6 : 1 },
-              ]}
+              className="flex-row items-center gap-2 rounded-xl border p-3"
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+                opacity: isDeleted ? 0.6 : 1,
+              }}
             >
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.rowTitle, { color: colors.text }]} numberOfLines={1}>
-                  {item.name} {isDeleted && <Text style={{ color: colors.error }}>(deleted)</Text>}
+              <View className="flex-1">
+                <Text
+                  className="text-[13px] font-semibold"
+                  style={{ color: colors.text }}
+                  numberOfLines={1}
+                >
+                  {item.name}{" "}
+                  {isDeleted && (
+                    <Text style={{ color: colors.error }}>(deleted)</Text>
+                  )}
                 </Text>
-                <Text style={[styles.rowMeta, { color: colors.textSecondary }]}>
-                  {[item.category, item.defaultUnit].filter(Boolean).join(" · ") || "Uncategorized"}
+                <Text className="text-[11px] mt-0.5" style={{ color: colors.textSecondary }}>
+                  {[item.category, item.defaultUnit].filter(Boolean).join(" · ") ||
+                    "Uncategorized"}
                 </Text>
               </View>
               {isDeleted ? (
                 <>
-                  <Pressable onPress={() => handleRestore(item)} hitSlop={6} style={styles.iconAction}>
-                    <MaterialCommunityIcons name="backup-restore" size={16} color={colors.textSecondary} />
+                  <Pressable onPress={() => handleRestore(item)} hitSlop={6} className="p-1">
+                    <MaterialCommunityIcons
+                      name="backup-restore"
+                      size={16}
+                      color={colors.textSecondary}
+                    />
                   </Pressable>
                   {isSuperadmin && (
-                    <Pressable onPress={() => handleHardDelete(item)} hitSlop={6} style={styles.iconAction}>
-                      <MaterialCommunityIcons name="delete-forever-outline" size={16} color={colors.error} />
+                    <Pressable onPress={() => handleHardDelete(item)} hitSlop={6} className="p-1">
+                      <MaterialCommunityIcons
+                        name="delete-forever-outline"
+                        size={16}
+                        color={colors.error}
+                      />
                     </Pressable>
                   )}
                 </>
               ) : (
                 <>
-                  <Pressable onPress={() => openMerge(item)} hitSlop={6} style={styles.iconAction}>
-                    <MaterialCommunityIcons name="call-merge" size={16} color={colors.textSecondary} />
+                  <Pressable onPress={() => openMerge(item)} hitSlop={6} className="p-1">
+                    <MaterialCommunityIcons
+                      name="call-merge"
+                      size={16}
+                      color={colors.textSecondary}
+                    />
                   </Pressable>
-                  <Pressable onPress={() => openEdit(item)} hitSlop={6} style={styles.iconAction}>
-                    <MaterialCommunityIcons name="pencil-outline" size={16} color={colors.textSecondary} />
+                  <Pressable onPress={() => openEdit(item)} hitSlop={6} className="p-1">
+                    <MaterialCommunityIcons
+                      name="pencil-outline"
+                      size={16}
+                      color={colors.textSecondary}
+                    />
                   </Pressable>
-                  <Pressable onPress={() => handleDelete(item)} hitSlop={6} style={styles.iconAction}>
-                    <MaterialCommunityIcons name="trash-can-outline" size={16} color={colors.error} />
+                  <Pressable onPress={() => handleDelete(item)} hitSlop={6} className="p-1">
+                    <MaterialCommunityIcons
+                      name="trash-can-outline"
+                      size={16}
+                      color={colors.error}
+                    />
                   </Pressable>
                 </>
               )}
@@ -274,84 +329,134 @@ export default function AdminProductsScreen() {
         }}
       />
 
-      <Modal visible={showForm} transparent animationType="fade" onRequestClose={() => setShowForm(false)}>
+      {/* Create / Edit form modal */}
+      <Modal
+        visible={showForm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowForm(false)}
+      >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalOverlay}
+          className="flex-1 bg-black/50 justify-center p-6"
         >
-          <View style={[styles.modalCard, { backgroundColor: colors.backgroundSecondary }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>
+          <View
+            className="rounded-2xl p-[18px] max-h-[80%]"
+            style={{ backgroundColor: colors.backgroundSecondary }}
+          >
+            <Text className="text-base font-bold mb-3" style={{ color: colors.text }}>
               {editingProduct ? "Edit Product" : "New Product"}
             </Text>
 
-            <Text style={[styles.label, { color: colors.text }]}>Name</Text>
+            <Text className="text-xs font-semibold" style={{ color: colors.text }}>
+              Name
+            </Text>
             <TextInput
               value={name}
               onChangeText={setName}
               placeholder="e.g. Paracetamol 500mg"
               placeholderTextColor={colors.textSecondary}
-              style={[styles.input, { backgroundColor: colors.backgroundElement, color: colors.text, borderColor: colors.border }]}
+              className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+              style={{
+                backgroundColor: colors.backgroundElement,
+                color: colors.text,
+                borderColor: colors.border,
+              }}
             />
 
-            <Text style={[styles.label, { color: colors.text, marginTop: 12 }]}>Category</Text>
-            <TextInput
+            <Text className="text-xs font-semibold mt-3" style={{ color: colors.text }}>
+              Category
+            </Text>
+            <ReferencePicker
+              title="Select Category"
+              options={categoryOptions}
               value={category}
-              onChangeText={setCategory}
-              placeholder="e.g. Medication"
-              placeholderTextColor={colors.textSecondary}
-              style={[styles.input, { backgroundColor: colors.backgroundElement, color: colors.text, borderColor: colors.border }]}
+              onChange={setCategory}
+              placeholder="Select a category"
+              emptyMessage="No categories set up yet."
             />
 
-            <Text style={[styles.label, { color: colors.text, marginTop: 12 }]}>Default Unit</Text>
-            <TextInput
+            <Text className="text-xs font-semibold mt-3" style={{ color: colors.text }}>
+              Default Unit
+            </Text>
+            <ReferencePicker
+              title="Select Unit"
+              options={unitOptions}
               value={defaultUnit}
-              onChangeText={setDefaultUnit}
-              placeholder="e.g. tablet"
-              placeholderTextColor={colors.textSecondary}
-              style={[styles.input, { backgroundColor: colors.backgroundElement, color: colors.text, borderColor: colors.border }]}
+              onChange={setDefaultUnit}
+              placeholder="Select a unit"
+              emptyMessage="No units set up yet."
             />
 
-            <Text style={[styles.label, { color: colors.text, marginTop: 12 }]}>ATC code(s)</Text>
+            <Text className="text-xs font-semibold mt-3" style={{ color: colors.text }}>
+              ATC code(s)
+            </Text>
             <TextInput
               value={atcCode}
               onChangeText={setAtcCode}
               placeholder="e.g. J01FA10/J01FA09"
               placeholderTextColor={colors.textSecondary}
-              style={[styles.input, { backgroundColor: colors.backgroundElement, color: colors.text, borderColor: colors.border }]}
+              className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+              style={{
+                backgroundColor: colors.backgroundElement,
+                color: colors.text,
+                borderColor: colors.border,
+              }}
             />
 
-            <Text style={[styles.label, { color: colors.text, marginTop: 12 }]}>Description</Text>
+            <Text className="text-xs font-semibold mt-3" style={{ color: colors.text }}>
+              Description
+            </Text>
             <TextInput
               value={description}
               onChangeText={setDescription}
               placeholder="Short clinical description..."
               placeholderTextColor={colors.textSecondary}
               multiline
-              style={[
-                styles.input,
-                { backgroundColor: colors.backgroundElement, color: colors.text, borderColor: colors.border, minHeight: 70, textAlignVertical: "top" },
-              ]}
+              className="border rounded-lg px-3 py-2.5 text-sm mt-1.5 min-h-[70px]"
+              style={{
+                backgroundColor: colors.backgroundElement,
+                color: colors.text,
+                borderColor: colors.border,
+                textAlignVertical: "top",
+              }}
             />
 
-            <View style={styles.modalActions}>
+            <View className="flex-row gap-2.5 mt-[18px]">
               <Pressable
                 onPress={() => setShowForm(false)}
-                style={[styles.modalButton, { backgroundColor: colors.backgroundElement }]}
+                className="flex-1 py-2.5 rounded-[10px] items-center"
+                style={{ backgroundColor: colors.backgroundElement }}
               >
-                <Text style={[styles.modalButtonText, { color: colors.text }]}>Cancel</Text>
+                <Text className="text-sm font-semibold" style={{ color: colors.text }}>
+                  Cancel
+                </Text>
               </Pressable>
-              <Pressable onPress={handleSave} style={[styles.modalButton, { backgroundColor: colors.primary }]}>
-                <Text style={[styles.modalButtonText, { color: "#fff" }]}>Save</Text>
+              <Pressable
+                onPress={handleSave}
+                className="flex-1 py-2.5 rounded-[10px] items-center"
+                style={{ backgroundColor: colors.primary }}
+              >
+                <Text className="text-sm font-semibold text-white">Save</Text>
               </Pressable>
             </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
-      <Modal visible={!!mergeTarget} transparent animationType="fade" onRequestClose={() => setMergeTarget(null)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.backgroundSecondary }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>
+      {/* Merge modal */}
+      <Modal
+        visible={!!mergeTarget}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMergeTarget(null)}
+      >
+        <View className="flex-1 bg-black/50 justify-center p-6">
+          <View
+            className="rounded-2xl p-[18px] max-h-[80%]"
+            style={{ backgroundColor: colors.backgroundSecondary }}
+          >
+            <Text className="text-base font-bold mb-3" style={{ color: colors.text }}>
               Merge "{mergeTarget?.name}" into...
             </Text>
             <TextInput
@@ -359,19 +464,29 @@ export default function AdminProductsScreen() {
               onChangeText={setMergeSearch}
               placeholder="Search for the canonical product..."
               placeholderTextColor={colors.textSecondary}
-              style={[styles.input, { backgroundColor: colors.backgroundElement, color: colors.text, borderColor: colors.border }]}
+              className="border rounded-lg px-3 py-2.5 text-sm"
+              style={{
+                backgroundColor: colors.backgroundElement,
+                color: colors.text,
+                borderColor: colors.border,
+              }}
               autoFocus
             />
             <FlatList
               data={mergeCandidates}
               keyExtractor={(item) => item.id}
-              style={{ maxHeight: 300, marginTop: 10 }}
+              className="max-h-[300px] mt-2.5"
               renderItem={({ item }) => (
                 <Pressable
                   onPress={() => confirmMerge(item)}
-                  style={[styles.mergeRow, { backgroundColor: colors.backgroundElement }]}
+                  className="rounded-lg p-3 mb-1.5"
+                  style={{ backgroundColor: colors.backgroundElement }}
                 >
-                  <Text style={[styles.rowTitle, { color: colors.text }]} numberOfLines={1}>
+                  <Text
+                    className="text-[13px] font-semibold"
+                    style={{ color: colors.text }}
+                    numberOfLines={1}
+                  >
                     {item.name}
                   </Text>
                 </Pressable>
@@ -379,9 +494,12 @@ export default function AdminProductsScreen() {
             />
             <Pressable
               onPress={() => setMergeTarget(null)}
-              style={[styles.modalButton, { backgroundColor: colors.backgroundElement, marginTop: 10 }]}
+              className="py-2.5 rounded-[10px] items-center mt-2.5"
+              style={{ backgroundColor: colors.backgroundElement }}
             >
-              <Text style={[styles.modalButtonText, { color: colors.text }]}>Cancel</Text>
+              <Text className="text-sm font-semibold" style={{ color: colors.text }}>
+                Cancel
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -389,44 +507,3 @@ export default function AdminProductsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: 1 },
-  newButton: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  searchWrap: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
-  searchBox: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9 },
-  deletedToggle: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 10, paddingHorizontal: 10, height: 36 },
-  deletedToggleText: { fontSize: 11, fontWeight: "600" },
-  searchInput: { flex: 1, fontSize: 14, padding: 0 },
-  listContent: { padding: 16 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 12,
-  },
-  rowTitle: { fontSize: 13, fontWeight: "600" },
-  rowMeta: { fontSize: 11, marginTop: 2 },
-  iconAction: { padding: 4 },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", padding: 24 },
-  modalCard: { borderRadius: 16, padding: 18, maxHeight: "80%" },
-  modalTitle: { fontSize: 16, fontWeight: "700", marginBottom: 12 },
-  label: { fontSize: 12, fontWeight: "600" },
-  input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, marginTop: 6 },
-  modalActions: { flexDirection: "row", gap: 10, marginTop: 18 },
-  modalButton: { flex: 1, paddingVertical: 11, borderRadius: 10, alignItems: "center" },
-  modalButtonText: { fontSize: 14, fontWeight: "600" },
-  mergeRow: { borderRadius: 8, padding: 12, marginBottom: 6 },
-});

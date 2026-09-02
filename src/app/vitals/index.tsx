@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
+import { View, Text, FlatList, Pressable } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -11,6 +11,8 @@ import { VITAL_TYPE_META, VITAL_TYPES_ORDERED } from "@/features/vitals/utils/vi
 import { buildVitalsPdf } from "@/features/vitals/utils/vitals-pdf";
 import VitalReadingCard from "@/features/vitals/components/vital-reading-card";
 import PrintButton from "@/shared/components/print-button";
+import ScreenHeader from "@/shared/components/screen-header";
+import EmptyState from "@/shared/components/empty-state";
 import DateField from "@/shared/components/date-field";
 
 const fmtShortDate = (d: Date) =>
@@ -96,38 +98,36 @@ export default function VitalsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>RxVitals</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Your at-home vitals record
-          </Text>
-        </View>
-        <PrintButton
-          variant="icon"
-          fileName="RxVitals-Record"
-          getHtml={() => buildVitalsPdf(filtered, patientName, filterSummary)}
-        />
-        <Pressable
-          onPress={() => router.push("/vitals/add-reading")}
-          style={[styles.newButton, { backgroundColor: colors.primary }]}
-        >
-          <MaterialCommunityIcons name="plus" size={20} color="#fff" />
-        </Pressable>
-      </View>
+      <ScreenHeader
+        title="RxVitals"
+        subtitle="Your at-home vitals record"
+        actions={
+          <>
+            <PrintButton
+              variant="icon"
+              fileName="RxVitals-Record"
+              getHtml={() => buildVitalsPdf(filtered, patientName, filterSummary)}
+            />
+            <Pressable
+              onPress={() => router.push("/vitals/add-reading")}
+              className="w-[34px] h-[34px] rounded-[10px] items-center justify-center"
+              style={{ backgroundColor: colors.primary }}
+            >
+              <MaterialCommunityIcons name="plus" size={20} color="#fff" />
+            </Pressable>
+          </>
+        }
+      />
 
-      <View style={[styles.disclaimer, { backgroundColor: colors.warning + "12" }]}>
+      <View className="flex-row items-start gap-2 mx-4 mt-3 rounded-[10px] p-3" style={{ backgroundColor: colors.warning + "12" }}>
         <MaterialCommunityIcons name="information-outline" size={14} color={colors.warning} />
-        <Text style={[styles.disclaimerText, { color: colors.warning }]}>
+        <Text className="text-xs flex-1 leading-[17px]" style={{ color: colors.warning }}>
           RxVitals only records what you enter — it does not interpret readings or provide medical
           advice. Share the PDF export with a healthcare professional for any interpretation.
         </Text>
       </View>
 
-      <View style={styles.filterRow}>
+      <View className="flex-row flex-wrap gap-2 px-4 pt-3">
         {VITAL_TYPES_ORDERED.map((type) => {
           const active = selectedTypes.has(type);
           const meta = VITAL_TYPE_META[type];
@@ -135,9 +135,10 @@ export default function VitalsScreen() {
             <Pressable
               key={type}
               onPress={() => toggleType(type)}
-              style={[styles.filterChip, { backgroundColor: active ? colors.primary : colors.backgroundElement }]}
+              className="px-3 py-[7px] rounded-full"
+              style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
             >
-              <Text style={[styles.filterChipText, { color: active ? "#fff" : colors.textSecondary }]}>
+              <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
                 {meta.shortLabel}
               </Text>
             </Pressable>
@@ -145,14 +146,14 @@ export default function VitalsScreen() {
         })}
       </View>
 
-      <View style={styles.dateFilterRow}>
+      <View className="flex-row items-center gap-2 px-4 pt-2.5" style={{ zIndex: 10 }}>
         <DateField label="From" value={dateFrom} onChange={setDateFrom} maximumDate={new Date()} icon="calendar-start" />
         <Text style={{ color: colors.textSecondary }}>–</Text>
         <DateField label="To" value={dateTo} onChange={setDateTo} maximumDate={new Date()} icon="calendar-end" />
         {hasActiveFilters && (
-          <Pressable onPress={clearFilters} style={styles.clearButton} hitSlop={8}>
+          <Pressable onPress={clearFilters} className="flex-row items-center gap-1 ml-1" hitSlop={8}>
             <MaterialCommunityIcons name="close-circle" size={14} color={colors.textSecondary} />
-            <Text style={[styles.clearButtonText, { color: colors.textSecondary }]}>Clear</Text>
+            <Text className="text-xs font-semibold" style={{ color: colors.textSecondary }}>Clear</Text>
           </Pressable>
         )}
       </View>
@@ -160,51 +161,16 @@ export default function VitalsScreen() {
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={{ padding: 16, flexGrow: 1 }}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <MaterialCommunityIcons name="heart-pulse" size={36} color={colors.textSecondary} />
-            <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-              {hasActiveFilters ? "No readings match these filters." : "No readings recorded yet."}
-            </Text>
-          </View>
+          <EmptyState
+            icon="heart-pulse"
+            message={hasActiveFilters ? "No readings match these filters." : "No readings recorded yet."}
+          />
         }
         renderItem={({ item }) => <VitalReadingCard reading={item} onDelete={deleteReading} />}
       />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: 1 },
-  newButton: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  disclaimer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 10,
-    padding: 12,
-  },
-  disclaimerText: { fontSize: 12, flex: 1, lineHeight: 17 },
-  filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 16, paddingTop: 12 },
-  filterChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20 },
-  filterChipText: { fontSize: 12, fontWeight: "600" },
-  dateFilterRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingTop: 10, zIndex: 10 },
-  clearButton: { flexDirection: "row", alignItems: "center", gap: 4, marginLeft: 4 },
-  clearButtonText: { fontSize: 12, fontWeight: "600" },
-  listContent: { padding: 16, flexGrow: 1 },
-  empty: { alignItems: "center", justifyContent: "center", gap: 10, paddingTop: 80 },
-});

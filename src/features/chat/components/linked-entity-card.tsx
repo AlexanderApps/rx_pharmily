@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { router } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -44,7 +44,6 @@ const LinkedEntityCard: React.FC<LinkedEntityCardProps> = ({
 }) => {
   const { colors } = useTheme();
   const meta = ENTITY_META[entity.type];
-
   const statusColor =
     entity.status === "published" || entity.status === "awarded"
       ? colors.success
@@ -55,18 +54,17 @@ const LinkedEntityCard: React.FC<LinkedEntityCardProps> = ({
   return (
     <Pressable
       onPress={() => navigateToEntity(entity)}
-      style={({ pressed }) => [
-        styles.card,
-        {
-          backgroundColor: colors.backgroundElement,
-          borderColor: colors.border,
-          opacity: pressed ? 0.75 : 1,
-        },
-        compact && styles.cardCompact,
-      ]}
+      className={`flex-row items-center gap-2.5 border rounded-xl p-2.5 active:opacity-75 ${
+        compact ? "" : "min-w-[230px] max-w-[280px]"
+      }`}
+      style={{
+        backgroundColor: colors.backgroundElement,
+        borderColor: colors.border,
+      }}
     >
       <View
-        style={[styles.iconWrap, { backgroundColor: colors.backgroundSecondary }]}
+        className="w-[34px] h-[34px] rounded-[9px] items-center justify-center"
+        style={{ backgroundColor: colors.backgroundSecondary }}
       >
         <MaterialCommunityIcons
           name={meta.icon as any}
@@ -75,30 +73,39 @@ const LinkedEntityCard: React.FC<LinkedEntityCardProps> = ({
         />
       </View>
 
-      <View style={styles.body}>
-        <View style={styles.topRow}>
+      <View className="flex-1 gap-0.5">
+        <View className="flex-row items-center justify-between gap-1.5">
           <Text
-            style={[styles.entityTypeLabel, { color: colors.textSecondary }]}
+            className="text-[10px] font-semibold uppercase"
+            style={{ color: colors.textSecondary }}
           >
             {meta.label} · {entity.code}
           </Text>
           <View
-            style={[styles.statusPill, { backgroundColor: statusColor + "18" }]}
+            className="px-1.5 py-px rounded-[5px]"
+            style={{ backgroundColor: statusColor + "18" }}
           >
-            <Text style={[styles.statusText, { color: statusColor }]}>
+            <Text
+              className="text-[9px] font-bold capitalize"
+              style={{ color: statusColor }}
+            >
               {entity.status}
             </Text>
           </View>
         </View>
+
         <Text
-          style={[styles.title, { color: colors.text }]}
+          className="text-[13px] font-semibold"
+          style={{ color: colors.text }}
           numberOfLines={1}
         >
           {entity.title}
         </Text>
+
         {entity.subtitle ? (
           <Text
-            style={[styles.subtitle, { color: colors.textSecondary }]}
+            className="text-[11px]"
+            style={{ color: colors.textSecondary }}
             numberOfLines={1}
           >
             {entity.subtitle}
@@ -116,39 +123,3 @@ const LinkedEntityCard: React.FC<LinkedEntityCardProps> = ({
 };
 
 export default LinkedEntityCard;
-
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 10,
-    minWidth: 230,
-    maxWidth: 280,
-  },
-  cardCompact: {
-    minWidth: 0,
-    maxWidth: undefined,
-  },
-  iconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  body: { flex: 1, gap: 2 },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 6,
-  },
-  entityTypeLabel: { fontSize: 10, fontWeight: "600", textTransform: "uppercase" },
-  statusPill: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: 5 },
-  statusText: { fontSize: 9, fontWeight: "700", textTransform: "capitalize" },
-  title: { fontSize: 13, fontWeight: "600" },
-  subtitle: { fontSize: 11 },
-});

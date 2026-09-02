@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Pressable, StyleSheet } from "react-native";
+import { View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/shared/components/themed-text";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -21,40 +21,25 @@ export default function RadioFilterGroup({
   const isSelected = (option: string) => selectedOption === option;
 
   return (
-    <ThemedView type="backgroundElement" style={styles.container}>
+    <ThemedView type="backgroundElement" className="w-full">
       {options.map((option) => {
         const selected = isSelected(option);
         return (
           <Pressable
             key={option}
             onPress={() => onSelectOption(option)}
-            style={[
-              styles.item,
-              {
-                borderBottomColor: colors.border,
-              },
-            ]}
+            className="flex-row items-center justify-between py-3.5 px-3 border-b"
+            style={{ borderBottomColor: colors.border }}
           >
             {/* Label */}
             <ThemedText>{option}</ThemedText>
             {/* Radio Button */}
             <View
-              style={[
-                styles.radioOuter,
-                {
-                  borderColor: selected ? colors.icon : colors.border,
-                },
-              ]}
+              className="w-6 h-6 rounded-xl border-2 justify-center items-center"
+              style={{ borderColor: selected ? colors.icon : colors.border }}
             >
               {selected && (
-                <View
-                  style={[
-                    styles.radioInner,
-                    {
-                      backgroundColor: colors.icon,
-                    },
-                  ]}
-                />
+                <View className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors.icon }} />
               )}
             </View>
           </Pressable>
@@ -64,29 +49,3 @@ export default function RadioFilterGroup({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-  },
-  item: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-  },
-  radioOuter: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-});

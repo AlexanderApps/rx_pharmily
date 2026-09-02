@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, FlatList, Pressable, TextInput, StyleSheet } from "react-native";
+import { View, Text, FlatList, Pressable, TextInput, Platform} from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import EmptyState from "@/shared/components/empty-state";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import ListSkeleton from "@/shared/components/list-skeleton";
@@ -57,76 +58,84 @@ export default function FindFacilityScreen() {
   }, [facilities, myFacilityIds, search]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Top Header Section */}
+      <View className="flex-row items-center gap-3 px-4 py-3 border-b-[0.5px]" style={{ borderBottomColor: colors.border }}>
+        {Platform.OS !== "web" && (
+        <Pressable onPress={() => router.back()} className="p-1">
           <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.text }]}>Find a Facility</Text>
+        )}
+        <Text className="text-[17px] font-bold" style={{ color: colors.text }}>Find a Facility</Text>
       </View>
 
+      {/* Verification Notice Banner */}
       {!isUserVerified && (
-        <View style={[styles.notice, { backgroundColor: colors.warning + "12" }]}>
+        <View className="flex-row items-start gap-1.5 rounded-xl p-2.5 mx-4 mt-3" style={{ backgroundColor: colors.warning + "12" }}>
           <MaterialCommunityIcons name="information-outline" size={14} color={colors.warning} />
-          <Text style={[styles.noticeText, { color: colors.warning }]}>
+          <Text className="text-xs flex-1 leading-[17px]" style={{ color: colors.warning }}>
             Verify your own account before you can request to join a facility. You can still browse in
             the meantime.
           </Text>
         </View>
       )}
 
-      <View style={styles.searchWrap}>
-        <View style={[styles.searchBox, { backgroundColor: colors.backgroundElement }]}>
+      {/* Search Bar Frame */}
+      <View className="px-4 pt-3">
+        <View className="flex-row items-center gap-2 rounded-xl px-3 py-2.5" style={{ backgroundColor: colors.backgroundElement }}>
           <MaterialCommunityIcons name="magnify" size={16} color={colors.textSecondary} />
           <TextInput
             value={search}
             onChangeText={setSearch}
             placeholder="Search by name, city, or region"
             placeholderTextColor={colors.textSecondary}
-            style={[styles.searchInput, { color: colors.text }]}
+            className="flex-1 text-xs p-0"
+            style={{ color: colors.text }}
           />
         </View>
       </View>
 
+      {/* Content Stream Layer */}
       {isLoadingFacilities && facilities.length === 0 ? (
         <ListSkeleton rows={6} />
       ) : (
         <FlatList
           data={results}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          contentContainerStyle={{ padding: 16, flexGrow: 1 }}
+          ItemSeparatorComponent={() => <View className="h-2.5" />}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <MaterialCommunityIcons name="hospital-building" size={36} color={colors.textSecondary} />
-              <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                {search ? "No facilities match your search." : "No other verified facilities yet."}
-              </Text>
-            </View>
+            <EmptyState
+              icon="hospital-building"
+              message={search ? "No facilities match your search." : "No other verified facilities yet."}
+            />
           }
           renderItem={({ item }) => {
             const pending = myPendingFacilityIds.has(item.id);
             return (
               <Pressable
                 onPress={() => router.push({ pathname: "/profile/facility-profile", params: { id: item.id } })}
-                style={[styles.card, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                className="flex-row items-center gap-3 rounded-xl border p-3"
+                style={{ backgroundColor: colors.backgroundSecondary, borderColor: colors.border }}
               >
-                <View
-                  style={[styles.avatar, { backgroundColor: colors.primary + "18" }]}
-                >
+                {/* Building Avatar Frame */}
+                <View className="w-[38px] h-[38px] rounded-xl items-center justify-center" style={{ backgroundColor: colors.primary + "18" }}>
                   <MaterialCommunityIcons name="hospital-building" size={18} color={colors.primary} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+                
+                <View className="flex-1">
+                  <Text className="text-sm font-bold" style={{ color: colors.text }} numberOfLines={1}>
                     {item.name}
                   </Text>
-                  <Text style={[styles.meta, { color: colors.textSecondary }]} numberOfLines={1}>
+                  <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }} numberOfLines={1}>
                     {item.type} · {item.location}, {item.region}
                   </Text>
                 </View>
+
+                {/* Conditional Call to Action Element */}
                 {pending ? (
-                  <View style={[styles.pendingPill, { backgroundColor: colors.backgroundElement }]}>
-                    <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: "600" }}>
+                  <View className="px-2 py-1.5 rounded-lg" style={{ backgroundColor: colors.backgroundElement }}>
+                    <Text className="text-[11px] font-semibold" style={{ color: colors.textSecondary }}>
                       Requested
                     </Text>
                   </View>
@@ -141,36 +150,3 @@ export default function FindFacilityScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-  },
-  back: { padding: 4 },
-  title: { fontSize: 17, fontWeight: "700" },
-  notice: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 6,
-    borderRadius: 10,
-    padding: 10,
-    marginHorizontal: 16,
-    marginTop: 12,
-  },
-  noticeText: { fontSize: 12, flex: 1, lineHeight: 17 },
-  searchWrap: { paddingHorizontal: 16, paddingTop: 12 },
-  searchBox: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
-  searchInput: { flex: 1, fontSize: 13, padding: 0 },
-  listContent: { padding: 16, flexGrow: 1 },
-  empty: { alignItems: "center", justifyContent: "center", gap: 10, paddingTop: 80 },
-  card: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 12, borderWidth: 1, padding: 12 },
-  avatar: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  name: { fontSize: 14, fontWeight: "700" },
-  meta: { fontSize: 12, marginTop: 2 },
-  pendingPill: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8 },
-});

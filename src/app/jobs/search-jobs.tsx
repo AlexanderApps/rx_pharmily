@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { router } from "expo-router";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View, Platform} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -12,6 +12,7 @@ import { useRxJobsStore } from "@/features/rxjobs/hooks/use-rxjobs-data";
 import { JobType, JobUrgency } from "@/features/rxjobs/types/rxjobs.types";
 import JobListContainer from "@/features/rxjobs/components/job-list-container";
 import SearchFilterChip from "@/shared/components/search-filter-chip";
+import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 
 const JOB_TYPES: JobType[] = [
   "Locum Shift",
@@ -25,10 +26,12 @@ export default function SearchJobs() {
   const searchInputRef = useRef<TextInput>(null);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<JobType | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [urgentOnly, setUrgentOnly] = useState(false);
   const { colors } = useTheme();
   const currentUserId = useAuthStore((state) => state.user?.id);
   const jobs = useRxJobsStore((state) => state.jobs);
+  const jobCategories = useReferenceDataStore((state) => state.jobCategories);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -42,6 +45,7 @@ export default function SearchJobs() {
     return jobs.filter((job) => {
       if (job.status !== "open" && job.postedBy !== currentUserId) return false;
       if (typeFilter && job.jobType !== typeFilter) return false;
+      if (categoryFilter && !job.categories.includes(categoryFilter)) return false;
       if (urgentOnly && job.urgency !== ("Immediate" as JobUrgency))
         return false;
       if (!q) return true;
@@ -51,7 +55,7 @@ export default function SearchJobs() {
         job.location.toLowerCase().includes(q)
       );
     });
-  }, [jobs, search, typeFilter, urgentOnly, currentUserId]);
+  }, [jobs, search, typeFilter, categoryFilter, urgentOnly, currentUserId]);
 
   return (
     <ThemedView style={{ flex: 1 }}>
@@ -72,6 +76,7 @@ export default function SearchJobs() {
               marginTop: 16,
             }}
           >
+            {Platform.OS !== "web" && (
             <Pressable
               onPress={() => router.back()}
               style={{
@@ -85,6 +90,7 @@ export default function SearchJobs() {
             >
               <Ionicons name="arrow-back" size={22} color={colors.text} />
             </Pressable>
+            )}
 
             <ThemedView style={{ flex: 1 }}>
               <Input
@@ -146,6 +152,15 @@ export default function SearchJobs() {
                 label={type}
                 active={typeFilter === type}
                 onPress={() => setTypeFilter(typeFilter === type ? null : type)}
+              />
+            ))}
+
+            {jobCategories.map((category) => (
+              <SearchFilterChip
+                key={category.id}
+                label={category.name}
+                active={categoryFilter === category.name}
+                onPress={() => setCategoryFilter(categoryFilter === category.name ? null : category.name)}
               />
             ))}
           </ScrollView>

@@ -1,18 +1,29 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet, TextInput, Alert, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  TextInput,
+  Alert,
+  ActivityIndicator, Platform} from "react-native";
 import { router, Redirect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { confirm } from "@/shared/hooks/use-confirm";
 import { toast } from "@/shared/hooks/use-toast";
+import StatusFilterTabs from "@/shared/components/status-filter-tabs";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { AccountRole, isSuperadminRole } from "@/features/auth/types/auth.types";
 import { useProfileStore, AdminUserSummary } from "@/features/profile/hooks/use-profile-data";
 
 const MAX_SUPERADMINS = 5;
 
-const ROLE_META: Record<AccountRole, { label: string; color: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }> = {
+const ROLE_META: Record<
+  AccountRole,
+  { label: string; color: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }
+> = {
   superadmin: { label: "Superadmin", color: "#9333ea", icon: "shield-crown" },
   admin: { label: "Admin", color: "#2563eb", icon: "shield-account" },
   user: { label: "User", color: "#64748b", icon: "account-outline" },
@@ -30,6 +41,7 @@ export default function RoleManagementScreen() {
 
   const [search, setSearch] = useState("");
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const [roleFilter, setRoleFilter] = useState<AccountRole | "all">("all");
 
   useEffect(() => {
     fetchAllUsers();
@@ -39,11 +51,14 @@ export default function RoleManagementScreen() {
 
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return allUsers;
-    return allUsers.filter(
-      (u) => u.fullName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
+    const byRole =
+      roleFilter === "all" ? allUsers : allUsers.filter((u) => u.accountRole === roleFilter);
+    if (!q) return byRole;
+    return byRole.filter(
+      (u) =>
+        u.fullName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
     );
-  }, [allUsers, search]);
+  }, [allUsers, search, roleFilter]);
 
   if (!isSuperadmin) {
     return <Redirect href="/(tabs)/account" />;
@@ -52,7 +67,6 @@ export default function RoleManagementScreen() {
   const handleChangeRole = async (target: AdminUserSummary, newRole: AccountRole) => {
     const meta = ROLE_META[newRole];
     const isDemotingSelf = target.id === currentUserId && newRole !== "superadmin";
-
     const ok = await confirm({
       title: `Change role to ${meta.label}?`,
       message: isDemotingSelf
@@ -69,6 +83,7 @@ export default function RoleManagementScreen() {
       await useAuthStore.getState().refreshProfile();
     }
     setPendingUserId(null);
+
     if (result.ok) {
       toast.success(`Role updated to ${meta.label}.`);
     } else {
@@ -77,40 +92,80 @@ export default function RoleManagementScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Header */}
+      <View
+        className="flex-row items-center gap-3 px-4 py-3 border-b"
+        style={{ borderBottomColor: colors.border }}
+      >
+        {Platform.OS !== "web" && (
+        <Pressable onPress={() => router.back()} className="p-1">
           <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.text }]}>Role Management</Text>
+        )}
+        <Text className="text-[17px] font-bold" style={{ color: colors.text }}>
+          Role Management
+        </Text>
       </View>
 
-      <View style={styles.content}>
-        <View style={[styles.capBox, { backgroundColor: colors.backgroundSecondary }]}>
+      <View className="flex-1 p-4">
+        {/* Cap indicator */}
+        <View
+          className="flex-row items-center gap-2 rounded-[10px] p-3 mb-3"
+          style={{ backgroundColor: colors.backgroundSecondary }}
+        >
           <MaterialCommunityIcons name="shield-crown-outline" size={16} color={colors.primary} />
-          <Text style={[styles.capText, { color: colors.text }]}>
+          <Text className="text-[13px] font-semibold" style={{ color: colors.text }}>
             {superadminCount} of {MAX_SUPERADMINS} superadmins in use
           </Text>
         </View>
 
-        <View style={[styles.searchBox, { backgroundColor: colors.backgroundElement }]}>
+        {/* Search */}
+        <View
+          className="flex-row items-center gap-2 rounded-[10px] px-3 h-10 mb-3.5"
+          style={{ backgroundColor: colors.backgroundElement }}
+        >
           <MaterialCommunityIcons name="magnify" size={16} color={colors.textSecondary} />
           <TextInput
             value={search}
             onChangeText={setSearch}
             placeholder="Search by name or email"
             placeholderTextColor={colors.textSecondary}
-            style={[styles.searchInput, { color: colors.text }]}
+            className="flex-1 text-sm"
+            style={{ color: colors.text }}
           />
         </View>
 
-        <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+        <StatusFilterTabs
+          options={[
+            { key: "all", label: "All", count: allUsers.length },
+            {
+              key: "user",
+              label: "User",
+              count: allUsers.filter((u) => u.accountRole === "user").length,
+            },
+            {
+              key: "admin",
+              label: "Admin",
+              count: allUsers.filter((u) => u.accountRole === "admin").length,
+            },
+            {
+              key: "superadmin",
+              label: "Superadmin",
+              count: allUsers.filter((u) => u.accountRole === "superadmin").length,
+            },
+          ]}
+          selected={roleFilter}
+          onSelect={(key) => setRoleFilter(key as AccountRole | "all")}
+        />
+
+        <ScrollView contentContainerClassName="pb-6">
           {results.map((u) => {
             const meta = ROLE_META[u.accountRole];
             const isSelf = u.id === currentUserId;
             const isPending = pendingUserId === u.id;
-            const atSuperadminCap = superadminCount >= MAX_SUPERADMINS && u.accountRole !== "superadmin";
-
+            const atSuperadminCap =
+              superadminCount >= MAX_SUPERADMINS && u.accountRole !== "superadmin";
             const initials = u.fullName
               .split(" ")
               .map((p) => p[0])
@@ -120,57 +175,96 @@ export default function RoleManagementScreen() {
               .toUpperCase();
 
             return (
-              <View key={u.id} style={[styles.userCard, { backgroundColor: colors.backgroundSecondary }]}>
-                <View style={styles.userRow}>
-                  <View style={[styles.avatar, { backgroundColor: u.avatarColor || colors.primary }]}>
-                    <Text style={styles.avatarText}>{initials}</Text>
+              <View
+                key={u.id}
+                className="rounded-xl p-3 mb-2.5"
+                style={{ backgroundColor: colors.backgroundSecondary }}
+              >
+                <View className="flex-row items-center gap-2.5">
+                  <View
+                    className="w-9 h-9 rounded-full items-center justify-center"
+                    style={{ backgroundColor: u.avatarColor || colors.primary }}
+                  >
+                    <Text className="text-white text-xs font-bold">{initials}</Text>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>
-                      {u.fullName} {isSelf && <Text style={{ color: colors.textSecondary }}>(you)</Text>}
+                  <View className="flex-1">
+                    <Text
+                      className="text-sm font-semibold"
+                      style={{ color: colors.text }}
+                      numberOfLines={1}
+                    >
+                      {u.fullName}{" "}
+                      {isSelf && (
+                        <Text style={{ color: colors.textSecondary }}>(you)</Text>
+                      )}
                     </Text>
-                    <Text style={[styles.userEmail, { color: colors.textSecondary }]} numberOfLines={1}>
+                    <Text
+                      className="text-xs mt-0.5"
+                      style={{ color: colors.textSecondary }}
+                      numberOfLines={1}
+                    >
                       {u.email}
                     </Text>
                   </View>
-                  <View style={[styles.roleBadge, { backgroundColor: meta.color + "18" }]}>
+                  <View
+                    className="flex-row items-center gap-1 rounded-full px-2 py-1"
+                    style={{ backgroundColor: meta.color + "18" }}
+                  >
                     <MaterialCommunityIcons name={meta.icon} size={12} color={meta.color} />
-                    <Text style={[styles.roleBadgeText, { color: meta.color }]}>{meta.label}</Text>
+                    <Text className="text-[11px] font-bold" style={{ color: meta.color }}>
+                      {meta.label}
+                    </Text>
                   </View>
                 </View>
 
                 {isPending ? (
-                  <View style={styles.actionsRow}>
+                  <View className="flex-row flex-wrap gap-2 mt-2.5">
                     <ActivityIndicator size="small" color={colors.textSecondary} />
                   </View>
                 ) : (
-                  <View style={styles.actionsRow}>
+                  <View className="flex-row flex-wrap gap-2 mt-2.5">
                     {u.accountRole !== "user" && (
                       <Pressable
                         onPress={() => handleChangeRole(u, "user")}
-                        style={[styles.actionButton, { backgroundColor: colors.backgroundElement }]}
+                        className="px-2.5 py-1.5 rounded-lg"
+                        style={{ backgroundColor: colors.backgroundElement }}
                       >
-                        <Text style={[styles.actionText, { color: colors.textSecondary }]}>Set as User</Text>
+                        <Text
+                          className="text-[11px] font-semibold"
+                          style={{ color: colors.textSecondary }}
+                        >
+                          Set as User
+                        </Text>
                       </Pressable>
                     )}
                     {u.accountRole !== "admin" && (
                       <Pressable
                         onPress={() => handleChangeRole(u, "admin")}
-                        style={[styles.actionButton, { backgroundColor: colors.backgroundElement }]}
+                        className="px-2.5 py-1.5 rounded-lg"
+                        style={{ backgroundColor: colors.backgroundElement }}
                       >
-                        <Text style={[styles.actionText, { color: colors.textSecondary }]}>Set as Admin</Text>
+                        <Text
+                          className="text-[11px] font-semibold"
+                          style={{ color: colors.textSecondary }}
+                        >
+                          Set as Admin
+                        </Text>
                       </Pressable>
                     )}
                     {u.accountRole !== "superadmin" && (
                       <Pressable
                         onPress={() => handleChangeRole(u, "superadmin")}
                         disabled={atSuperadminCap}
-                        style={[
-                          styles.actionButton,
-                          { backgroundColor: colors.backgroundElement, opacity: atSuperadminCap ? 0.4 : 1 },
-                        ]}
+                        className="px-2.5 py-1.5 rounded-lg"
+                        style={{
+                          backgroundColor: colors.backgroundElement,
+                          opacity: atSuperadminCap ? 0.4 : 1,
+                        }}
                       >
-                        <Text style={[styles.actionText, { color: colors.textSecondary }]}>
+                        <Text
+                          className="text-[11px] font-semibold"
+                          style={{ color: colors.textSecondary }}
+                        >
                           {atSuperadminCap ? "Cap reached" : "Set as Superadmin"}
                         </Text>
                       </Pressable>
@@ -182,33 +276,15 @@ export default function RoleManagementScreen() {
           })}
 
           {results.length === 0 && (
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No users match your search.</Text>
+            <Text
+              className="text-center text-[13px] mt-10"
+              style={{ color: colors.textSecondary }}
+            >
+              No users match your search.
+            </Text>
           )}
         </ScrollView>
       </View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
-  back: { padding: 4 },
-  title: { fontSize: 17, fontWeight: "700" },
-  content: { flex: 1, padding: 16 },
-  capBox: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, padding: 12, marginBottom: 12 },
-  capText: { fontSize: 13, fontWeight: "600" },
-  searchBox: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, paddingHorizontal: 12, height: 40, marginBottom: 14 },
-  searchInput: { flex: 1, fontSize: 14 },
-  userCard: { borderRadius: 12, padding: 12, marginBottom: 10 },
-  userRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  avatar: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  avatarText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  userName: { fontSize: 14, fontWeight: "600" },
-  userEmail: { fontSize: 12, marginTop: 1 },
-  roleBadge: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
-  roleBadgeText: { fontSize: 11, fontWeight: "700" },
-  actionsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
-  actionButton: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8 },
-  actionText: { fontSize: 11, fontWeight: "600" },
-  emptyText: { textAlign: "center", fontSize: 13, marginTop: 40 },
-});

@@ -1,11 +1,20 @@
 import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from "react-native";
+import { View, Text, TextInput, Pressable, ScrollView } from "react-native";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import SubmitButton from "@/shared/components/submit-button";
 import BottomSheet from "@/shared/components/bottom-sheet";
+import MyFacilityPicker from "@/shared/components/forms/my-facility-picker";
 import { DonationItem, DonationResponseFormData } from "@/features/donations/types/donation.types";
+
+// Same helper as app/donations/donation-market-details.tsx's own
+// expiry display — kept local here too rather than shared, matching
+// that file's existing (unshared) convention.
+const DAY_MS = 24 * 60 * 60 * 1000;
+function daysUntil(date: Date) {
+  return Math.ceil((new Date(date).getTime() - Date.now()) / DAY_MS);
+}
 
 export interface DonationClaimSheetHandle {
   open: () => void;
@@ -104,6 +113,8 @@ const DonationClaimSheet = forwardRef<DonationClaimSheetHandle, DonationClaimShe
 
       if (ok) {
         modalRef.current?.dismiss();
+      } else {
+        setError("Couldn't submit this claim. Please try again.");
       }
     };
 
@@ -117,43 +128,37 @@ const DonationClaimSheet = forwardRef<DonationClaimSheetHandle, DonationClaimShe
         enablePanDownToClose
         backgroundColor={colors.backgroundSecondary}
       >
-        <View style={styles.sheetBody}>
-          <View style={styles.headerBlock}>
-            <Text style={[styles.title, { color: colors.text }]}>Claim Items</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        <View className="flex-1 flex-col px-5">
+          <View className="shrink-0 gap-2.5">
+            <Text className="text-base font-bold" style={{ color: colors.text }}>Claim Items</Text>
+            <Text className="text-xs -mt-1.5" style={{ color: colors.textSecondary }}>
               Select what you need and how much
             </Text>
 
-            <TextInput
+            <MyFacilityPicker
               value={responderFacility}
-              onChangeText={setResponderFacility}
-              placeholder="Your facility name"
-              placeholderTextColor={colors.textSecondary}
-              style={[
-                styles.input,
-                { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-              ]}
+              onChange={setResponderFacility}
+              placeholder="Your facility"
+              renderAsModal
             />
           </View>
 
-          <ScrollView style={styles.listBlock} keyboardShouldPersistTaps="handled">
+          <ScrollView className="flex-1 mt-3 mb-3" keyboardShouldPersistTaps="handled">
             {claimableItems.map((item) => {
               const entry = selection[item.id];
               const isSelected = !!entry?.selected;
               return (
                 <View
                   key={item.id}
-                  style={[
-                    styles.itemRow,
-                    {
-                      backgroundColor: colors.backgroundElement,
-                      borderColor: isSelected ? colors.primary : colors.border,
-                    },
-                  ]}
+                  className="border rounded-xl p-3 gap-2.5 mb-2.5"
+                  style={{
+                    backgroundColor: colors.backgroundElement,
+                    borderColor: isSelected ? colors.primary : colors.border,
+                  }}
                 >
                   <Pressable
                     onPress={() => toggleItem(item)}
-                    style={styles.itemTopRow}
+                    className="flex-row items-center gap-2.5"
                     hitSlop={6}
                   >
                     <MaterialCommunityIcons
@@ -162,29 +167,35 @@ const DonationClaimSheet = forwardRef<DonationClaimSheetHandle, DonationClaimShe
                       color={isSelected ? colors.primary : colors.textSecondary}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.itemName, { color: colors.text }]} numberOfLines={1}>
+                      <Text className="text-sm font-semibold" style={{ color: colors.text }} numberOfLines={1}>
                         {item.product}
                       </Text>
-                      <Text style={[styles.itemMeta, { color: colors.textSecondary }]}>
+                      <Text
+                        className="text-[11px] mt-0.5"
+                        style={{ color: daysUntil(item.expiryDate) <= 30 ? colors.warning : colors.textSecondary }}
+                      >
                         {item.quantity} available
                         {item.batch ? ` · Batch ${item.batch}` : ""}
+                        {" · expires "}
+                        {new Date(item.expiryDate).toLocaleDateString(undefined, {
+                          day: "2-digit",
+                          month: "short",
+                        })}
                       </Text>
                     </View>
                   </Pressable>
 
                   {isSelected && (
-                    <View style={styles.qtyRow}>
-                      <Text style={[styles.qtyLabel, { color: colors.textSecondary }]}>
+                    <View className="flex-row items-center justify-between pl-[30px]">
+                      <Text className="text-xs" style={{ color: colors.textSecondary }}>
                         Quantity
                       </Text>
                       <TextInput
                         value={entry.quantity}
                         onChangeText={(v) => updateQuantity(item.id, v)}
                         keyboardType="number-pad"
-                        style={[
-                          styles.qtyInput,
-                          { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text },
-                        ]}
+                        className="w-20 border rounded-lg px-2.5 py-1.5 text-[13px] text-center"
+                        style={{ backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }}
                       />
                     </View>
                   )}
@@ -193,12 +204,12 @@ const DonationClaimSheet = forwardRef<DonationClaimSheetHandle, DonationClaimShe
             })}
 
             {claimableItems.length === 0 && (
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              <Text className="text-[13px] text-center mt-6" style={{ color: colors.textSecondary }}>
                 No claimable items on this donation.
               </Text>
             )}
 
-            <Text style={[styles.label, { color: colors.text, marginTop: 4 }]}>
+            <Text className="text-xs font-semibold mt-1" style={{ color: colors.text }}>
               Comment (optional)
             </Text>
             <TextInput
@@ -206,16 +217,13 @@ const DonationClaimSheet = forwardRef<DonationClaimSheetHandle, DonationClaimShe
               onChangeText={setComment}
               placeholder="Pickup timing, contact info, etc..."
               placeholderTextColor={colors.textSecondary}
-              style={[
-                styles.input,
-                styles.textArea,
-                { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-              ]}
+              className="border rounded-lg px-3 py-[11px] text-sm min-h-[70px] mt-1.5"
+              style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
               multiline
               textAlignVertical="top"
             />
 
-            {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
+            {error && <Text className="text-xs font-medium mt-2" style={{ color: colors.error }}>{error}</Text>}
 
             <View style={{ height: 8 }} />
           </ScrollView>
@@ -236,37 +244,3 @@ DonationClaimSheet.displayName = "DonationClaimSheet";
 
 export default DonationClaimSheet;
 
-const styles = StyleSheet.create({
-  sheetBody: { flex: 1, flexDirection: "column", paddingHorizontal: 20 },
-  headerBlock: { flexShrink: 0, gap: 10 },
-  title: { fontSize: 16, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: -6 },
-  listBlock: { flex: 1, marginTop: 12, marginBottom: 12 },
-  label: { fontSize: 12, fontWeight: "600" },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    fontSize: 14,
-  },
-  textArea: { minHeight: 70, marginTop: 6 },
-  itemRow: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 10, marginBottom: 10 },
-  itemTopRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  itemName: { fontSize: 14, fontWeight: "600" },
-  itemMeta: { fontSize: 11, marginTop: 2 },
-  qtyRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingLeft: 30 },
-  qtyLabel: { fontSize: 12 },
-  qtyInput: {
-    width: 80,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    fontSize: 13,
-    textAlign: "center",
-  },
-  emptyText: { fontSize: 13, textAlign: "center", marginTop: 24 },
-  errorText: { fontSize: 12, fontWeight: "500", marginTop: 8 },
-  submitButtonText: { color: "#fff", fontSize: 15, fontWeight: "600" },
-});

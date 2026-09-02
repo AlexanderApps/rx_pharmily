@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Pressable, Text, View, ActivityIndicator, StyleProp, ViewStyle, TextStyle, StyleSheet } from "react-native";
+import { Pressable, Text, View, ActivityIndicator, StyleProp, ViewStyle, TextStyle } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { noSelectStyle } from "@/shared/constants/text-selection";
 
 interface SubmitButtonProps {
   label: string;
@@ -48,9 +49,17 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({
     <Pressable
       onPress={handlePress}
       disabled={isDisabled}
+      className={`rounded-[10px] py-3.5 items-center justify-center ${
+        isDisabled ? "cursor-not-allowed" : "cursor-pointer hover:opacity-90"
+      }`}
       style={[
-        styles.button,
-        { backgroundColor: bg, opacity: isDisabled && !submitting ? 0.6 : 1 },
+        // Only set explicitly when disabled — leaving this untouched
+        // (rather than an explicit opacity: 1) when enabled means
+        // hover:opacity-90 above isn't competing with an inline style for
+        // control of the same property, since inline style generally
+        // wins that fight in NativeWind regardless of which was more
+        // "recently" applied.
+        isDisabled && !submitting ? { backgroundColor: bg, opacity: 0.6 } : { backgroundColor: bg },
         variant === "outline" && { borderWidth: 1.5, borderColor: colors.primary },
         style,
       ]}
@@ -58,9 +67,9 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({
       {submitting ? (
         <ActivityIndicator size="small" color={fg} />
       ) : (
-        <View style={styles.content}>
+        <View className="flex-row items-center gap-2">
           {icon && <MaterialCommunityIcons name={icon} size={15} color={fg} />}
-          <Text style={[styles.text, { color: fg }, textStyle]}>{label}</Text>
+          <Text className="text-[15px] font-semibold" style={[{ color: fg }, noSelectStyle, textStyle]}>{label}</Text>
         </View>
       )}
     </Pressable>
@@ -69,8 +78,3 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({
 
 export default SubmitButton;
 
-const styles = StyleSheet.create({
-  button: { borderRadius: 10, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
-  content: { flexDirection: "row", alignItems: "center", gap: 8 },
-  text: { fontSize: 15, fontWeight: "600" },
-});

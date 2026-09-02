@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  ScrollView,
-  Pressable,
-} from "react-native";
+import { View, Text, ScrollView, Pressable, Platform} from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { confirm } from "@/shared/hooks/use-confirm";
@@ -39,13 +33,12 @@ export default function SecurityScreen() {
     <ThemedView style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }}>
         {/* Header Row */}
-        <View style={styles.headerRow}>
+        <View className="flex-row items-center px-4 py-3">
+          {Platform.OS !== "web" && (
           <Pressable
             onPress={() => router.back()}
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && { opacity: 0.7 },
-            ]}
+            className="p-1 mr-3"
+            style={({ pressed }) => (pressed ? { opacity: 0.7 } : undefined)}
           >
             <MaterialCommunityIcons
               name="arrow-left"
@@ -53,53 +46,53 @@ export default function SecurityScreen() {
               color={colors.text}
             />
           </Pressable>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
+          )}
+          <Text className="text-xl font-semibold" style={{ color: colors.text }}>
             Security Settings
           </Text>
         </View>
 
         <ScrollView
-          style={[styles.container, { backgroundColor: colors.background }]}
-          contentContainerStyle={styles.contentContainer}
+          className="flex-1"
+          style={{ backgroundColor: colors.background }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
           showsVerticalScrollIndicator={false}
         >
           {/* SECTION 1: Device Authentication */}
-          <View style={styles.sectionContainer}>
+          <View className="mt-6">
             <Text
-              style={[styles.sectionTitle, { color: colors.textSecondary }]}
+              className="text-[13px] font-semibold uppercase mb-2 ml-1 tracking-[0.5px]"
+              style={{ color: colors.textSecondary }}
             >
               Access & Authentication
             </Text>
             <View
-              style={[
-                styles.cardWrapper,
-                { backgroundColor: colors.backgroundSecondary },
-              ]}
+              className="rounded-xl overflow-hidden"
+              style={{ backgroundColor: colors.backgroundSecondary }}
             >
               {/* Biometric Toggle Row */}
               <Pressable
                 onPress={() => setBiometricsEnabled(!biometricsEnabled)}
-                style={({ pressed }) => [
-                  styles.rowItem,
-                  { borderBottomColor: colors.border, borderBottomWidth: 0.5 },
-                  pressed && styles.rowPressed,
-                ]}
+                className="flex-row items-center justify-between p-4"
+                style={({ pressed }) => ({
+                  borderBottomColor: colors.border,
+                  borderBottomWidth: 0.5,
+                  opacity: pressed ? 0.7 : 1,
+                })}
               >
-                <View style={styles.rowLeft}>
+                <View className="flex-row items-center flex-1 mr-4">
                   <MaterialCommunityIcons
                     name="fingerprint"
                     size={22}
                     color={colors.textSecondary}
                   />
-                  <View style={styles.textMetaWrapper}>
-                    <Text style={[styles.rowText, { color: colors.text }]}>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-base font-medium mb-0.5" style={{ color: colors.text }}>
                       Biometric Sign-In
                     </Text>
                     <Text
-                      style={[
-                        styles.descriptionText,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-[13px]"
+                      style={{ color: colors.textSecondary }}
                     >
                       Use Face ID or Fingerprint scanner
                     </Text>
@@ -116,26 +109,22 @@ export default function SecurityScreen() {
               {/* Two-Factor Toggle Row */}
               <Pressable
                 onPress={() => setTwoFactorEnabled(!twoFactorEnabled)}
-                style={({ pressed }) => [
-                  styles.rowItem,
-                  pressed && styles.rowPressed,
-                ]}
+                className="flex-row items-center justify-between p-4"
+                style={({ pressed }) => (pressed ? { opacity: 0.7 } : undefined)}
               >
-                <View style={styles.rowLeft}>
+                <View className="flex-row items-center flex-1 mr-4">
                   <MaterialCommunityIcons
                     name="shield-account-outline"
                     size={22}
                     color={colors.textSecondary}
                   />
-                  <View style={styles.textMetaWrapper}>
-                    <Text style={[styles.rowText, { color: colors.text }]}>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-base font-medium mb-0.5" style={{ color: colors.text }}>
                       Two-Factor Auth (2FA)
                     </Text>
                     <Text
-                      style={[
-                        styles.descriptionText,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-[13px]"
+                      style={{ color: colors.textSecondary }}
                     >
                       Secure account actions via SMS or App
                     </Text>
@@ -152,42 +141,40 @@ export default function SecurityScreen() {
           </View>
 
           {/* SECTION 2: Credentials Management */}
-          <View style={styles.sectionContainer}>
+          <View className="mt-6">
             <Text
-              style={[styles.sectionTitle, { color: colors.textSecondary }]}
+              className="text-[13px] font-semibold uppercase mb-2 ml-1 tracking-[0.5px]"
+              style={{ color: colors.textSecondary }}
             >
               Credentials
             </Text>
             <View
-              style={[
-                styles.cardWrapper,
-                { backgroundColor: colors.backgroundSecondary },
-              ]}
+              className="rounded-xl overflow-hidden"
+              style={{ backgroundColor: colors.backgroundSecondary }}
             >
               {/* Change Password Link */}
               <Pressable
                 onPress={() => console.log("Navigate to Change Password")}
-                style={({ pressed }) => [
-                  styles.rowItem,
-                  { borderBottomColor: colors.border, borderBottomWidth: 0.5 },
-                  pressed && styles.rowPressed,
-                ]}
+                className="flex-row items-center justify-between p-4"
+                style={({ pressed }) => ({
+                  borderBottomColor: colors.border,
+                  borderBottomWidth: 0.5,
+                  opacity: pressed ? 0.7 : 1,
+                })}
               >
-                <View style={styles.rowLeft}>
+                <View className="flex-row items-center flex-1 mr-4">
                   <MaterialCommunityIcons
                     name="lock-reset"
                     size={22}
                     color={colors.textSecondary}
                   />
-                  <View style={styles.textMetaWrapper}>
-                    <Text style={[styles.rowText, { color: colors.text }]}>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-base font-medium mb-0.5" style={{ color: colors.text }}>
                       Change Password
                     </Text>
                     <Text
-                      style={[
-                        styles.descriptionText,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-[13px]"
+                      style={{ color: colors.textSecondary }}
                     >
                       Last updated 3 months ago
                     </Text>
@@ -203,26 +190,22 @@ export default function SecurityScreen() {
               {/* Pin Code Setup */}
               <Pressable
                 onPress={() => console.log("Navigate to Security PIN")}
-                style={({ pressed }) => [
-                  styles.rowItem,
-                  pressed && styles.rowPressed,
-                ]}
+                className="flex-row items-center justify-between p-4"
+                style={({ pressed }) => (pressed ? { opacity: 0.7 } : undefined)}
               >
-                <View style={styles.rowLeft}>
+                <View className="flex-row items-center flex-1 mr-4">
                   <MaterialCommunityIcons
                     name="numeric"
                     size={22}
                     color={colors.textSecondary}
                   />
-                  <View style={styles.textMetaWrapper}>
-                    <Text style={[styles.rowText, { color: colors.text }]}>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-base font-medium mb-0.5" style={{ color: colors.text }}>
                       App Lock PIN
                     </Text>
                     <Text
-                      style={[
-                        styles.descriptionText,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-[13px]"
+                      style={{ color: colors.textSecondary }}
                     >
                       Configure backup 4-digit numeric code
                     </Text>
@@ -238,46 +221,39 @@ export default function SecurityScreen() {
           </View>
 
           {/* SECTION 3: Session Management */}
-          <View style={styles.sectionContainer}>
+          <View className="mt-6">
             <Text
-              style={[styles.sectionTitle, { color: colors.textSecondary }]}
+              className="text-[13px] font-semibold uppercase mb-2 ml-1 tracking-[0.5px]"
+              style={{ color: colors.textSecondary }}
             >
               Active Sessions
             </Text>
             <View
-              style={[
-                styles.cardWrapper,
-                { backgroundColor: colors.backgroundSecondary },
-              ]}
+              className="rounded-xl overflow-hidden"
+              style={{ backgroundColor: colors.backgroundSecondary }}
             >
               {/* Force Sign-Out Action */}
               <Pressable
                 onPress={handleTerminateSessions}
-                style={({ pressed }) => [
-                  styles.rowItem,
-                  pressed && styles.rowPressed,
-                ]}
+                className="flex-row items-center justify-between p-4"
+                style={({ pressed }) => (pressed ? { opacity: 0.7 } : undefined)}
               >
-                <View style={styles.rowLeft}>
+                <View className="flex-row items-center flex-1 mr-4">
                   <MaterialCommunityIcons
                     name="logout-variant"
                     size={22}
                     color="#C5221F"
                   />
-                  <View style={styles.textMetaWrapper}>
+                  <View className="ml-3 flex-1">
                     <Text
-                      style={[
-                        styles.rowText,
-                        { color: "#C5221F", fontWeight: "600" },
-                      ]}
+                      className="text-base mb-0.5 font-semibold"
+                      style={{ color: "#C5221F" }}
                     >
                       Log Out Other Devices
                     </Text>
                     <Text
-                      style={[
-                        styles.descriptionText,
-                        { color: colors.textSecondary },
-                      ]}
+                      className="text-[13px]"
+                      style={{ color: colors.textSecondary }}
                     >
                       Disconnect active tokens on all web/mobile links
                     </Text>
@@ -291,69 +267,3 @@ export default function SecurityScreen() {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backButton: {
-    padding: 4,
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-  },
-  container: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-  },
-  sectionContainer: {
-    marginTop: 24,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    marginBottom: 8,
-    marginLeft: 4,
-    letterSpacing: 0.5,
-  },
-  cardWrapper: {
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  rowItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-  },
-  rowPressed: {
-    opacity: 0.7,
-  },
-  rowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    marginRight: 16,
-  },
-  textMetaWrapper: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  rowText: {
-    fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 2,
-  },
-  descriptionText: {
-    fontSize: 13,
-  },
-});

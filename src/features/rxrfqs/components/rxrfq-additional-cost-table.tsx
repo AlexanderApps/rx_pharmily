@@ -71,16 +71,17 @@ const RxRfqAdditionalCostsTable: React.FC<RxRfqAdditionalCostsTableProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View className="w-full gap-3">
       {/* Header row */}
-      <View style={styles.headerRow}>
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+      <View className="flex-row items-center justify-between">
+        <Text className="text-xs font-medium" style={{ color: colors.textSecondary }}>
           {items.length > 0
             ? `${items.length} cost${items.length > 1 ? "s" : ""} added`
             : "No additional costs"}
         </Text>
         <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: colors.text }]}
+          className="flex-row items-center gap-1.5 px-3 py-[7px] rounded-lg"
+          style={{ backgroundColor: colors.text }}
           onPress={openAdd}
         >
           <MaterialCommunityIcons
@@ -89,10 +90,8 @@ const RxRfqAdditionalCostsTable: React.FC<RxRfqAdditionalCostsTableProps> = ({
             color={colors.backgroundSecondary}
           />
           <Text
-            style={[
-              styles.addButtonText,
-              { color: colors.backgroundSecondary },
-            ]}
+            className="text-[13px] font-semibold"
+            style={{ color: colors.backgroundSecondary }}
           >
             Add Cost
           </Text>
@@ -100,28 +99,26 @@ const RxRfqAdditionalCostsTable: React.FC<RxRfqAdditionalCostsTableProps> = ({
       </View>
 
       {error && (
-        <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+        <Text className="text-xs font-medium" style={{ color: colors.error }}>{error}</Text>
       )}
 
       {items.length === 0 ? (
         <View
-          style={[
-            styles.emptyState,
-            {
-              backgroundColor: colors.backgroundElement,
-              borderColor: colors.border,
-            },
-          ]}
+          className="items-center justify-center py-8 px-5 rounded-xl border border-dashed gap-1"
+          style={{
+            backgroundColor: colors.backgroundElement,
+            borderColor: colors.border,
+          }}
         >
           <MaterialCommunityIcons
             name="cash-plus"
             size={40}
             color={colors.textSecondary}
           />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>
+          <Text className="text-[15px] font-semibold mt-2" style={{ color: colors.text }}>
             No additional costs
           </Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+          <Text className="text-[13px] text-center" style={{ color: colors.textSecondary }}>
             Add delivery, tax, handling or other charges.
           </Text>
         </View>
@@ -132,27 +129,21 @@ const RxRfqAdditionalCostsTable: React.FC<RxRfqAdditionalCostsTableProps> = ({
             keyExtractor={(item) => item.id}
             scrollEnabled={false}
             ItemSeparatorComponent={() => (
-              <View
-                style={[styles.separator, { backgroundColor: colors.border }]}
-              />
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.border }} />
             )}
-            style={[
-              styles.list,
-              {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
-              },
-            ]}
+            className="rounded-xl border overflow-hidden"
+            style={{
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+            }}
             renderItem={({ item }) => {
               const meta = COST_TYPE_META[item.costType];
               return (
-                <View style={styles.row}>
+                <View className="flex-row items-center px-3.5 py-3 gap-3">
                   {/* Left: icon + text */}
                   <View
-                    style={[
-                      styles.iconWrap,
-                      { backgroundColor: colors.backgroundSecondary },
-                    ]}
+                    className="w-9 h-9 rounded-lg items-center justify-center"
+                    style={{ backgroundColor: colors.backgroundSecondary }}
                   >
                     <MaterialCommunityIcons
                       name={meta.icon as any}
@@ -161,26 +152,23 @@ const RxRfqAdditionalCostsTable: React.FC<RxRfqAdditionalCostsTableProps> = ({
                     />
                   </View>
 
-                  <View style={styles.rowBody}>
-                    <View style={styles.rowTopLine}>
+                  <View className="flex-1 gap-0.5">
+                    <View className="flex-row items-center gap-2">
                       <Text
-                        style={[styles.rowDescription, { color: colors.text }]}
+                        className="text-sm font-medium flex-1"
+                        style={{ color: colors.text }}
                         numberOfLines={1}
                       >
                         {item.description}
                       </Text>
                       {item.isRequired && (
                         <View
-                          style={[
-                            styles.requiredBadge,
-                            { backgroundColor: colors.error + "18" },
-                          ]}
+                          className="px-[7px] py-0.5 rounded-md"
+                          style={{ backgroundColor: colors.error + "18" }}
                         >
                           <Text
-                            style={[
-                              styles.requiredBadgeText,
-                              { color: colors.error },
-                            ]}
+                            className="text-[11px] font-semibold"
+                            style={{ color: colors.error }}
                           >
                             Required
                           </Text>
@@ -188,24 +176,25 @@ const RxRfqAdditionalCostsTable: React.FC<RxRfqAdditionalCostsTableProps> = ({
                       )}
                     </View>
                     <Text
-                      style={[styles.rowMeta, { color: colors.textSecondary }]}
+                      className="text-xs"
+                      style={{ color: colors.textSecondary }}
                     >
                       {meta.label}
                     </Text>
                   </View>
 
                   {/* Right: amount + actions */}
-                  <View style={styles.rowRight}>
-                    <Text style={[styles.rowAmount, { color: colors.text }]}>
+                  <View className="items-end gap-1">
+                    <Text className="text-sm font-semibold" style={{ color: colors.text }}>
                       {item.amount.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
                     </Text>
-                    <View style={styles.rowActions}>
+                    <View className="flex-row gap-0.5">
                       <TouchableOpacity
                         onPress={() => openEdit(item)}
-                        style={styles.actionBtn}
+                        className="p-1 mx-0.5"
                       >
                         <MaterialCommunityIcons
                           name="pencil-outline"
@@ -215,7 +204,7 @@ const RxRfqAdditionalCostsTable: React.FC<RxRfqAdditionalCostsTableProps> = ({
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => handleDelete(item.id)}
-                        style={styles.actionBtn}
+                        className="p-1 mx-0.5"
                       >
                         <MaterialCommunityIcons
                           name="trash-can-outline"
@@ -232,18 +221,16 @@ const RxRfqAdditionalCostsTable: React.FC<RxRfqAdditionalCostsTableProps> = ({
 
           {/* Total */}
           <View
-            style={[
-              styles.totalRow,
-              {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
-              },
-            ]}
+            className="flex-row justify-between items-center px-3.5 py-3 rounded-xl border"
+            style={{
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+            }}
           >
-            <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>
+            <Text className="text-xs font-medium" style={{ color: colors.textSecondary }}>
               Additional costs total ({currency})
             </Text>
-            <Text style={[styles.totalValue, { color: colors.text }]}>
+            <Text className="text-[15px] font-semibold" style={{ color: colors.text }}>
               {total.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
@@ -259,97 +246,11 @@ const RxRfqAdditionalCostsTable: React.FC<RxRfqAdditionalCostsTableProps> = ({
         onSave={handleSave}
         initialData={editingItem}
         isEditing={!!editingItem}
+        currency={currency}
       />
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { width: "100%", gap: 12 },
-
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  sectionLabel: { fontSize: 12, fontWeight: "500" },
-  addButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-  },
-  addButtonText: { fontSize: 13, fontWeight: "600" },
-
-  errorText: { fontSize: 12, fontWeight: "500" },
-
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 32,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    gap: 4,
-  },
-  emptyTitle: { fontSize: 15, fontWeight: "600", marginTop: 8 },
-  emptySubtitle: { fontSize: 13, textAlign: "center" },
-
-  list: {
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: "hidden",
-  },
-  separator: { height: StyleSheet.hairlineWidth },
-
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  rowBody: { flex: 1, gap: 2 },
-  rowTopLine: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  rowDescription: { fontSize: 14, fontWeight: "500", flex: 1 },
-  rowMeta: { fontSize: 12 },
-  requiredBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  requiredBadgeText: { fontSize: 11, fontWeight: "600" },
-
-  rowRight: { alignItems: "flex-end", gap: 4 },
-  rowAmount: { fontSize: 14, fontWeight: "600" },
-  rowActions: { flexDirection: "row", gap: 2 },
-  actionBtn: { padding: 4, marginHorizontal: 2 },
-
-  totalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  totalLabel: { fontSize: 12, fontWeight: "500" },
-  totalValue: { fontSize: 15, fontWeight: "600" },
-});
-
 export default RxRfqAdditionalCostsTable;
+

@@ -1,12 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  ScrollView,
-} from "react-native";
+import { View, Text, TouchableOpacity, FlatList, ScrollView } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import BottomSheet from "@/shared/components/bottom-sheet";
@@ -66,21 +59,13 @@ const CategoriesMultiSelect: React.FC<CategoriesMultiSelectProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View className="w-full">
       <TouchableOpacity
-        style={[
-          styles.button,
-          {
-            backgroundColor: error
-              ? colors.backgroundSecondary
-              : colors.backgroundElement,
-            borderColor: error
-              ? colors.error
-              : isOpen
-                ? colors.backgroundElement
-                : colors.border,
-          },
-        ]}
+        className="flex-row items-center justify-between px-3 py-3 rounded-md border min-h-12"
+        style={{
+          backgroundColor: error ? colors.backgroundSecondary : colors.backgroundElement,
+          borderColor: error ? colors.error : isOpen ? colors.backgroundElement : colors.border,
+        }}
         onPress={toggleBottomSheet}
         activeOpacity={0.7}
       >
@@ -88,23 +73,21 @@ const CategoriesMultiSelect: React.FC<CategoriesMultiSelectProps> = ({
           <ScrollView
             horizontal
             scrollEnabled={false}
-            contentContainerStyle={styles.tagsContainer}
+            contentContainerStyle={{ flexDirection: "row", flexWrap: "wrap", gap: 8, flex: 1 }}
             showsHorizontalScrollIndicator={false}
           >
             {selectedCategoryObjects.map((category) => (
               <View
                 key={category.id}
-                style={[
-                  styles.tag,
-                  { backgroundColor: colors.backgroundSelected },
-                ]}
+                className="flex-row items-center px-2.5 py-1.5 rounded gap-1.5"
+                style={{ backgroundColor: colors.backgroundSelected }}
               >
-                <Text style={[styles.tagText, { color: colors.text }]}>
+                <Text className="text-xs font-medium" style={{ color: colors.text }}>
                   {category.name}
                 </Text>
                 <TouchableOpacity
                   onPress={() => toggleCategory(category.id)}
-                  style={styles.tagCloseButton}
+                  className="p-0.5"
                 >
                   <MaterialCommunityIcons
                     name="close"
@@ -116,7 +99,7 @@ const CategoriesMultiSelect: React.FC<CategoriesMultiSelectProps> = ({
             ))}
           </ScrollView>
         ) : (
-          <Text style={[styles.placeholder, { color: colors.textSecondary }]}>
+          <Text className="text-sm font-medium flex-1" style={{ color: colors.textSecondary }}>
             Select categories...
           </Text>
         )}
@@ -124,12 +107,12 @@ const CategoriesMultiSelect: React.FC<CategoriesMultiSelectProps> = ({
           name="chevron-down"
           size={22}
           color={error ? colors.error : colors.textSecondary}
-          style={[styles.icon, isOpen && styles.iconRotated]}
+          style={isOpen ? { marginLeft: 8, transform: [{ rotate: "180deg" }] } : { marginLeft: 8 }}
         />
       </TouchableOpacity>
 
       {error && (
-        <Text style={[styles.error, { color: colors.error }]}>{error}</Text>
+        <Text className="text-xs mt-1.5 font-medium" style={{ color: colors.error }}>{error}</Text>
       )}
 
       <BottomSheet
@@ -142,8 +125,8 @@ const CategoriesMultiSelect: React.FC<CategoriesMultiSelectProps> = ({
         onChange={handleBottomSheetChange}
         backgroundColor={colors.backgroundSecondary}
       >
-        <View style={styles.bottomSheetHeader}>
-          <Text style={[styles.bottomSheetTitle, { color: colors.text }]}>
+        <View className="pb-4 items-center">
+          <Text className="text-base font-semibold" style={{ color: colors.text }}>
             Select Categories
           </Text>
         </View>
@@ -151,37 +134,31 @@ const CategoriesMultiSelect: React.FC<CategoriesMultiSelectProps> = ({
         <FlatList
           data={CATEGORIES}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={{ paddingBottom: 24 }}
           renderItem={({ item }) => {
             const isChecked = selectedCategories.includes(item.id);
             return (
               <TouchableOpacity
-                style={[
-                  styles.optionItem,
-                  { borderBottomColor: colors.border },
-                  isChecked && { backgroundColor: colors.backgroundElement },
-                ]}
+                className="flex-row items-center justify-between px-4 py-3.5 border-b-[0.5px]"
+                style={{
+                  borderBottomColor: colors.border,
+                  backgroundColor: isChecked ? colors.backgroundElement : "transparent",
+                }}
                 onPress={() => toggleCategory(item.id)}
                 activeOpacity={0.6}
               >
                 <Text
-                  style={[
-                    styles.optionText,
-                    { color: colors.text },
-                    isChecked && { fontWeight: "600" },
-                  ]}
+                  className="text-sm flex-1"
+                  style={{ color: colors.text, fontWeight: isChecked ? "600" : "500" }}
                 >
                   {item.name}
                 </Text>
                 {/* Checkbox moved to the right side 👇 */}
                 <View
+                  className="w-5 h-5 rounded justify-center items-center ml-3 border-[1.5px]"
                   style={[
-                    styles.checkbox,
                     { borderColor: colors.border },
-                    isChecked && {
-                      backgroundColor: colors.text,
-                      borderColor: colors.text,
-                    },
+                    isChecked && { backgroundColor: colors.text, borderColor: colors.text },
                   ]}
                 >
                   {isChecked && (
@@ -199,13 +176,12 @@ const CategoriesMultiSelect: React.FC<CategoriesMultiSelectProps> = ({
 
         {selectedCategories.length > 0 && (
           <View
-            style={[
-              styles.bottomSheetFooter,
-              { borderTopColor: colors.border },
-            ]}
+            className="pt-4 pb-2 items-center border-t-[0.5px]"
+            style={{ borderTopColor: colors.border }}
           >
             <Text
-              style={[styles.selectedCount, { color: colors.textSecondary }]}
+              className="text-sm font-medium"
+              style={{ color: colors.textSecondary }}
             >
               {selectedCategories.length} selected
             </Text>
@@ -216,100 +192,5 @@ const CategoriesMultiSelect: React.FC<CategoriesMultiSelectProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-  },
-  button: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    minHeight: 48,
-  },
-  tagsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    flex: 1,
-  },
-  tag: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 4,
-    gap: 6,
-  },
-  tagText: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  tagCloseButton: {
-    padding: 2,
-  },
-  placeholder: {
-    fontSize: 14,
-    fontWeight: "500",
-    flex: 1,
-  },
-  icon: {
-    marginLeft: 8,
-  },
-  iconRotated: {
-    transform: [{ rotate: "180deg" }],
-  },
-  error: {
-    fontSize: 12,
-    marginTop: 6,
-    fontWeight: "500",
-  },
-  bottomSheetHeader: {
-    paddingBottom: 16,
-    alignItems: "center",
-  },
-  bottomSheetTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  listContent: {
-    paddingBottom: 24,
-  },
-  optionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between", // 👈 Spreads text to left and checkbox to right
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 0.5,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 12, // 👈 Shifted spacing margin away from right wall
-  },
-  optionText: {
-    fontSize: 14,
-    fontWeight: "500",
-    flex: 1,
-  },
-  bottomSheetFooter: {
-    paddingTop: 16,
-    paddingBottom: 8,
-    alignItems: "center",
-    borderTopWidth: 0.5,
-  },
-  selectedCount: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-});
-
 export default CategoriesMultiSelect;
+

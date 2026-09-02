@@ -66,6 +66,8 @@ export interface Post {
   likeCount: number;
   hasLiked: boolean;
   commentCount: number;
+  status: "active" | "suspended";
+  deletedAt?: Date;
 }
 
 export interface Comment {
@@ -74,6 +76,8 @@ export interface Comment {
   author: PostAuthor;
   text: string;
   createdAt: Date;
+  status: "active" | "suspended";
+  deletedAt?: Date;
 }
 
 export interface PostFormData {

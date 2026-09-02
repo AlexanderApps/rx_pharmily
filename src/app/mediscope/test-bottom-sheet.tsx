@@ -1,19 +1,9 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Button, StyleSheet, View, Text } from "react-native";
+import { Button, View, Text } from "react-native";
 import BottomSheet, {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetModalProvider,
   BottomSheetScrollView,
-  BottomSheetView,
 } from "@gorhom/bottom-sheet";
-import {
-  GestureHandlerRootView,
-  Pressable,
-} from "react-native-gesture-handler";
-
-import { ThemedText } from "@/shared/components/themed-text";
-import { ThemedView } from "@/shared/components/themed-view";
+import { Pressable } from "react-native-gesture-handler";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
@@ -98,40 +88,22 @@ const INCOTERM_OPTIONS: IncotermOption[] = [
 
 export default function TestBottomSheet() {
   const sheetRef = useRef<BottomSheet>(null);
-
   const { colors } = useTheme();
 
-  // variables
-  const data = useMemo(
-    () =>
-      Array(50)
-        .fill(0)
-        .map((_, index) => `index-${index}`),
-    [],
-  );
   const snapPoints = useMemo(() => ["25%", "50%", "90%"], []);
   const [isSelected, setIsSelected] = useState(false);
 
-  // callbacks
   const handleSheetChange = useCallback((index: any) => {
     console.log("handleSheetChange", index);
   }, []);
+
   const handleSnapPress = useCallback((index: number) => {
     sheetRef.current?.snapToIndex(index);
   }, []);
+
   const handleClosePress = useCallback(() => {
     sheetRef.current?.close();
   }, []);
-
-  // render
-  const renderItem = useCallback(
-    (item: string) => (
-      <View key={item} style={styles.itemContainer}>
-        <Text>{item}</Text>
-      </View>
-    ),
-    [],
-  );
 
   const handleSelect = (code: string) => {
     // onChange(code);
@@ -142,57 +114,41 @@ export default function TestBottomSheet() {
     (item: IncotermOption) => (
       <Pressable
         onPress={() => handleSelect(item.code)}
+        className="flex-row items-center justify-between px-4 py-4 border-b"
         style={[
-          styles.optionRow,
-          {
-            borderBottomColor: colors.border,
-          },
-          isSelected && {
-            backgroundColor: `${colors.primary}10`,
-          },
+          { borderBottomColor: colors.border },
+          isSelected && { backgroundColor: `${colors.primary}10` },
         ]}
       >
-        <View style={styles.optionContent}>
+        <View className="flex-row flex-1 gap-3">
           <View
-            style={[
-              styles.codeBadge,
-              {
-                backgroundColor:
-                  item.code === "" ? colors.border : `${colors.primary}15`,
-              },
-            ]}
+            className="w-[60px] rounded-md items-center justify-center py-1.5 self-start"
+            style={{
+              backgroundColor:
+                item.code === "" ? colors.border : `${colors.primary}15`,
+            }}
           >
             <Text
-              style={[
-                styles.codeBadgeText,
-                {
-                  color:
-                    item.code === "" ? colors.textSecondary : colors.primary,
-                },
-              ]}
+              className="text-[11px] font-bold"
+              style={{
+                color: item.code === "" ? colors.textSecondary : colors.primary,
+              }}
             >
               {item.code || "NONE"}
             </Text>
           </View>
-
-          <View style={styles.optionTextContainer}>
-            <Text style={[styles.optionLabel, { color: colors.text }]}>
+          <View className="flex-1">
+            <Text className="text-sm font-semibold" style={{ color: colors.text }}>
               {item.label}
             </Text>
-
             <Text
-              style={[
-                styles.optionDescription,
-                {
-                  color: colors.textSecondary,
-                },
-              ]}
+              className="mt-1 text-xs leading-[18px]"
+              style={{ color: colors.textSecondary }}
             >
               {item.description}
             </Text>
           </View>
         </View>
-
         {isSelected && (
           <MaterialCommunityIcons
             name="check-circle"
@@ -202,11 +158,11 @@ export default function TestBottomSheet() {
         )}
       </Pressable>
     ),
-    [isSelected],
+    [isSelected, colors],
   );
+
   return (
-    // <GestureHandlerRootView style={styles.container}>
-    <View style={styles.container}>
+    <View className="flex-1 pt-[200px]">
       <Button title="Snap To 90%" onPress={() => handleSnapPress(2)} />
       <Button title="Snap To 50%" onPress={() => handleSnapPress(1)} />
       <Button title="Snap To 25%" onPress={() => handleSnapPress(0)} />
@@ -219,139 +175,10 @@ export default function TestBottomSheet() {
         enablePanDownToClose={true}
         onChange={handleSheetChange}
       >
-        <BottomSheetScrollView contentContainerStyle={styles.contentContainer}>
+        <BottomSheetScrollView contentContainerClassName="bg-white">
           {INCOTERM_OPTIONS.map(renderItem2)}
         </BottomSheetScrollView>
       </BottomSheet>
     </View>
-    // </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 200,
-  },
-  contentContainer: {
-    backgroundColor: "white",
-  },
-  itemContainer: {
-    padding: 6,
-    margin: 6,
-    backgroundColor: "#eee",
-  },
-
-  label: {
-    fontSize: 13,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-
-  trigger: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-  },
-
-  triggerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    gap: 10,
-  },
-
-  triggerText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-
-  errorText: {
-    fontSize: 12,
-  },
-
-  modalContainer: {
-    flex: 1,
-  },
-
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-
-  closeButton: {
-    padding: 4,
-    marginRight: 12,
-  },
-
-  headerTextContainer: {
-    flex: 1,
-  },
-
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
-
-  modalSubtitle: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-
-  listContent: {
-    paddingBottom: 32,
-  },
-
-  optionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-
-  optionContent: {
-    flexDirection: "row",
-    flex: 1,
-    gap: 12,
-  },
-
-  codeBadge: {
-    width: 60,
-    borderRadius: 6,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 5,
-    alignSelf: "flex-start",
-  },
-
-  codeBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-
-  optionTextContainer: {
-    flex: 1,
-  },
-
-  optionLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-
-  optionDescription: {
-    marginTop: 4,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-});

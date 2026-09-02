@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { RxRfqStatusType } from "@/features/rxrfqs/types/rxrfqs.types";
@@ -58,37 +58,24 @@ const RxRfqStatusBadge: React.FC<RxRfqStatusBadgeProps> = ({
 
   return (
     <View
-      style={[
-        styles.badge,
-        isSm && styles.badgeSm,
-        { backgroundColor: meta.color + "18" },
-      ]}
+      className={
+        isSm
+          ? "flex-row items-center gap-1 px-[7px] py-[3px] rounded-md self-start"
+          : "flex-row items-center gap-1 px-2.5 py-[5px] rounded-lg self-start"
+      }
+      style={{ backgroundColor: meta.color + "18" }}
     >
       <MaterialCommunityIcons
         name={meta.icon as any}
         size={isSm ? 11 : 13}
         color={meta.color}
       />
-      <Text style={[styles.text, isSm && styles.textSm, { color: meta.color }]}>
+      <Text className={isSm ? "text-[11px] font-semibold" : "text-xs font-semibold"} style={{ color: meta.color }}>
         {meta.label}
       </Text>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-  },
-  badgeSm: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
-  text: { fontSize: 12, fontWeight: "600" },
-  textSm: { fontSize: 11 },
-});
-
 export default RxRfqStatusBadge;
+

@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { View, Text } from "react-native";
 import { ThemedView } from "@/shared/components/themed-view";
 import RxRfqsRequestForm from "@/features/rxrfqs/components/rxrfq-req-form";
 import { RxRfqsFormData } from "@/features/rxrfqs/types/rxrfqs.types";
@@ -6,12 +6,16 @@ import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo } from "react";
 import { toast } from "@/shared/hooks/use-toast";
+import { useTheme } from "@/shared/hooks/use-theme";
+import DetailSkeleton from "@/shared/components/detail-skeleton";
 
 export default function AddRxRfqRequest() {
   // If an id is present we're editing an existing (draft) RFQ, otherwise
   // we're creating a brand new one.
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const { colors } = useTheme();
   const rxRfqMarketPlace = useRxRfqsStore((state) => state.rxrfqMarketPlace);
+  const isLoadingRfqs = useRxRfqsStore((state) => state.isLoading);
   const addRxRfq = useRxRfqsStore((state) => state.addRxRfq);
   const updateRxRfq = useRxRfqsStore((state) => state.updateRxRfq);
 
@@ -43,18 +47,30 @@ export default function AddRxRfqRequest() {
     }
   };
 
+  // Editing an id that hasn't resolved yet — a cold refresh leaves
+  // rxRfqMarketPlace empty until it re-fetches, and without this guard
+  // the form would render immediately with initialData=undefined,
+  // silently starting as a blank "create" form instead of the intended
+  // edit.
+  if (id && !existing) {
+    if (isLoadingRfqs) {
+      return (
+        <ThemedView className="flex-1">
+          <DetailSkeleton rows={4} />
+        </ThemedView>
+      );
+    }
+    return (
+      <ThemedView className="flex-1 items-center justify-center">
+        <Text style={{ color: colors.text }}>This RFQ could not be found.</Text>
+      </ThemedView>
+    );
+  }
+
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView className="flex-1">
       <RxRfqsRequestForm onSubmit={handleSubmit} initialData={existing} />
     </ThemedView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-});

@@ -1,11 +1,5 @@
 import React, { useState, useRef, useMemo } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  ScrollView,
-  Pressable,
-} from "react-native";
+import { View, Text, ScrollView, Pressable, Platform} from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { confirm } from "@/shared/hooks/use-confirm";
@@ -13,7 +7,6 @@ import { toast } from "@/shared/hooks/use-toast";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ThemedView } from "@/shared/components/themed-view";
-// Import your custom BottomSheet component here
 import BottomSheet from "@/shared/components/bottom-sheet";
 
 interface SettingsScreenProps {
@@ -36,18 +29,15 @@ export default function SettingsScreen({
   const { colors, setThemeMode } = useTheme();
 
   const changeTheme = (theme: "light" | "dark" | "system") => {
-    // onThemeChange(theme);
     setThemeMode(theme === "system" ? "light" : theme);
   };
 
-  // 1. Setup the reference and layout snap points for your custom sheet
   const filterModalRef = useRef<any>(null);
   const snapPoints = useMemo(() => ["35%"], []);
 
-  const pressedOverlay =
-    colors.text === "#ffffff"
-      ? "rgba(255, 255, 255, 0.05)"
-      : "rgba(0, 0, 0, 0.03)";
+  // Compute uniform platform active tints natively via string combinations
+  const activeBg =
+    colors.text === "#ffffff" ? "active:bg-white/5" : "active:bg-black/3";
 
   const themeLabels = {
     light: "Light Mode",
@@ -58,7 +48,8 @@ export default function SettingsScreen({
   const handleClearCache = async () => {
     const ok = await confirm({
       title: "Clear Cache",
-      message: "Are you sure you want to clear local app cache? This frees up storage space.",
+      message:
+        "Are you sure you want to clear local app cache? This frees up storage space.",
       confirmLabel: "Clear",
       destructive: true,
     });
@@ -92,7 +83,6 @@ export default function SettingsScreen({
           label: "Appearance",
           icon: "palette-outline",
           valueText: themeLabels[currentTheme],
-          // 2. Present the bottom sheet using its reference interface
           onPress: () =>
             filterModalRef.current?.expand?.() ||
             filterModalRef.current?.present?.(),
@@ -119,18 +109,17 @@ export default function SettingsScreen({
   ];
 
   return (
-    <ThemedView style={{ flex: 1 }}>
+    <ThemedView className="flex-1">
       <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.background }]}
+        className="flex-1"
+        style={{ backgroundColor: colors.background }}
       >
-        {/* Header Row */}
-        <View style={styles.headerRow}>
+        {/* Header Bar */}
+        <View className="flex-row items-center px-4 py-3">
+          {Platform.OS !== "web" && (
           <Pressable
             onPress={() => router.back()}
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && { opacity: 0.7 },
-            ]}
+            className="p-1 mr-3 active:opacity-70"
           >
             <MaterialCommunityIcons
               name="arrow-left"
@@ -138,67 +127,68 @@ export default function SettingsScreen({
               color={colors.text}
             />
           </Pressable>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
+          )}
+          <Text
+            className="text-[20px] font-semibold"
+            style={{ color: colors.text }}
+          >
             Settings
           </Text>
         </View>
 
-        {/* Main Settings List */}
+        {/* Scrollable Container */}
         <ScrollView
-          contentContainerStyle={styles.contentContainer}
+          contentContainerClassName="px-4 pt-4 pb-10 gap-6"
           showsVerticalScrollIndicator={false}
         >
           {settingsGroups.map((group) => (
-            <View key={group.title} style={styles.sectionContainer}>
+            <View key={group.title} className="gap-2">
               <Text
-                style={[styles.sectionTitle, { color: colors.textSecondary }]}
+                className="text-[12px] font-semibold uppercase tracking-[0.6px] pl-1"
+                style={{ color: colors.textSecondary }}
               >
-                {group.title}
+                group.title
               </Text>
+
               <View
-                style={[
-                  styles.cardWrapper,
-                  { backgroundColor: colors.backgroundSecondary },
-                ]}
+                className="rounded-[16px] overflow-hidden"
+                style={{ backgroundColor: colors.backgroundSecondary }}
               >
                 {group.rows.map((row, index) => {
                   const isLast = index === group.rows.length - 1;
-
                   return (
                     <Pressable
                       key={row.id}
                       onPress={row.onPress}
-                      style={({ pressed }) => [
-                        styles.rowItem,
-                        {
-                          backgroundColor: pressed
-                            ? pressedOverlay
-                            : "transparent",
-                        },
-                        !isLast && {
-                          borderBottomColor: colors.border,
-                          borderBottomWidth: 0.5,
-                        },
-                      ]}
+                      className={`flex-row items-center justify-between px-4 py-[15px] min-h-[56px] ${activeBg}`}
+                      style={
+                        !isLast
+                          ? {
+                              borderBottomColor: colors.border,
+                              borderBottomWidth: 0.5,
+                            }
+                          : undefined
+                      }
                     >
-                      <View style={styles.rowLeft}>
+                      <View className="flex-row items-center gap-3.5 flex-1">
                         <MaterialCommunityIcons
                           name={row.icon}
                           size={22}
                           color={colors.textSecondary}
                         />
-                        <Text style={[styles.rowText, { color: colors.text }]}>
+                        <Text
+                          className="text-[15px] font-medium"
+                          style={{ color: colors.text }}
+                        >
                           {row.label}
                         </Text>
                       </View>
 
-                      <View style={styles.rowRight}>
+                      <View className="flex-row items-center gap-1">
                         {row.valueText && (
                           <Text
-                            style={[
-                              styles.valueText,
-                              { color: colors.textSecondary },
-                            ]}
+                            className="text-[14px] font-normal"
+                            style={{ color: colors.textSecondary }}
                           >
                             {row.valueText}
                           </Text>
@@ -217,7 +207,7 @@ export default function SettingsScreen({
           ))}
         </ScrollView>
 
-        {/* Your Custom Bottom Sheet Integration */}
+        {/* Bottom Sheet Context Window */}
         <BottomSheet
           ref={filterModalRef}
           snapPoints={snapPoints}
@@ -229,11 +219,14 @@ export default function SettingsScreen({
           backgroundColor={colors.backgroundSecondary}
         >
           <ThemedView type="backgroundSecondary">
-            <Text style={[styles.sheetTitle, { color: colors.text }]}>
+            <Text
+              className="text-[18px] font-bold mb-4 pl-1"
+              style={{ color: colors.text }}
+            >
               Choose Theme
             </Text>
 
-            <View style={styles.sheetOptionsContainer}>
+            <View className="gap-1">
               {(["light", "dark", "system"] as const).map((mode) => {
                 const isSelected = currentTheme === mode;
                 const icons = {
@@ -241,40 +234,28 @@ export default function SettingsScreen({
                   dark: "weather-night",
                   system: "cellphone-cog",
                 };
-
                 return (
                   <Pressable
                     key={mode}
                     onPress={() => {
-                      // onThemeChange(mode);
                       changeTheme(mode);
-                      // 3. Dismiss sheet safely upon selecting an alternative look layout
                       filterModalRef.current?.close?.() ||
                         filterModalRef.current?.dismiss?.();
                     }}
-                    style={({ pressed }) => [
-                      styles.sheetOptionRow,
-                      {
-                        backgroundColor: pressed
-                          ? pressedOverlay
-                          : "transparent",
-                      },
-                    ]}
+                    className={`flex-row items-center justify-between py-3.5 px-3 rounded-[12px] ${activeBg}`}
                   >
-                    <View style={styles.rowLeft}>
+                    <View className="flex-row items-center gap-3.5 flex-1">
                       <MaterialCommunityIcons
                         name={icons[mode] as any}
                         size={22}
                         color={isSelected ? colors.text : colors.textSecondary}
                       />
                       <Text
-                        style={[
-                          styles.sheetOptionText,
-                          {
-                            color: colors.text,
-                            fontWeight: isSelected ? "600" : "400",
-                          },
-                        ]}
+                        className="text-[16px]"
+                        style={{
+                          color: colors.text,
+                          fontWeight: isSelected ? "600" : "400",
+                        }}
                       >
                         {themeLabels[mode]}
                       </Text>
@@ -296,95 +277,3 @@ export default function SettingsScreen({
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backButton: {
-    padding: 4,
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-  },
-  contentContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 40,
-    gap: 24,
-  },
-  sectionContainer: {
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-    paddingLeft: 4,
-  },
-  cardWrapper: {
-    borderRadius: 16,
-    overflow: "hidden",
-    // elevation: 2,
-    // shadowColor: "#000",
-    // shadowOpacity: 0.04,
-    // shadowRadius: 8,
-    // shadowOffset: { width: 0, height: 2 },
-  },
-  rowItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-    minHeight: 56,
-  },
-  rowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    flex: 1,
-  },
-  rowRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  rowText: {
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  valueText: {
-    fontSize: 14,
-    fontWeight: "400",
-  },
-  sheetTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 16,
-    paddingLeft: 4,
-  },
-  sheetOptionsContainer: {
-    gap: 4,
-  },
-  sheetOptionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  sheetOptionText: {
-    fontSize: 16,
-  },
-});

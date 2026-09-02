@@ -1,5 +1,6 @@
 import React from "react";
-import { StyleSheet, Text, View, Pressable, ScrollView } from "react-native";
+import { Text, View, Pressable, ScrollView } from "react-native";
+import { noSelectStyle } from "@/shared/constants/text-selection";
 
 interface HorizontalScrollContainerProps {
   title: string;
@@ -17,21 +18,20 @@ export const HorizontalScrollContainer = ({
   children,
 }: HorizontalScrollContainerProps) => {
   return (
-    <View style={styles.container}>
-      <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.sectionTitle, { color: textColor }]}>{title}</Text>
+    <View className="mt-8">
+      <View className="mb-3 flex-row items-center justify-between px-5">
+        <Text className="text-lg font-semibold" style={{ color: textColor }}>
+          {title}
+        </Text>
         {onViewAllPress && (
           <Pressable
             onPress={onViewAllPress}
-            // 1. Injected dynamic bounds checking parameters around the small text link
             hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
-            // 2. Added immediate response feedback when users hold the press target
-            style={({ pressed }) => [
-              styles.viewAllButton,
-              pressed && styles.pressedState,
-            ]}
+            className="items-center justify-center px-2.5 py-1.5 active:opacity-60 cursor-pointer hover:opacity-80"
           >
-            <Text style={styles.viewAllText}>{viewAllText}</Text>
+            <Text className="text-sm font-semibold text-green-600" style={noSelectStyle}>
+              {viewAllText}
+            </Text>
           </Pressable>
         )}
       </View>
@@ -39,48 +39,10 @@ export const HorizontalScrollContainer = ({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.scrollView}
-        contentContainerStyle={styles.horizontalScrollContent}
+        contentContainerClassName="px-5"
       >
         {children}
       </ScrollView>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    marginTop: 32,
-  },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-    paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  viewAllButton: {
-    paddingVertical: 6, // Expands physical height footprint safely
-    paddingHorizontal: 10, // Expands physical width footprint safely
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pressedState: {
-    opacity: 0.6, // Visual feedback anchor matching your design standards
-  },
-  viewAllText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#16a34a",
-  },
-  scrollView: {
-    marginTop: 12,
-  },
-  horizontalScrollContent: {
-    paddingHorizontal: 20,
-  },
-});

@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, ScrollView, Pressable, View } from "react-native";
+import { ScrollView, Pressable, View, Platform} from "react-native";
 
 import { ThemedText } from "@/shared/components/themed-text";
 import { ThemedView } from "@/shared/components/themed-view";
@@ -9,6 +9,7 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { Ionicons } from "@expo/vector-icons";
 import RxRfqListContainer from "@/features/rxrfqs/components/rxrfq-list-container";
 import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
+import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 
 const RFQ_FILTERS = ["All", "Published", "Draft", "Closed", "Awarded"] as const;
 type FilterType = (typeof RFQ_FILTERS)[number];
@@ -16,7 +17,8 @@ type FilterType = (typeof RFQ_FILTERS)[number];
 export default function MyRxRfqScreen() {
   const { filter } = useLocalSearchParams<{ filter?: string }>();
   const { colors } = useTheme();
-  const rxRfqData = useRxRfqsStore((state) => state.rxrfqs);
+  const rxrfqMarketPlace = useRxRfqsStore((state) => state.rxrfqMarketPlace);
+  const rxrfqs = useRxRfqsStore((state) => state.rxrfqs);
 
   // 1. Deriving state directly from query params fixes navigation bugs
   const activeFilter = React.useMemo<FilterType>(() => {
@@ -30,13 +32,28 @@ export default function MyRxRfqScreen() {
       : "All";
   }, [filter]);
 
+  // This screen is "My RxRFQs" — it's meant to show only the current
+  // user's own requests (createdBy === user.id), the same comparison
+  // every isOwner field in the app already uses. rxrfqMarketPlace is the
+  // raw data still carrying createdBy; rxrfqs is the already-resolved
+  // card view (facilityName/facilityLocation joined in) that
+  // RxRfqListContainer expects — filtering the latter by an id set from
+  // the former gets both the right scope and correctly-populated cards.
+  const myRfqs = React.useMemo(() => {
+    const userId = useProfileStore.getState().user.id;
+    const myIds = new Set(
+      rxrfqMarketPlace.filter((rfq) => rfq.createdBy === userId).map((rfq) => rfq.id),
+    );
+    return rxrfqs.filter((rfq) => myIds.has(rfq.id));
+  }, [rxrfqMarketPlace, rxrfqs]);
+
   // 2. Filter function handles case-insensitive status matching safely
   const filteredRfqs = React.useMemo(() => {
-    return rxRfqData.filter((rfq) => {
+    return myRfqs.filter((rfq) => {
       if (activeFilter === "All") return true;
       return rfq.status?.toLowerCase() === activeFilter.toLowerCase();
     });
-  }, [rxRfqData, activeFilter]);
+  }, [myRfqs, activeFilter]);
 
   // 3. Update the route parameters instead of changing local state
   const handleFilterPress = (filterItem: string) => {
@@ -44,34 +61,33 @@ export default function MyRxRfqScreen() {
   };
 
   return (
-    <ThemedView style={styles.safeArea}>
+    <ThemedView className="flex-1">
       <SafeAreaView style={{ flex: 1 }}>
         <View
-          style={[
-            styles.header,
-            { borderBottomColor: colors.backgroundElement },
-          ]}
+          className="px-4 pt-3 pb-3 border-b-[0.5px]"
+          style={{ borderBottomColor: colors.backgroundElement }}
         >
-          <View style={styles.headerRow}>
-            <View style={styles.headerLeftGroup}>
+          <View className="flex-row justify-between items-center">
+            <View className="flex-row items-center flex-1">
+              {Platform.OS !== "web" && (
               <Pressable
                 onPress={() => router.back()}
-                style={styles.backButton}
+                className="mr-3 p-1"
               >
                 <Ionicons name="arrow-back" size={24} color={colors.text} />
               </Pressable>
+              )}
 
               <View>
                 <ThemedText
-                  style={[styles.headerTitle, { color: colors.text }]}
+                  className="text-2xl font-bold"
+                  style={{ color: colors.text }}
                 >
                   My RxRFQs
                 </ThemedText>
                 <ThemedText
-                  style={[
-                    styles.headerSubtitle,
-                    { color: colors.textSecondary },
-                  ]}
+                  className="text-xs mt-0.5"
+                  style={{ color: colors.textSecondary }}
                 >
                   Manage and track your requests for quotations
                 </ThemedText>
@@ -80,12 +96,12 @@ export default function MyRxRfqScreen() {
           </View>
         </View>
 
-        <ThemedView style={styles.scrollWrapper}>
+        <ThemedView className="py-[15px]">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             style={{ flexGrow: 0, maxHeight: 56 }}
-            contentContainerStyle={styles.scrollContainer}
+            contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
           >
             {RFQ_FILTERS.map((filterItem) => {
               const isActive = activeFilter === filterItem;
@@ -94,18 +110,16 @@ export default function MyRxRfqScreen() {
                 <Pressable
                   key={filterItem}
                   onPress={() => handleFilterPress(filterItem)}
-                  style={[
-                    styles.button,
+                  className="px-[18px] py-2 rounded-full border-[1.5px] items-center justify-center"
+                  style={
                     isActive
-                      ? {
-                          backgroundColor: colors.secondary,
-                          borderColor: colors.secondary,
-                        }
-                      : styles.inactiveButton,
-                  ]}
+                      ? { backgroundColor: colors.secondary, borderColor: colors.secondary }
+                      : { backgroundColor: "transparent", borderColor: "rgba(128,128,128,0.2)" }
+                  }
                 >
                   <ThemedText
-                    style={[styles.buttonText, isActive && styles.activeText]}
+                    className="text-sm font-semibold"
+                    style={isActive ? { color: "#FFFFFF" } : undefined}
                   >
                     {filterItem}
                   </ThemedText>
@@ -131,50 +145,4 @@ export default function MyRxRfqScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 0.5,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  headerLeftGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  backButton: {
-    marginRight: 12,
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  scrollWrapper: { paddingVertical: 15 },
-  scrollContainer: { paddingHorizontal: 20, gap: 10 },
-  button: {
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  inactiveButton: {
-    backgroundColor: "transparent",
-    borderColor: "rgba(128,128,128,0.2)",
-  },
-  buttonText: { fontSize: 14, fontWeight: "600" },
-  activeText: { color: "#FFFFFF" },
-});
+

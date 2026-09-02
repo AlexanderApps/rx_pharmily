@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, Pressable, StyleSheet, Modal, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, Modal, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -181,49 +181,54 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={[styles.card, { backgroundColor: colors.backgroundSecondary }]} onPress={() => {}}>
-          <Pressable onPress={onClose} style={styles.closeButton} hitSlop={8}>
+      <Pressable className="flex-1 items-center justify-center p-6" style={{ backgroundColor: "rgba(0,0,0,0.5)" }} onPress={onClose}>
+        <Pressable className="w-full max-w-[340px] rounded-[20px] p-6 items-center gap-1.5" style={{ backgroundColor: colors.backgroundSecondary }} onPress={() => {}}>
+          <Pressable
+            onPress={onClose}
+            className="absolute top-3 right-3 w-7 h-7 rounded-full items-center justify-center"
+            style={{ backgroundColor: "rgba(128,128,128,0.15)" }}
+            hitSlop={8}
+          >
             <MaterialCommunityIcons name="close" size={18} color={colors.textSecondary} />
           </Pressable>
 
-          <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
+          <View className="w-[68px] h-[68px] rounded-full items-center justify-center mb-1.5" style={{ backgroundColor: avatarColor }}>
             {entityType === "user" ? (
-              <Text style={styles.avatarText}>{initials}</Text>
+              <Text className="text-white text-2xl font-bold">{initials}</Text>
             ) : (
               <MaterialCommunityIcons name={icon} size={30} color="#fff" />
             )}
           </View>
 
-          <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+          <Text className="text-[17px] font-bold text-center" style={{ color: colors.text }} numberOfLines={1}>
             {name}
           </Text>
           {subtitle ? (
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+            <Text className="text-[13px] text-center" style={{ color: colors.textSecondary }} numberOfLines={1}>
               {subtitle}
             </Text>
           ) : null}
 
-          <View style={styles.badgeRow}>
+          <View className="mt-1.5">
             <KycStatusBadge status={kycStatus} compact />
           </View>
 
-          {bio ? <Text style={[styles.bio, { color: colors.textSecondary }]}>{bio}</Text> : null}
+          {bio ? <Text className="text-[13px] text-center mt-2.5 leading-[18px]" style={{ color: colors.textSecondary }}>{bio}</Text> : null}
 
           {(showEmail && email) || (showPhone && phone) ? (
-            <View style={[styles.contactBlock, { backgroundColor: colors.backgroundElement }]}>
+            <View className="w-full rounded-xl p-3 gap-2 mt-3.5" style={{ backgroundColor: colors.backgroundElement }}>
               {showEmail && email && (
-                <View style={styles.contactRow}>
+                <View className="flex-row items-center gap-2">
                   <MaterialCommunityIcons name="email-outline" size={14} color={colors.textSecondary} />
-                  <Text style={[styles.contactText, { color: colors.text }]} numberOfLines={1}>
+                  <Text className="text-[13px] flex-1" style={{ color: colors.text }} numberOfLines={1}>
                     {email}
                   </Text>
                 </View>
               )}
               {showPhone && phone && (
-                <View style={styles.contactRow}>
+                <View className="flex-row items-center gap-2">
                   <MaterialCommunityIcons name="phone-outline" size={14} color={colors.textSecondary} />
-                  <Text style={[styles.contactText, { color: colors.text }]}>{phone}</Text>
+                  <Text className="text-[13px] flex-1" style={{ color: colors.text }}>{phone}</Text>
                 </View>
               )}
             </View>
@@ -233,14 +238,15 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
             <Pressable
               onPress={handleMessage}
               disabled={isMessaging}
-              style={[styles.messageButton, { backgroundColor: colors.primary, opacity: isMessaging ? 0.6 : 1 }]}
+              className="flex-row items-center justify-center gap-2 py-3 rounded-[10px] w-full mt-4"
+              style={{ backgroundColor: colors.primary, opacity: isMessaging ? 0.6 : 1 }}
             >
               {isMessaging ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <>
                   <MaterialCommunityIcons name="chat-outline" size={16} color="#fff" />
-                  <Text style={styles.messageButtonText}>Message</Text>
+                  <Text className="text-white text-sm font-semibold">Message</Text>
                 </>
               )}
             </Pressable>
@@ -252,59 +258,3 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
 };
 
 export default PublicProfileCard;
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  card: {
-    width: "100%",
-    maxWidth: 340,
-    borderRadius: 20,
-    padding: 24,
-    alignItems: "center",
-    gap: 6,
-  },
-  closeButton: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(128,128,128,0.15)",
-  },
-  avatar: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 6,
-  },
-  avatarText: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  name: { fontSize: 17, fontWeight: "700", textAlign: "center" },
-  subtitle: { fontSize: 13, textAlign: "center" },
-  badgeRow: { marginTop: 6 },
-  bio: { fontSize: 13, textAlign: "center", marginTop: 10, lineHeight: 18 },
-  contactBlock: { width: "100%", borderRadius: 12, padding: 12, gap: 8, marginTop: 14 },
-  contactRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  contactText: { fontSize: 13, flex: 1 },
-  messageButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 10,
-    width: "100%",
-    marginTop: 16,
-  },
-  messageButtonText: { color: "#fff", fontSize: 14, fontWeight: "600" },
-});

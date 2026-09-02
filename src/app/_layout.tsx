@@ -5,9 +5,14 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { StatusBar } from "expo-status-bar";
 import { useColorScheme, View, ActivityIndicator } from "react-native";
+import {
+  SafeAreaProvider,
+  initialWindowMetrics,
+} from "react-native-safe-area-context";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
+import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
 import { useDonationStore } from "@/features/donations/hooks/use-donation-data";
@@ -15,8 +20,8 @@ import { useMediscopeStore } from "@/features/mediscope/hooks/use-mediscope-data
 import { useRxJobsStore } from "@/features/rxjobs/hooks/use-rxjobs-data";
 import { useAdsStore } from "@/features/ads/hooks/use-ads-data";
 import { usePostsStore } from "@/features/posts/hooks/use-posts-data";
-import WebAppShell from "@/shared/components/web-app-shell";
 import LogoMark from "@/shared/components/logo-mark";
+import WebAppShell from "@/shared/components/web-app-shell";
 import Toast from "@/shared/components/toast";
 import ConfirmDialog from "@/shared/components/confirm-dialog";
 
@@ -29,6 +34,7 @@ export default function RootLayout() {
   const session = useAuthStore((state) => state.session);
   const initialize = useAuthStore((state) => state.initialize);
   const fetchProducts = useCatalogStore((state) => state.fetchProducts);
+  const fetchReferenceData = useReferenceDataStore((state) => state.fetchAll);
   const fetchMyProfile = useProfileStore((state) => state.fetchMyProfile);
   const fetchFacilities = useProfileStore((state) => state.fetchFacilities);
   const fetchOrganizations = useProfileStore((state) => state.fetchOrganizations);
@@ -62,6 +68,7 @@ export default function RootLayout() {
     // own profile screen, which is itself only reachable from that list.
     if (session) {
       fetchProducts();
+      fetchReferenceData();
       fetchMyProfile();
       fetchFacilities();
       fetchOrganizations();
@@ -91,19 +98,22 @@ export default function RootLayout() {
 
   if (isLoading) {
     return (
-      <WebAppShell showChrome={false}>
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background, gap: 20 }}>
-          <LogoMark size={72} />
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </WebAppShell>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <WebAppShell showChrome={!onAuthScreen}>
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background, gap: 20 }}>
+            <LogoMark size={72} />
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        </WebAppShell>
+      </SafeAreaProvider>
     );
   }
 
   return (
-    <WebAppShell showChrome={!onAuthScreen}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <BottomSheetModalProvider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <WebAppShell showChrome={!onAuthScreen}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <BottomSheetModalProvider>
           <StatusBar style={themeMode === "dark" ? "light" : "dark"} />
           <Stack
             screenOptions={{
@@ -241,10 +251,11 @@ export default function RootLayout() {
               }}
             />
           </Stack>
-          <Toast />
           <ConfirmDialog />
         </BottomSheetModalProvider>
       </GestureHandlerRootView>
-    </WebAppShell>
+      </WebAppShell>
+      <Toast />
+    </SafeAreaProvider>
   );
 }

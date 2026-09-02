@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
+import { View, Text, ScrollView, Pressable, Platform} from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { router, Redirect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,16 +7,20 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { ThemedView } from "@/shared/components/themed-view";
 import { useAdsStore } from "@/features/ads/hooks/use-ads-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { usePostsStore } from "@/features/posts/hooks/use-posts-data";
 import { useHelpStore } from "@/features/help/hooks/use-help-data";
 import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { isAdminRole, isSuperadminRole } from "@/features/auth/types/auth.types";
+import { usePaymentsStore } from "@/features/payments/hooks/use-payments-data";
 
 export default function AdminHubScreen() {
   const { colors } = useTheme();
   const isAdmin = useAuthStore((state) => isAdminRole(state.profile?.accountRole));
   const isSuperadmin = useAuthStore((state) => isSuperadminRole(state.profile?.accountRole));
+
   const ads = useAdsStore((state) => state.ads);
+  const posts = usePostsStore((state) => state.posts);
   const user = useProfileStore((state) => state.user);
   const facilities = useProfileStore((state) => state.facilities);
   const organizations = useProfileStore((state) => state.organizations);
@@ -27,13 +31,29 @@ export default function AdminHubScreen() {
   const products = useCatalogStore((state) => state.products);
   const formularyRequests = useCatalogStore((state) => state.formularyRequests);
   const facilityCreationRequests = useProfileStore((state) => state.facilityCreationRequests);
-  const organizationCreationRequests = useProfileStore((state) => state.organizationCreationRequests);
-  const facilityMembershipRequests = useProfileStore((state) => state.facilityMembershipRequests);
-  const facilityOrganizationRequests = useProfileStore((state) => state.facilityOrganizationRequests);
-  const fetchFacilityCreationRequests = useProfileStore((state) => state.fetchFacilityCreationRequests);
-  const fetchOrganizationCreationRequests = useProfileStore((state) => state.fetchOrganizationCreationRequests);
-  const fetchFacilityMembershipRequests = useProfileStore((state) => state.fetchFacilityMembershipRequests);
-  const fetchFacilityOrganizationRequests = useProfileStore((state) => state.fetchFacilityOrganizationRequests);
+  const organizationCreationRequests = useProfileStore(
+    (state) => state.organizationCreationRequests,
+  );
+  const facilityMembershipRequests = useProfileStore(
+    (state) => state.facilityMembershipRequests,
+  );
+  const facilityOrganizationRequests = useProfileStore(
+    (state) => state.facilityOrganizationRequests,
+  );
+  const pendingPayments = usePaymentsStore((state) => state.pendingPayments);
+  const fetchPendingPayments = usePaymentsStore((state) => state.fetchPendingPayments);
+  const fetchFacilityCreationRequests = useProfileStore(
+    (state) => state.fetchFacilityCreationRequests,
+  );
+  const fetchOrganizationCreationRequests = useProfileStore(
+    (state) => state.fetchOrganizationCreationRequests,
+  );
+  const fetchFacilityMembershipRequests = useProfileStore(
+    (state) => state.fetchFacilityMembershipRequests,
+  );
+  const fetchFacilityOrganizationRequests = useProfileStore(
+    (state) => state.fetchFacilityOrganizationRequests,
+  );
 
   useEffect(() => {
     fetchFacilityCreationRequests();
@@ -42,9 +62,17 @@ export default function AdminHubScreen() {
     fetchFacilityOrganizationRequests();
     fetchReports();
     fetchUsersForKycReview();
+    fetchPendingPayments();
   }, []);
 
-  const pendingAdsCount = useMemo(() => ads.filter((a) => a.status === "pending").length, [ads]);
+  const pendingAdsCount = useMemo(
+    () => ads.filter((a) => a.status === "pending").length,
+    [ads],
+  );
+  const suspendedPostsCount = useMemo(
+    () => posts.filter((p) => p.status === "suspended").length,
+    [posts],
+  );
   const pendingKycCount = useMemo(() => {
     const kycStatuses = [
       user.kyc.status,
@@ -70,7 +98,12 @@ export default function AdminHubScreen() {
         ...facilityMembershipRequests,
         ...facilityOrganizationRequests,
       ].filter((r) => r.status === "pending").length,
-    [facilityCreationRequests, organizationCreationRequests, facilityMembershipRequests, facilityOrganizationRequests],
+    [
+      facilityCreationRequests,
+      organizationCreationRequests,
+      facilityMembershipRequests,
+      facilityOrganizationRequests,
+    ],
   );
 
   // Checked after every hook above has run, unconditionally, on every
@@ -90,7 +123,7 @@ export default function AdminHubScreen() {
       icon: "bullhorn-outline" as const,
       color: "#dc2626",
       count: pendingAdsCount,
-      route: "/ads/moderation",
+      route: "/admin/ads-moderation",
     },
     {
       key: "kyc",
@@ -104,7 +137,8 @@ export default function AdminHubScreen() {
     {
       key: "facility-org-requests",
       title: "Facility & Org Requests",
-      description: "Approve or reject new facilities, organizations, membership, and facility-org links.",
+      description:
+        "Approve or reject new facilities, organizations, membership, and facility-org links.",
       icon: "domain" as const,
       color: "#0891b2",
       count: pendingFacilityOrgRequestsCount,
@@ -130,6 +164,16 @@ export default function AdminHubScreen() {
       route: "/admin/formulary-requests",
     },
     {
+      key: "reference-data",
+      title: "Reference Data",
+      description: "Manage units of measurement, medication categories, and regions.",
+      icon: "database-outline" as const,
+      color: "#7c3aed",
+      count: 0,
+      countLabel: "manage",
+      route: "/admin/reference-data",
+    },
+    {
       key: "reports",
       title: "Reports",
       description: "Bug reports and reports on users or content.",
@@ -137,6 +181,15 @@ export default function AdminHubScreen() {
       color: "#d97706",
       count: openReportsCount,
       route: "/admin/reports",
+    },
+    {
+      key: "posts-moderation",
+      title: "Post Moderation",
+      description: "Suspend or remove community posts and comments.",
+      icon: "forum-outline" as const,
+      color: "#0891b2",
+      count: suspendedPostsCount,
+      route: "/admin/posts-moderation",
     },
     {
       key: "faq",
@@ -152,6 +205,15 @@ export default function AdminHubScreen() {
 
   if (isSuperadmin) {
     cards.push({
+      key: "payments",
+      title: "Payments",
+      description: "Confirm or cancel pending mobile money payments.",
+      icon: "cash-clock" as const,
+      color: "#059669",
+      count: pendingPayments.length,
+      route: "/admin/payments",
+    });
+    cards.push({
       key: "role-management",
       title: "Role Management",
       description: "Promote or demote admins and superadmins.",
@@ -164,44 +226,70 @@ export default function AdminHubScreen() {
   }
 
   return (
-    <ThemedView style={styles.flex1}>
-      <SafeAreaView style={styles.flex1} edges={["top", "left", "right"]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+    <ThemedView className="flex-1">
+      <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
+        {/* Header */}
+        <View
+          className="flex-row items-center gap-3 px-4 pt-3 pb-4 border-b"
+          style={{ borderBottomColor: colors.border }}
+        >
+          {Platform.OS !== "web" && (
+          <Pressable onPress={() => router.back()} className="p-1">
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </Pressable>
+          )}
           <View>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Admin</Text>
-            <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+            <Text className="text-[22px] font-bold" style={{ color: colors.text }}>
+              Admin
+            </Text>
+            <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>
               System management tools
             </Text>
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerClassName="p-4 gap-2.5"
+          showsVerticalScrollIndicator={false}
+        >
           {cards.map((card) => (
             <Pressable
               key={card.key}
               onPress={() => router.push(card.route as any)}
-              style={[
-                styles.card,
-                { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, shadowColor: colors.text },
-              ]}
+              className="flex-row items-center gap-3.5 rounded-2xl border p-4 shadow-sm"
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+                shadowColor: colors.text,
+              }}
             >
-              <View style={[styles.iconWrap, { backgroundColor: card.color + "18" }]}>
+              <View
+                className="w-12 h-12 rounded-[14px] items-center justify-center"
+                style={{ backgroundColor: card.color + "18" }}
+              >
                 <MaterialCommunityIcons name={card.icon} size={24} color={card.color} />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.cardTitle, { color: colors.text }]}>{card.title}</Text>
-                <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>
+              <View className="flex-1">
+                <Text className="text-[15px] font-bold" style={{ color: colors.text }}>
+                  {card.title}
+                </Text>
+                <Text
+                  className="text-xs mt-1 leading-4"
+                  style={{ color: colors.textSecondary }}
+                >
                   {card.description}
                 </Text>
               </View>
-              <View style={styles.countBlock}>
-                <Text style={[styles.countValue, { color: card.count > 0 ? card.color : colors.textSecondary }]}>
+              <View className="items-center min-w-10">
+                <Text
+                  className="text-lg font-extrabold"
+                  style={{
+                    color: card.count > 0 ? card.color : colors.textSecondary,
+                  }}
+                >
                   {card.count}
                 </Text>
-                <Text style={[styles.countLabel, { color: colors.textSecondary }]}>
+                <Text className="text-[10px] mt-0.5" style={{ color: colors.textSecondary }}>
                   {card.countLabel ?? "pending"}
                 </Text>
               </View>
@@ -212,48 +300,3 @@ export default function AdminHubScreen() {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex1: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
-    borderBottomWidth: 0.5,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 22, fontWeight: "700" },
-  headerSubtitle: { fontSize: 12, marginTop: 2 },
-  noticeBox: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 6,
-    marginHorizontal: 16,
-    marginTop: 14,
-    borderRadius: 10,
-    padding: 10,
-  },
-  noticeText: { fontSize: 11, flex: 1, lineHeight: 16 },
-  scrollContent: { padding: 16, gap: 10 },
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 16,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  iconWrap: { width: 48, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  cardTitle: { fontSize: 15, fontWeight: "700" },
-  cardDescription: { fontSize: 12, marginTop: 4, lineHeight: 16 },
-  countBlock: { alignItems: "center", minWidth: 40 },
-  countValue: { fontSize: 18, fontWeight: "800" },
-  countLabel: { fontSize: 10, marginTop: 1 },
-});

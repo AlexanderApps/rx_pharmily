@@ -387,18 +387,16 @@ const PriceComboBox: React.FC<PriceComboBoxProps> = ({
           ====================================================== */}
 
       <View
-        style={[
-          styles.inputWrap,
-          {
-            backgroundColor: colors.backgroundElement,
+        className="flex-row items-center gap-2 border rounded-[10px] px-3 py-[11px]"
+        style={{
+          backgroundColor: colors.backgroundElement,
 
-            borderColor: error
-              ? colors.error
-              : focused
-                ? colors.primary
-                : colors.border,
-          },
-        ]}
+          borderColor: error
+            ? colors.error
+            : focused
+              ? colors.primary
+              : colors.border,
+        }}
       >
         <MaterialCommunityIcons
           name={isSearchMode ? "text-box-search-outline" : "currency-usd"}
@@ -420,12 +418,8 @@ const PriceComboBox: React.FC<PriceComboBoxProps> = ({
           placeholder={isSearchMode ? placeholder : "0.00"}
           placeholderTextColor={colors.textSecondary}
           keyboardType={keyboardType}
-          style={[
-            styles.input,
-            {
-              color: colors.text,
-            },
-          ]}
+          className="flex-1 text-sm p-0"
+          style={{ color: colors.text }}
         />
       </View>
 
@@ -435,12 +429,8 @@ const PriceComboBox: React.FC<PriceComboBoxProps> = ({
 
       {hasPriceLists && !selectedTemplate && !error && (
         <Text
-          style={[
-            styles.hint,
-            {
-              color: colors.textSecondary,
-            },
-          ]}
+          className="text-[11px] mt-[5px] leading-[15px]"
+          style={{ color: colors.textSecondary }}
         >
           Select a price list to search products, or enter a price directly.
         </Text>
@@ -451,27 +441,21 @@ const PriceComboBox: React.FC<PriceComboBoxProps> = ({
           ====================================================== */}
 
       {selectedTemplate && (
-        <View style={styles.selectedTemplateContainer}>
+        <View className="mt-1.5">
           <Text
-            style={[
-              styles.selectedTemplateLabel,
-              {
-                color: colors.textSecondary,
-              },
-            ]}
+            className="text-[10px] mb-[3px]"
+            style={{ color: colors.textSecondary }}
           >
             Price list
           </Text>
 
           <Pressable
             onPress={handleChangeTemplate}
-            style={[
-              styles.selectedTemplate,
-              {
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-              },
-            ]}
+            className="flex-row items-center gap-1.5 border rounded-lg px-[9px] py-[7px]"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
           >
             <MaterialCommunityIcons
               name="file-document-outline"
@@ -480,12 +464,8 @@ const PriceComboBox: React.FC<PriceComboBoxProps> = ({
             />
 
             <Text
-              style={[
-                styles.selectedTemplateText,
-                {
-                  color: colors.text,
-                },
-              ]}
+              className="flex-1 text-[11px] font-semibold"
+              style={{ color: colors.text }}
               numberOfLines={1}
             >
               {selectedTemplate.title}
@@ -505,27 +485,21 @@ const PriceComboBox: React.FC<PriceComboBoxProps> = ({
           ====================================================== */}
 
       {selectedProductName && (
-        <View style={styles.selectedTemplateContainer}>
+        <View className="mt-1.5">
           <Text
-            style={[
-              styles.selectedTemplateLabel,
-              {
-                color: colors.textSecondary,
-              },
-            ]}
+            className="text-[10px] mb-[3px]"
+            style={{ color: colors.textSecondary }}
           >
             Product
           </Text>
 
           <Pressable
             onPress={handleClearProduct}
-            style={[
-              styles.selectedTemplate,
-              {
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-              },
-            ]}
+            className="flex-row items-center gap-1.5 border rounded-lg px-[9px] py-[7px]"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
           >
             <MaterialCommunityIcons
               name="pill"
@@ -534,12 +508,10 @@ const PriceComboBox: React.FC<PriceComboBoxProps> = ({
             />
 
             <Text
-              style={[
-                styles.selectedTemplateText,
-                {
-                  color: colors.text,
-                },
-              ]}
+              className="flex-1 text-[11px] font-semibold"
+              style={{
+                color: colors.text,
+              }}
               numberOfLines={1}
             >
               {selectedProductName}
@@ -560,21 +532,15 @@ const PriceComboBox: React.FC<PriceComboBoxProps> = ({
 
       {showPriceListDropdown && (
         <View
-          style={[
-            styles.dropdown,
-            {
-              backgroundColor: colors.backgroundSecondary,
-              borderColor: colors.border,
-            },
-          ]}
+          className="border rounded-[10px] mt-1.5 overflow-hidden"
+          style={{
+            backgroundColor: colors.backgroundSecondary,
+            borderColor: colors.border,
+          }}
         >
           <Text
-            style={[
-              styles.dropdownHeader,
-              {
-                color: colors.textSecondary,
-              },
-            ]}
+            className="text-[10px] font-semibold px-3 pt-[9px] pb-1.5"
+            style={{ color: colors.textSecondary }}
           >
             Select price list
           </Text>
@@ -583,14 +549,10 @@ const PriceComboBox: React.FC<PriceComboBoxProps> = ({
             <Pressable
               key={template.id}
               onPressIn={() => handleSelectTemplate(template.id)}
-              style={[
-                styles.suggestionRow,
-                {
-                  borderBottomColor: colors.border,
-                },
-              ]}
+              className="flex-row items-center gap-2.5 px-3 py-2.5"
+              style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
             >
-              <View style={styles.templateIcon}>
+              <View className="w-7 h-7 items-center justify-center">
                 <MaterialCommunityIcons
                   name="file-document-outline"
                   size={18}
@@ -600,24 +562,16 @@ const PriceComboBox: React.FC<PriceComboBoxProps> = ({
 
               <View style={{ flex: 1 }}>
                 <Text
-                  style={[
-                    styles.suggestionProduct,
-                    {
-                      color: colors.text,
-                    },
-                  ]}
+                  className="text-[13px] font-semibold"
+                  style={{ color: colors.text }}
                   numberOfLines={1}
                 >
                   {template.title}
                 </Text>
 
                 <Text
-                  style={[
-                    styles.suggestionMeta,
-                    {
-                      color: colors.textSecondary,
-                    },
-                  ]}
+                  className="text-[11px] mt-px"
+                  style={{ color: colors.textSecondary }}
                 >
                   {template.items.length}{" "}
                   {template.items.length === 1 ? "product" : "products"}
@@ -634,33 +588,23 @@ const PriceComboBox: React.FC<PriceComboBoxProps> = ({
 
       {showProductDropdown && (
         <View
-          style={[
-            styles.dropdown,
-            {
-              backgroundColor: colors.backgroundSecondary,
-              borderColor: colors.border,
-            },
-          ]}
+          className="border rounded-[10px] mt-1.5 overflow-hidden"
+          style={{
+            backgroundColor: colors.backgroundSecondary,
+            borderColor: colors.border,
+          }}
         >
           {suggestions.map((item) => (
             <Pressable
               key={item.id}
               onPressIn={() => handleSelectProduct(item)}
-              style={[
-                styles.suggestionRow,
-                {
-                  borderBottomColor: colors.border,
-                },
-              ]}
+              className="flex-row items-center gap-2.5 px-3 py-2.5"
+              style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
             >
               <View style={{ flex: 1 }}>
                 <Text
-                  style={[
-                    styles.suggestionProduct,
-                    {
-                      color: colors.text,
-                    },
-                  ]}
+                  className="text-[13px] font-semibold"
+                  style={{ color: colors.text }}
                   numberOfLines={1}
                 >
                   {item.product}
@@ -668,12 +612,8 @@ const PriceComboBox: React.FC<PriceComboBoxProps> = ({
 
                 {item.unit && (
                   <Text
-                    style={[
-                      styles.suggestionMeta,
-                      {
-                        color: colors.textSecondary,
-                      },
-                    ]}
+                    className="text-[11px] mt-px"
+                    style={{ color: colors.textSecondary }}
                   >
                     Per {item.unit}
                   </Text>
@@ -681,12 +621,8 @@ const PriceComboBox: React.FC<PriceComboBoxProps> = ({
               </View>
 
               <Text
-                style={[
-                  styles.suggestionRate,
-                  {
-                    color: colors.primary,
-                  },
-                ]}
+                className="text-[13px] font-bold"
+                style={{ color: colors.primary }}
               >
                 {currency} {formatAmount(item.rate)}
               </Text>
@@ -701,12 +637,8 @@ const PriceComboBox: React.FC<PriceComboBoxProps> = ({
 
       {error && (
         <Text
-          style={[
-            styles.errorText,
-            {
-              color: colors.error,
-            },
-          ]}
+          className="text-[11px] mt-1"
+          style={{ color: colors.error }}
         >
           {error}
         </Text>
@@ -716,103 +648,3 @@ const PriceComboBox: React.FC<PriceComboBoxProps> = ({
 };
 
 export default PriceComboBox;
-
-const styles = StyleSheet.create({
-  inputWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-  },
-
-  input: {
-    flex: 1,
-    fontSize: 14,
-    padding: 0,
-  },
-
-  hint: {
-    fontSize: 11,
-    marginTop: 5,
-    lineHeight: 15,
-  },
-
-  errorText: {
-    fontSize: 11,
-    marginTop: 4,
-  },
-
-  selectedTemplateContainer: {
-    marginTop: 6,
-  },
-
-  selectedTemplateLabel: {
-    fontSize: 10,
-    marginBottom: 3,
-  },
-
-  selectedTemplate: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 9,
-    paddingVertical: 7,
-  },
-
-  selectedTemplateText: {
-    flex: 1,
-    fontSize: 11,
-    fontWeight: "600",
-  },
-
-  dropdown: {
-    borderWidth: 1,
-    borderRadius: 10,
-    marginTop: 6,
-    overflow: "hidden",
-  },
-
-  dropdownHeader: {
-    fontSize: 10,
-    fontWeight: "600",
-    paddingHorizontal: 12,
-    paddingTop: 9,
-    paddingBottom: 6,
-  },
-
-  suggestionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-
-  templateIcon: {
-    width: 28,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  suggestionProduct: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-
-  suggestionMeta: {
-    fontSize: 11,
-    marginTop: 1,
-  },
-
-  suggestionRate: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
-});

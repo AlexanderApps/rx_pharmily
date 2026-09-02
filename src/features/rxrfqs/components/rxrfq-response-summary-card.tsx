@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { RxRfqResponseCardData } from "@/features/rxrfqs/types/rxrfqs.types";
@@ -30,23 +30,19 @@ const RxRfqResponseSummaryCard: React.FC<RxRfqResponseSummaryCardProps> = ({
 
   return (
     <TouchableOpacity
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.backgroundElement,
-          borderColor: isAwarded ? colors.success : colors.border,
-          borderWidth: isAwarded ? 2 : 1,
-        },
-      ]}
+      className="flex-row items-center rounded-xl p-3 gap-2.5"
+      style={{
+        backgroundColor: colors.backgroundElement,
+        borderColor: isAwarded ? colors.success : colors.border,
+        borderWidth: isAwarded ? 2 : 1,
+      }}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={styles.left}>
+      <View className="flex-1 flex-row items-center gap-2.5">
         <View
-          style={[
-            styles.avatar,
-            { backgroundColor: colors.backgroundSecondary },
-          ]}
+          className="w-9 h-9 rounded-lg items-center justify-center"
+          style={{ backgroundColor: colors.backgroundSecondary }}
         >
           <MaterialCommunityIcons
             name="storefront-outline"
@@ -56,13 +52,15 @@ const RxRfqResponseSummaryCard: React.FC<RxRfqResponseSummaryCardProps> = ({
         </View>
         <View style={{ flex: 1 }}>
           <Text
-            style={[styles.facility, { color: colors.text }]}
+            className="text-sm font-medium"
+            style={{ color: colors.text }}
             numberOfLines={1}
           >
             {response.vendorFacility}
           </Text>
           <Text
-            style={[styles.meta, { color: colors.textSecondary }]}
+            className="text-[11px] mt-0.5"
+            style={{ color: colors.textSecondary }}
             numberOfLines={1}
           >
             {response.submittedAt
@@ -74,25 +72,23 @@ const RxRfqResponseSummaryCard: React.FC<RxRfqResponseSummaryCardProps> = ({
         </View>
       </View>
 
-      <View style={styles.right}>
+      <View className="items-end gap-0.5">
         {isAwarded && (
           <View
-            style={[
-              styles.awardBadge,
-              { backgroundColor: colors.success + "18" },
-            ]}
+            className="flex-row items-center gap-[3px] px-1.5 py-0.5 rounded-md mb-0.5"
+            style={{ backgroundColor: colors.success + "18" }}
           >
             <MaterialCommunityIcons
               name="trophy-outline"
               size={12}
               color={colors.success}
             />
-            <Text style={[styles.awardBadgeText, { color: colors.success }]}>
+            <Text className="text-[10px] font-bold" style={{ color: colors.success }}>
               Awarded
             </Text>
           </View>
         )}
-        <Text style={[styles.amount, { color: colors.text }]}>
+        <Text className="text-sm font-semibold" style={{ color: colors.text }}>
           {currency}{" "}
           {response.grandTotal.toLocaleString(undefined, {
             minimumFractionDigits: 2,
@@ -100,7 +96,7 @@ const RxRfqResponseSummaryCard: React.FC<RxRfqResponseSummaryCardProps> = ({
           })}
         </Text>
         {response.totalOptionalCosts > 0 && (
-          <Text style={[styles.optionalNote, { color: colors.textSecondary }]}>
+          <Text className="text-[10px]" style={{ color: colors.textSecondary }}>
             +{currency}{" "}
             {response.totalOptionalCosts.toLocaleString(undefined, {
               maximumFractionDigits: 2,
@@ -119,37 +115,5 @@ const RxRfqResponseSummaryCard: React.FC<RxRfqResponseSummaryCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 12,
-    padding: 12,
-    gap: 10,
-  },
-  left: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  facility: { fontSize: 14, fontWeight: "500" },
-  meta: { fontSize: 11, marginTop: 2 },
-  right: { alignItems: "flex-end", gap: 2 },
-  amount: { fontSize: 14, fontWeight: "600" },
-  optionalNote: { fontSize: 10 },
-  awardBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginBottom: 2,
-  },
-  awardBadgeText: { fontSize: 10, fontWeight: "700" },
-});
-
 export default RxRfqResponseSummaryCard;
+

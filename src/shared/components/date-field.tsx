@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
+import { View, Text, Pressable, Platform } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -34,16 +34,24 @@ const DateField: React.FC<DateFieldProps> = ({ label, value, onChange, maximumDa
     <View>
       <Pressable
         onPress={() => setOpen(true)}
-        style={[styles.chip, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}
+        className="flex-row items-center gap-1.5 px-2.5 py-1.5 rounded-lg border"
+        style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border }}
       >
         <MaterialCommunityIcons name={icon} size={14} color={colors.textSecondary} />
-        <Text style={[styles.chipText, { color: value ? colors.text : colors.textSecondary }]}>
+        <Text className="text-xs font-semibold" style={{ color: value ? colors.text : colors.textSecondary }}>
           {value ? fmtShortDate(value) : label}
         </Text>
       </Pressable>
 
       {open && (
-        <View style={[styles.popout, { backgroundColor: colors.background, borderColor: colors.border }]}>
+        // Android's picker is a native modal dialog regardless of where
+        // it sits in the tree, so this positioning only really matters
+        // for iOS's inline calendar — but applying it unconditionally
+        // is harmless either way and keeps this simple.
+        <View
+          className="absolute top-full left-0 z-20 mt-1.5 rounded-xl border p-2"
+          style={{ backgroundColor: colors.background, borderColor: colors.border }}
+        >
           <DateTimePicker
             value={value ?? new Date()}
             mode="date"
@@ -52,8 +60,12 @@ const DateField: React.FC<DateFieldProps> = ({ label, value, onChange, maximumDa
             {...(Platform.OS === "ios" ? { display: "inline" as const } : {})}
           />
           {Platform.OS === "ios" && (
-            <Pressable onPress={() => setOpen(false)} style={[styles.iosDoneButton, { backgroundColor: colors.primary }]}>
-              <Text style={styles.iosDoneButtonText}>Done</Text>
+            <Pressable
+              onPress={() => setOpen(false)}
+              className="self-center mt-2 px-6 py-2 rounded-[10px]"
+              style={{ backgroundColor: colors.primary }}
+            >
+              <Text className="text-white font-bold text-[13px]">Done</Text>
             </Pressable>
           )}
         </View>
@@ -64,37 +76,3 @@ const DateField: React.FC<DateFieldProps> = ({ label, value, onChange, maximumDa
 
 export default DateField;
 
-const styles = StyleSheet.create({
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  chipText: { fontSize: 12, fontWeight: "600" },
-  // Android's picker is a native modal dialog regardless of where it
-  // sits in the tree, so this positioning only really matters for iOS's
-  // inline calendar — but applying it unconditionally is harmless either
-  // way and keeps this simple.
-  popout: {
-    position: "absolute",
-    top: "100%",
-    left: 0,
-    zIndex: 20,
-    marginTop: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 8,
-  },
-  iosDoneButton: {
-    alignSelf: "center",
-    marginTop: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  iosDoneButtonText: { color: "#fff", fontWeight: "700", fontSize: 13 },
-});

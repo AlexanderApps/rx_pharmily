@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useTheme } from "@/shared/hooks/use-theme";
 import BottomSheet from "@/shared/components/bottom-sheet";
@@ -15,44 +15,9 @@ import {
   RxRfqVisibilityRule,
   RxRfqVisibilityRuleType,
 } from "@/features/rxrfqs/types/rxrfqs.types";
-
-// ---------------------------------------------------------------------------
-// Mock data — swap these out for API calls when ready
-// ---------------------------------------------------------------------------
-const MOCK_REGIONS = [
-  "Greater Accra",
-  "Ashanti",
-  "Western",
-  "Northern",
-  "Central",
-  "Eastern",
-];
-
-const MOCK_FACILITY_TYPES = [
-  "Wholesale",
-  "Retail Pharmacy",
-  "Public Hospital",
-  "Private Lab",
-];
-
-const MOCK_FACILITIES = [
-  "Korle-Bu Teaching Hospital Depot",
-  "Komfo Anokye Central Store",
-  "Accra Lab Diagnostics Centre",
-  "MedPharma Wholesale Ltd",
-  "Ridge Hospital Supply Unit",
-  "Greater Accra Regional Hospital Store",
-  "Tema General Hospital Pharmacy",
-  "37 Military Hospital Depot",
-  "La General Hospital",
-  "Cocoa Clinic Dispensary",
-  "Legon Hospital Store",
-  "University of Ghana Medical Centre",
-  "KATH Pharmaceutical Store",
-  "Okomfo Anokye Medical Supplies",
-  "Cape Coast Teaching Hospital Depot",
-];
-// ---------------------------------------------------------------------------
+import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
+import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { FACILITY_TYPES } from "@/features/profile/types/profile.types";
 
 export interface RxRfqAddRuleSheetHandle {
   open: () => void;
@@ -70,6 +35,8 @@ export const RxRfqAddRuleSheet = forwardRef<
   const { colors } = useTheme();
   const modalRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ["80%"], []);
+  const regions = useReferenceDataStore((state) => state.regions);
+  const facilities = useProfileStore((state) => state.facilities);
 
   const [selectedRuleType, setSelectedRuleType] =
     useState<RxRfqVisibilityRuleType>("Region");
@@ -124,10 +91,14 @@ export const RxRfqAddRuleSheet = forwardRef<
   };
 
   const currentData = useMemo(() => {
-    if (selectedRuleType === "Region") return MOCK_REGIONS;
-    if (selectedRuleType === "Facility Type") return MOCK_FACILITY_TYPES;
-    return MOCK_FACILITIES;
-  }, [selectedRuleType]);
+    if (selectedRuleType === "Region") return regions.map((r) => r.name);
+    if (selectedRuleType === "Facility Type") return FACILITY_TYPES;
+    // All facilities, not just the current user's own — this rule is
+    // restricting an RFQ's visibility to specific *other* facilities,
+    // so the full facilities list (already fetched globally, same as
+    // regions) is the correct source here, not getMyFacilities().
+    return facilities.map((f) => f.name);
+  }, [selectedRuleType, regions, facilities]);
 
   return (
     <BottomSheet
@@ -140,18 +111,16 @@ export const RxRfqAddRuleSheet = forwardRef<
       backgroundColor={colors.backgroundSecondary}
     >
       {/* Outer flex column — fills the full sheet height */}
-      <View style={styles.sheetBody}>
+      <View className="flex-1 flex-col p-5">
         {/* Fixed header: title + step labels + type selector */}
-        <View style={styles.headerBlock}>
-          <Text style={[styles.title, { color: colors.text }]}>
+        <View className="shrink-0">
+          <Text className="text-base font-bold text-center" style={{ color: colors.text }}>
             Add Target Restriction Filters
           </Text>
 
           <Text
-            style={[
-              styles.stepLabel,
-              { color: colors.textSecondary, marginTop: 12 },
-            ]}
+            className="text-[11px] font-bold tracking-[1px] mb-1.5 mt-3"
+            style={{ color: colors.textSecondary }}
           >
             1. SELECT CRITERIA TYPE
           </Text>
@@ -161,17 +130,15 @@ export const RxRfqAddRuleSheet = forwardRef<
           />
 
           <Text
-            style={[
-              styles.stepLabel,
-              { color: colors.textSecondary, marginTop: 16 },
-            ]}
+            className="text-[11px] font-bold tracking-[1px] mb-1.5 mt-4"
+            style={{ color: colors.textSecondary }}
           >
             2. MULTI-SELECT MATCHING TARGETS ({selectedValues.length})
           </Text>
         </View>
 
         {/* Expanding list — takes all remaining vertical space */}
-        <View style={styles.listBlock}>
+        <View className="flex-1 my-1 mb-5">
           <RxRfqFacilitySearchList
             data={currentData}
             selectedValues={selectedValues}
@@ -184,17 +151,15 @@ export const RxRfqAddRuleSheet = forwardRef<
 
         {/* Button pinned to bottom */}
         <TouchableOpacity
-          style={[
-            styles.saveButton,
-            {
-              backgroundColor:
-                selectedValues.length === 0 ? colors.border : colors.primary,
-            },
-          ]}
+          className="shrink-0 py-3.5 rounded-md items-center mt-2 mb-2"
+          style={{
+            backgroundColor:
+              selectedValues.length === 0 ? colors.border : colors.primary,
+          }}
           onPress={handleSave}
           disabled={selectedValues.length === 0}
         >
-          <Text style={styles.saveButtonText}>
+          <Text className="text-white font-semibold text-sm">
             {selectedValues.length > 0
               ? `Add Selected Rules (${selectedValues.length})`
               : "Select Options"}
@@ -207,34 +172,3 @@ export const RxRfqAddRuleSheet = forwardRef<
 
 RxRfqAddRuleSheet.displayName = "RxRfqAddRuleSheet";
 
-const styles = StyleSheet.create({
-  sheetBody: {
-    flex: 1,
-    flexDirection: "column",
-    padding: 20,
-  },
-  headerBlock: {
-    flexShrink: 0,
-  },
-  listBlock: {
-    flex: 1,
-    marginVertical: 4,
-    marginBottom: 20,
-  },
-  title: { fontSize: 16, fontWeight: "700", textAlign: "center" },
-  stepLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-    marginBottom: 6,
-  },
-  saveButton: {
-    flexShrink: 0,
-    paddingVertical: 14,
-    borderRadius: 6,
-    alignItems: "center",
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  saveButtonText: { color: "#fff", fontWeight: "600", fontSize: 14 },
-});

@@ -24,12 +24,10 @@ const AdCard: React.FC<AdCardProps> = ({ ad, onPress }) => {
   return (
     <Pressable
       onPress={() => onPress?.(ad)}
-      style={[
-        styles.card,
-        { backgroundColor: colors.backgroundSecondary, borderColor: colors.primary + "30" },
-      ]}
+      className="rounded-[14px] border p-3.5 gap-2.5"
+      style={{ backgroundColor: colors.backgroundSecondary, borderColor: colors.primary + "30" }}
     >
-      <View style={styles.headerRow}>
+      <View className="flex-row items-center gap-2.5">
         <ClickableAvatar
           entityType="user"
           entityId={ad.advertiser.id}
@@ -39,27 +37,34 @@ const AdCard: React.FC<AdCardProps> = ({ ad, onPress }) => {
           size={40}
         />
         <View style={{ flex: 1 }}>
-          <Text style={[styles.authorName, { color: colors.text }]} numberOfLines={1}>
+          <Text className="text-sm font-semibold" style={{ color: colors.text }} numberOfLines={1}>
             {ad.advertiser.name}
           </Text>
-          <View style={styles.sponsoredRow}>
+          <View className="flex-row items-center gap-1 mt-px">
             <MaterialCommunityIcons name="bullhorn-outline" size={11} color={colors.primary} />
-            <Text style={[styles.sponsoredText, { color: colors.primary }]}>Sponsored</Text>
-            <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>
+            <Text className="text-[11px] font-bold" style={{ color: colors.primary }}>Sponsored</Text>
+            <Text className="text-[11px]" style={{ color: colors.textSecondary }}>
               · {format(ad.createdAt)}
             </Text>
           </View>
         </View>
+        {ad.status === "pending" && (
+          <View className="px-2 py-[3px] rounded-[7px]" style={{ backgroundColor: colors.warning + "18" }}>
+            <Text className="text-[10px] font-bold" style={{ color: colors.warning }}>
+              Pending review
+            </Text>
+          </View>
+        )}
         {ad.plan.featured && (
-          <View style={[styles.featuredBadge, { backgroundColor: colors.secondary + "20" }]}>
+          <View className="w-6 h-6 rounded-full items-center justify-center" style={{ backgroundColor: colors.secondary + "20" }}>
             <MaterialCommunityIcons name="star" size={11} color={colors.secondary} />
           </View>
         )}
       </View>
 
-      <Text style={[styles.title, { color: colors.text }]}>{ad.title}</Text>
+      <Text className="text-[15px] font-bold" style={{ color: colors.text }}>{ad.title}</Text>
       {ad.text ? (
-        <Text style={[styles.text, { color: colors.textSecondary }]} numberOfLines={3}>
+        <Text className="text-[13px] leading-[19px]" style={{ color: colors.textSecondary }} numberOfLines={3}>
           {ad.text}
         </Text>
       ) : null}
@@ -67,9 +72,9 @@ const AdCard: React.FC<AdCardProps> = ({ ad, onPress }) => {
       {ad.media && ad.media.length > 0 && <AdMediaCarousel media={ad.media} />}
 
       {ad.fdaApprovalId && (
-        <View style={[styles.fdaRow, { backgroundColor: colors.success + "12" }]}>
+        <View className="flex-row items-center gap-1.5 px-2.5 py-1.5 rounded-lg" style={{ backgroundColor: colors.success + "12" }}>
           <MaterialCommunityIcons name="shield-check-outline" size={13} color={colors.success} />
-          <Text style={[styles.fdaText, { color: colors.success }]}>
+          <Text className="text-[11px] font-semibold" style={{ color: colors.success }}>
             FDA Approved · {ad.fdaApprovalId}
           </Text>
         </View>
@@ -78,17 +83,18 @@ const AdCard: React.FC<AdCardProps> = ({ ad, onPress }) => {
       {ad.linkUrl && (
         <Pressable
           onPress={handleOpenLink}
-          style={[styles.linkButton, { backgroundColor: colors.primary }]}
+          className="flex-row items-center justify-center gap-1.5 py-2.5 rounded-[10px]"
+          style={{ backgroundColor: colors.primary }}
         >
-          <Text style={styles.linkButtonText}>Learn More</Text>
+          <Text className="text-white text-[13px] font-semibold">Learn More</Text>
           <Ionicons name="open-outline" size={14} color="#fff" />
         </Pressable>
       )}
 
-      <View style={[styles.actionsRow, { borderTopColor: colors.border }]}>
+      <View className="flex-row gap-5 pt-2.5" style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}>
         <Pressable
           onPress={() => toggleReaction(ad.id, "like")}
-          style={styles.actionButton}
+          className="flex-row items-center gap-1.5"
           hitSlop={6}
         >
           <MaterialCommunityIcons
@@ -97,10 +103,8 @@ const AdCard: React.FC<AdCardProps> = ({ ad, onPress }) => {
             color={ad.userReaction === "like" ? colors.primary : colors.textSecondary}
           />
           <Text
-            style={[
-              styles.actionText,
-              { color: ad.userReaction === "like" ? colors.primary : colors.textSecondary },
-            ]}
+            className="text-[13px] font-medium"
+            style={{ color: ad.userReaction === "like" ? colors.primary : colors.textSecondary }}
           >
             {ad.likeCount}
           </Text>
@@ -108,7 +112,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, onPress }) => {
 
         <Pressable
           onPress={() => toggleReaction(ad.id, "dislike")}
-          style={styles.actionButton}
+          className="flex-row items-center gap-1.5"
           hitSlop={6}
         >
           <MaterialCommunityIcons
@@ -117,18 +121,16 @@ const AdCard: React.FC<AdCardProps> = ({ ad, onPress }) => {
             color={ad.userReaction === "dislike" ? colors.error : colors.textSecondary}
           />
           <Text
-            style={[
-              styles.actionText,
-              { color: ad.userReaction === "dislike" ? colors.error : colors.textSecondary },
-            ]}
+            className="text-[13px] font-medium"
+            style={{ color: ad.userReaction === "dislike" ? colors.error : colors.textSecondary }}
           >
             {ad.dislikeCount}
           </Text>
         </Pressable>
 
-        <Pressable onPress={() => onPress?.(ad)} style={styles.actionButton} hitSlop={6}>
+        <Pressable onPress={() => onPress?.(ad)} className="flex-row items-center gap-1.5" hitSlop={6}>
           <Ionicons name="chatbubble-outline" size={15} color={colors.textSecondary} />
-          <Text style={[styles.actionText, { color: colors.textSecondary }]}>
+          <Text className="text-[13px] font-medium" style={{ color: colors.textSecondary }}>
             {ad.commentCount}
           </Text>
         </Pressable>
@@ -139,54 +141,3 @@ const AdCard: React.FC<AdCardProps> = ({ ad, onPress }) => {
 
 export default AdCard;
 
-const styles = StyleSheet.create({
-  card: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 10 },
-  headerRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: { color: "#fff", fontSize: 13, fontWeight: "700" },
-  authorName: { fontSize: 14, fontWeight: "600" },
-  sponsoredRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 1 },
-  sponsoredText: { fontSize: 11, fontWeight: "700" },
-  timeAgo: { fontSize: 11 },
-  featuredBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: { fontSize: 15, fontWeight: "700" },
-  text: { fontSize: 13, lineHeight: 19 },
-  fdaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  fdaText: { fontSize: 11, fontWeight: "600" },
-  linkButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  linkButtonText: { color: "#fff", fontSize: 13, fontWeight: "600" },
-  actionsRow: {
-    flexDirection: "row",
-    gap: 20,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 10,
-  },
-  actionButton: { flexDirection: "row", alignItems: "center", gap: 6 },
-  actionText: { fontSize: 13, fontWeight: "500" },
-});

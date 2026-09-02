@@ -30,7 +30,7 @@ type VitalsStore = {
   isLoading: boolean;
 
   fetchReadings: () => Promise<void>;
-  addReading: (data: VitalReadingFormData) => Promise<void>;
+  addReading: (data: VitalReadingFormData) => Promise<boolean>;
   deleteReading: (id: string) => Promise<void>;
 };
 
@@ -78,9 +78,10 @@ export const useVitalsStore = create<VitalsStore>((set) => ({
       .single();
     if (error || !row) {
       console.warn("[vitals] addReading failed:", error?.message);
-      return;
+      return false;
     }
     set((state) => ({ readings: [mapRow(row), ...state.readings] }));
+    return true;
   },
 
   deleteReading: async (id) => {

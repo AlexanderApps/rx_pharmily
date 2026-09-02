@@ -2,11 +2,8 @@ import React, { useMemo, useRef } from "react";
 import {
   View,
   Text,
-  ScrollView,
   Pressable,
-  StyleSheet,
-  Animated,
-} from "react-native";
+  Animated, Platform} from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
@@ -26,7 +23,6 @@ export default function RxJobsScreen() {
   const { colors } = useTheme();
   const currentUserId = useAuthStore((state) => state.user?.id);
   const jobs = useRxJobsStore((state) => state.jobs);
-  const applications = useRxJobsStore((state) => state.applications);
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerSearchOpacity = scrollY.interpolate({
@@ -40,18 +36,46 @@ export default function RxJobsScreen() {
     [jobs, currentUserId],
   );
 
+  // "Overview" mirrors the same pattern as rxrfq/donations/mediscope: the
+  // current user's own postings, not global marketplace totals or the
+  // user's own applications to other people's jobs (that's a separate,
+  // job-seeker-facing view, reachable via "My Applications" below).
+  const overviewStats = useMemo(() => {
+    const myActivePostings = myJobs.filter((j) => j.status === "open");
+    const totalApplicants = myActivePostings.reduce(
+      (sum, j) => sum + j.applicantsCount,
+      0,
+    );
+    const awaitingReview = myActivePostings.filter(
+      (j) => j.applicantsCount > 0,
+    ).length;
+
+    return {
+      activeCount: myActivePostings.length,
+      totalApplicants,
+      awaitingReview,
+    };
+  }, [myJobs]);
+
+  // "My Jobs" below: the current user's own most-recently-posted jobs,
+  // excluding ones that are settled (closed/cancelled).
+  const myRecentJobs = useMemo(
+    () =>
+      [...myJobs]
+        .filter((j) => j.status !== "closed" && j.status !== "cancelled")
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 3),
+    [myJobs],
+  );
+
   const immediateJobs = useMemo(
     () =>
       jobs.filter(
-        (j) => j.urgency === "Immediate" && (j.status === "open" || j.postedBy === currentUserId),
+        (j) =>
+          j.urgency === "Immediate" &&
+          (j.status === "open" || j.postedBy === currentUserId),
       ),
     [jobs, currentUserId],
-  );
-
-  const myApplicationsCount = applications.length;
-  const shortlistedCount = useMemo(
-    () => applications.filter((a) => a.status === "shortlisted").length,
-    [applications],
   );
 
   const openJobDetails = (id: string, isOwner: boolean) => {
@@ -62,42 +86,42 @@ export default function RxJobsScreen() {
   };
 
   return (
-    <ThemedView style={styles.flex1}>
-      <SafeAreaView style={styles.flex1} edges={["top", "left", "right"]}>
+    <ThemedView className="flex-1">
+      <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
         {/* Sticky Custom Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerLeftGroup}>
-              <Pressable
-                onPress={() => router.back()}
-                style={styles.backButton}
-              >
+        <View
+          className="border-b px-4 pb-3 pt-3"
+          style={{ borderBottomColor: colors.border, borderBottomWidth: 0.5 }}
+        >
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1 flex-row items-center">
+              {Platform.OS !== "web" && (
+              <Pressable onPress={() => router.back()} className="mr-3 p-1">
                 <Ionicons name="arrow-back" size={24} color={colors.text} />
               </Pressable>
-
+              )}
               <View>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>
+                <Text
+                  className="text-2xl font-bold"
+                  style={{ color: colors.text }}
+                >
                   RxJobs
                 </Text>
                 <Text
-                  style={[
-                    styles.headerSubtitle,
-                    { color: colors.textSecondary },
-                  ]}
+                  className="mt-0.5 text-xs"
+                  style={{ color: colors.textSecondary }}
                 >
                   Find your next pharmacy role
                 </Text>
               </View>
             </View>
 
-            <View style={styles.headerActions}>
+            <View className="flex-row items-center gap-2">
               <Animated.View style={{ opacity: headerSearchOpacity }}>
                 <Pressable
                   onPress={() => router.push("/jobs/search-jobs")}
-                  style={[
-                    styles.actionIconBtn,
-                    { backgroundColor: colors.backgroundSecondary },
-                  ]}
+                  className="h-10 w-10 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: colors.backgroundSecondary }}
                 >
                   <Ionicons
                     name="search-outline"
@@ -106,13 +130,25 @@ export default function RxJobsScreen() {
                   />
                 </Pressable>
               </Animated.View>
+
+              {/* Create — web only; native keeps the floating action
+                  button below instead. */}
+              {Platform.OS === "web" && (
+                <Pressable
+                  onPress={() => router.push("/jobs/post-job")}
+                  className="h-10 w-10 items-center justify-center rounded-xl cursor-pointer hover:opacity-90"
+                  style={{ backgroundColor: colors.primary }}
+                >
+                  <Ionicons name="add" size={22} color={colors.background} />
+                </Pressable>
+              )}
             </View>
           </View>
         </View>
 
         <Animated.ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={{ paddingBottom: 120 }}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
             { useNativeDriver: true },
@@ -120,17 +156,14 @@ export default function RxJobsScreen() {
           scrollEventThrottle={16}
         >
           {/* Search */}
-          <View style={styles.sectionPadding}>
+          <View className="mt-6 px-5">
             <Pressable
               onPress={() => router.push("/jobs/search-jobs")}
-              style={({ pressed }) => [
-                styles.searchBox,
-                {
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: colors.border,
-                  opacity: pressed ? 0.7 : 1,
-                },
-              ]}
+              className="flex-row items-center rounded-2xl border px-4 py-3 active:opacity-70"
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+              }}
             >
               <Ionicons
                 name="search-outline"
@@ -138,7 +171,8 @@ export default function RxJobsScreen() {
                 color={colors.textSecondary}
               />
               <Text
-                style={[styles.searchText, { color: colors.textSecondary }]}
+                className="ml-3 flex-1 text-base"
+                style={{ color: colors.textSecondary }}
               >
                 Search jobs, companies, locations...
               </Text>
@@ -146,53 +180,54 @@ export default function RxJobsScreen() {
           </View>
 
           {/* Stats Overview */}
-          <View style={styles.sectionPadding}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          <View className="mt-6 px-5">
+            <Text
+              className="mb-3 text-lg font-semibold"
+              style={{ color: colors.text }}
+            >
               Overview
             </Text>
-
-            <View style={styles.statsRow}>
+            <View className="flex-row gap-3">
               <StatCard
-                number={`${jobs.length}`}
-                label="Open Roles"
-                type="info"
-                colors={colors}
-                onPress={() => router.push("/jobs/list-jobs")}
-              />
-              <StatCard
-                number={`${myApplicationsCount}`}
-                label="Applied"
+                number={`${overviewStats.activeCount}`}
+                label="Active Postings"
                 type="success"
                 colors={colors}
-                onPress={() => router.push("/jobs/my-applications")}
+                onPress={() => router.push("/jobs/my-jobs")}
               />
               <StatCard
-                number={`${shortlistedCount}`}
-                label="Shortlisted"
+                number={`${overviewStats.totalApplicants}`}
+                label="Applicants"
+                type="info"
+                colors={colors}
+                onPress={() => router.push("/jobs/my-jobs")}
+              />
+              <StatCard
+                number={`${overviewStats.awaitingReview}`}
+                label="Awaiting"
                 type="warning"
                 colors={colors}
+                onPress={() => router.push("/jobs/my-jobs")}
               />
             </View>
           </View>
 
           {/* My Jobs — posting history */}
-          {myJobs.length > 0 && (
-            <SectionListContainer
-              title="My Jobs"
-              backgroundColor={colors.backgroundSecondary}
-              textColor={colors.text}
-              onViewAllPress={() => router.push("/jobs/my-jobs")}
-            >
-              {myJobs.slice(0, 3).map((item: Job, index, slicedArray) => (
-                <JobRow
-                  key={item.id}
-                  item={item}
-                  isLastItem={index === slicedArray.length - 1}
-                  onPress={() => openJobDetails(item.id, true)}
-                />
-              ))}
-            </SectionListContainer>
-          )}
+          <SectionListContainer
+            title="My Jobs"
+            backgroundColor={colors.backgroundSecondary}
+            textColor={colors.text}
+            onViewAllPress={() => router.push("/jobs/my-jobs")}
+          >
+            {myRecentJobs.map((item: Job, index, slicedArray) => (
+              <JobRow
+                key={item.id}
+                item={item}
+                isLastItem={index === slicedArray.length - 1}
+                onPress={() => openJobDetails(item.id, true)}
+              />
+            ))}
+          </SectionListContainer>
 
           {/* Urgent roles */}
           <SectionListContainer
@@ -206,7 +241,9 @@ export default function RxJobsScreen() {
                 key={item.id}
                 item={item}
                 isLastItem={index === slicedArray.length - 1}
-                onPress={() => openJobDetails(item.id, item.postedBy === currentUserId)}
+                onPress={() =>
+                  openJobDetails(item.id, item.postedBy === currentUserId)
+                }
               />
             ))}
           </SectionListContainer>
@@ -217,21 +254,30 @@ export default function RxJobsScreen() {
             textColor={colors.text}
             onViewAllPress={() => router.push("/jobs/list-jobs")}
           >
-            {jobs.map((item) => (
-              <JobHsCard
-                key={item.id}
-                item={item}
-                onPress={() => openJobDetails(item.id, item.postedBy === currentUserId)}
-              />
-            ))}
+            {[...jobs]
+              .filter((item) => item.status === "open")
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              .slice(0, 10)
+              .map((item) => (
+                <JobHsCard
+                  key={item.id}
+                  item={item}
+                  onPress={() =>
+                    openJobDetails(item.id, item.postedBy === currentUserId)
+                  }
+                />
+              ))}
           </HorizontalScrollContainer>
 
           {/* Quick Actions */}
-          <View style={styles.sectionPadding}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          <View className="mt-6 px-5">
+            <Text
+              className="mb-3 text-lg font-semibold"
+              style={{ color: colors.text }}
+            >
               Quick Actions
             </Text>
-            <View style={styles.statsRow}>
+            <View className="flex-row gap-3">
               <ActionButton
                 icon={
                   <MaterialCommunityIcons
@@ -272,73 +318,25 @@ export default function RxJobsScreen() {
           </View>
         </Animated.ScrollView>
 
-        {/* Floating Action Button */}
+        {/* Floating Action Button — native only; web uses the header
+            Create button instead. */}
+        {Platform.OS !== "web" && (
         <Pressable
           onPress={() => router.push("/jobs/post-job")}
-          style={({ pressed }) => [
-            styles.fab,
-            { backgroundColor: colors.primary },
-            pressed && { opacity: 0.9 },
-          ]}
+          className="absolute bottom-8 right-6 h-16 w-16 items-center justify-center rounded-full shadow-lg active:opacity-90 cursor-pointer hover:opacity-90"
+          style={{
+            backgroundColor: colors.primary,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 8,
+          }}
         >
           <Ionicons name="add" size={30} color={colors.background} />
         </Pressable>
+        )}
       </SafeAreaView>
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex1: { flex: 1 },
-  scrollContent: { paddingBottom: 120 },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 0.5,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  headerLeftGroup: { flexDirection: "row", alignItems: "center", flex: 1 },
-  backButton: { marginRight: 12, padding: 4 },
-  headerTitle: { fontSize: 24, fontWeight: "700" },
-  headerSubtitle: { fontSize: 12, marginTop: 2 },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
-  actionIconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sectionPadding: { paddingHorizontal: 20, marginTop: 24 },
-  sectionTitle: { fontSize: 18, fontWeight: "600", marginBottom: 12 },
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  searchText: { flex: 1, marginLeft: 12, fontSize: 16 },
-  statsRow: { flexDirection: "row", gap: 12 },
-  fab: {
-    position: "absolute",
-    right: 24,
-    bottom: 32,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-});

@@ -7,7 +7,6 @@ import React, {
 } from "react";
 import {
   View,
-  StyleSheet,
   Text,
   TouchableOpacity,
   TextInput,
@@ -18,6 +17,8 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import BottomSheet from "@/shared/components/bottom-sheet";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { BsScrollView as BottomSheetScrollView } from "@/shared/components/bs/bs-primitives";
+import ReferencePicker from "@/shared/components/forms/reference-picker";
+import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 
 import ProductPicker from "@/shared/components/product-picker";
 import ItemStatusCheckbox from "@/features/donations/components/temp/item-status-checkbox";
@@ -38,6 +39,15 @@ const RxRfQItemModal = forwardRef<BottomSheetModal, RxRfQItemModalProps>(
     const { colors } = useTheme();
     const [errors, setErrors] = useState<Record<string, string>>({});
     const snapPoints = useMemo(() => ["90%", "95%"], []);
+    const referenceUnits = useReferenceDataStore((state) => state.units);
+    const unitOptions = useMemo(
+      () =>
+        referenceUnits.map((u) => ({
+          id: u.name,
+          label: u.abbreviation ? `${u.name} (${u.abbreviation})` : u.name,
+        })),
+      [referenceUnits],
+    );
 
     // Local form state manager
     const [formData, setFormData] = useState<Omit<RxRfqItem, "id">>({
@@ -108,15 +118,15 @@ const RxRfQItemModal = forwardRef<BottomSheetModal, RxRfQItemModalProps>(
         backgroundColor={colors.backgroundSecondary}
       >
         {/* Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.title, { color: colors.text }]}>
+        <View className="flex-row justify-between items-center px-5 py-4 border-b" style={{ borderBottomColor: colors.border }}>
+          <Text className="text-lg font-bold" style={{ color: colors.text }}>
             {isEditing ? "Edit Item" : "Add New Item"}
           </Text>
           <TouchableOpacity
             onPress={() =>
               (ref as React.RefObject<BottomSheetModal>).current?.dismiss()
             }
-            style={styles.closeButton}
+            className="p-1"
           >
             <MaterialCommunityIcons
               name="close"
@@ -128,10 +138,10 @@ const RxRfQItemModal = forwardRef<BottomSheetModal, RxRfQItemModalProps>(
 
         {/* Form Fields Content - Let BottomSheet handle scrolling naturally */}
         <BottomSheetScrollView>
-          <View style={styles.content}>
-            <View style={styles.contentContainer}>
-              <View style={styles.section}>
-                <Text style={[styles.label, { color: colors.text }]}>
+          <View className="flex-1">
+            <View className="px-5 pt-5 pb-10 gap-5">
+              <View className="w-full gap-2">
+                <Text className="text-sm font-semibold" style={{ color: colors.text }}>
                   Product <Text style={{ color: colors.error }}>*</Text>
                 </Text>
                 <ProductPicker
@@ -142,20 +152,18 @@ const RxRfQItemModal = forwardRef<BottomSheetModal, RxRfQItemModalProps>(
                   error={errors.product}
                 />
               </View>
-              <View style={styles.section}>
-                <Text style={[styles.label, { color: colors.text }]}>
+              <View className="w-full gap-2">
+                <Text className="text-sm font-semibold" style={{ color: colors.text }}>
                   Quantity <Text style={{ color: colors.error }}>*</Text>
                 </Text>
                 <View
-                  style={[
-                    styles.quantityContainer,
-                    {
-                      backgroundColor: colors.backgroundElement,
-                      borderColor: errors.quantity
-                        ? colors.error
-                        : colors.border,
-                    },
-                  ]}
+                  className="flex-row items-center border rounded-lg overflow-hidden"
+                  style={{
+                    backgroundColor: colors.backgroundElement,
+                    borderColor: errors.quantity
+                      ? colors.error
+                      : colors.border,
+                  }}
                 >
                   <TouchableOpacity
                     onPress={() =>
@@ -164,7 +172,7 @@ const RxRfQItemModal = forwardRef<BottomSheetModal, RxRfQItemModalProps>(
                         quantity: Math.max(1, prev.quantity - 1),
                       }))
                     }
-                    style={styles.quantityButton}
+                    className="px-4 py-3 items-center justify-center"
                   >
                     <MaterialCommunityIcons
                       name="minus"
@@ -173,7 +181,8 @@ const RxRfQItemModal = forwardRef<BottomSheetModal, RxRfQItemModalProps>(
                     />
                   </TouchableOpacity>
                   <TextInput
-                    style={[styles.quantityInput, { color: colors.text }]}
+                    className="flex-1 text-center text-base font-semibold py-2"
+                    style={{ color: colors.text }}
                     value={formData.quantity.toString()}
                     onChangeText={(value) => {
                       const num = parseInt(value, 10);
@@ -191,7 +200,7 @@ const RxRfQItemModal = forwardRef<BottomSheetModal, RxRfQItemModalProps>(
                         quantity: prev.quantity + 1,
                       }))
                     }
-                    style={styles.quantityButton}
+                    className="px-4 py-3 items-center justify-center"
                   >
                     <MaterialCommunityIcons
                       name="plus"
@@ -201,14 +210,14 @@ const RxRfQItemModal = forwardRef<BottomSheetModal, RxRfQItemModalProps>(
                   </TouchableOpacity>
                 </View>
                 {errors.quantity && (
-                  <Text style={[styles.error, { color: colors.error }]}>
+                  <Text className="text-xs font-medium mt-0.5" style={{ color: colors.error }}>
                     {errors.quantity}
                   </Text>
                 )}
               </View>
 
-              <View style={styles.section}>
-                <Text style={[styles.label, { color: colors.text }]}>
+              <View className="w-full gap-2">
+                <Text className="text-sm font-semibold" style={{ color: colors.text }}>
                   Allow Alternatives
                 </Text>
                 <ActiveCheckbox
@@ -223,31 +232,23 @@ const RxRfQItemModal = forwardRef<BottomSheetModal, RxRfQItemModalProps>(
                 />
               </View>
 
-              <View style={styles.section}>
-                <Text style={[styles.label, { color: colors.text }]}>
+              <View className="w-full gap-2">
+                <Text className="text-sm font-semibold" style={{ color: colors.text }}>
                   Unit of Measure (UOM)
                 </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.backgroundElement,
-                      borderColor: colors.border,
-                      color: colors.text,
-                    },
-                  ]}
+                <ReferencePicker
+                  title="Select Unit"
+                  options={unitOptions}
                   value={formData.uom}
-                  onChangeText={(uom) =>
-                    setFormData((prev) => ({ ...prev, uom }))
-                  }
-                  placeholder="Enter UOM..."
-                  placeholderTextColor={colors.textSecondary}
+                  onChange={(uom) => setFormData((prev) => ({ ...prev, uom }))}
+                  placeholder="Select a unit"
+                  emptyMessage="No units set up yet."
                 />
               </View>
 
-              <View style={styles.statusStack}>
-                <View style={styles.section}>
-                  <Text style={[styles.label, { color: colors.text }]}>
+              <View className="flex-col w-full gap-4">
+                <View className="w-full gap-2">
+                  <Text className="text-sm font-semibold" style={{ color: colors.text }}>
                     Comments
                   </Text>
                   <CommentInput
@@ -260,15 +261,14 @@ const RxRfQItemModal = forwardRef<BottomSheetModal, RxRfQItemModalProps>(
               </View>
 
               <TouchableOpacity
-                style={[styles.saveButton, { backgroundColor: colors.text }]}
+                className="rounded-[10px] py-3.5 items-center justify-center mb-[150px]"
+                style={{ backgroundColor: colors.text }}
                 onPress={handleSave}
                 activeOpacity={0.8}
               >
                 <Text
-                  style={[
-                    styles.saveButtonText,
-                    { color: colors.backgroundSecondary },
-                  ]}
+                  className="text-base font-semibold"
+                  style={{ color: colors.backgroundSecondary }}
                 >
                   {isEditing ? "Save Changes" : "Add Item"}
                 </Text>
@@ -281,63 +281,5 @@ const RxRfQItemModal = forwardRef<BottomSheetModal, RxRfQItemModalProps>(
   },
 );
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  title: { fontSize: 18, fontWeight: "700" },
-  closeButton: { padding: 4 },
-  content: { flex: 1 },
-  contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    gap: 20,
-  },
-  section: { width: "100%", gap: 8 },
-  statusStack: { flexDirection: "column", width: "100%", gap: 16 },
-  label: { fontSize: 14, fontWeight: "600" },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 15,
-  },
-  quantityContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 8,
-    overflow: "hidden",
-  },
-  quantityButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  quantityInput: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "600",
-    paddingVertical: 8,
-  },
-  error: { fontSize: 12, fontWeight: "500", marginTop: 2 },
-  saveButton: {
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 150,
-  },
-  saveButtonText: { fontSize: 16, fontWeight: "600" },
-});
-
 export default RxRfQItemModal;
+

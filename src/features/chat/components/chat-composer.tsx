@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, Pressable, ActivityIndicator } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import LoadingImage from "@/shared/components/loading-image";
@@ -39,20 +39,16 @@ const ChatComposer: React.FC<ChatComposerProps> = ({
 
   return (
     <View
-      style={[
-        styles.wrap,
-        { backgroundColor: colors.background, borderTopColor: colors.border },
-      ]}
+      className="border-t px-2.5 pt-2 pb-2.5 gap-2"
+      style={{ backgroundColor: colors.background, borderTopColor: colors.border }}
     >
       {stagedEntity && (
         <View
-          style={[
-            styles.stagedChip,
-            {
-              backgroundColor: colors.backgroundElement,
-              borderColor: colors.border,
-            },
-          ]}
+          className="flex-row items-center gap-1.5 border rounded-[10px] px-2.5 py-[7px]"
+          style={{
+            backgroundColor: colors.backgroundElement,
+            borderColor: colors.border,
+          }}
         >
           <MaterialCommunityIcons
             name={
@@ -64,7 +60,8 @@ const ChatComposer: React.FC<ChatComposerProps> = ({
             color={colors.primary}
           />
           <Text
-            style={[styles.stagedText, { color: colors.text }]}
+            className="flex-1 text-xs font-medium"
+            style={{ color: colors.text }}
             numberOfLines={1}
           >
             {stagedEntity.code} — {stagedEntity.title}
@@ -80,23 +77,21 @@ const ChatComposer: React.FC<ChatComposerProps> = ({
       )}
 
       {stagedMedia && (
-        <View style={styles.stagedMediaWrap}>
+        <View className="w-16 h-16">
           {stagedMedia.type === "image" ? (
-            <LoadingImage source={{ uri: stagedMedia.uri }} style={styles.stagedMediaThumb} />
+            <LoadingImage source={{ uri: stagedMedia.uri }} style={{ width: 64, height: 64, borderRadius: 10 }} />
           ) : (
             <View
-              style={[
-                styles.stagedMediaThumb,
-                styles.stagedVideoThumb,
-                { backgroundColor: colors.backgroundElement },
-              ]}
+              className="w-16 h-16 rounded-[10px] items-center justify-center"
+              style={{ backgroundColor: colors.backgroundElement }}
             >
               <MaterialCommunityIcons name="play-circle-outline" size={22} color={colors.text} />
             </View>
           )}
           <Pressable
             onPress={onRemoveStagedMedia}
-            style={[styles.removeMediaButton, { backgroundColor: colors.error }]}
+            className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full items-center justify-center"
+            style={{ backgroundColor: colors.error }}
             hitSlop={8}
           >
             <MaterialCommunityIcons name="close" size={12} color="#fff" />
@@ -104,10 +99,11 @@ const ChatComposer: React.FC<ChatComposerProps> = ({
         </View>
       )}
 
-      <View style={styles.inputRow}>
+      <View className="flex-row items-end gap-2">
         <Pressable
           onPress={onAttachPress}
-          style={[styles.iconButton, { backgroundColor: colors.backgroundElement }]}
+          className="w-[38px] h-[38px] rounded-full items-center justify-center"
+          style={{ backgroundColor: colors.backgroundElement }}
           hitSlop={6}
         >
           <MaterialCommunityIcons
@@ -120,7 +116,8 @@ const ChatComposer: React.FC<ChatComposerProps> = ({
         <Pressable
           onPress={onAttachMediaPress}
           disabled={uploadingMedia}
-          style={[styles.iconButton, { backgroundColor: colors.backgroundElement, opacity: uploadingMedia ? 0.6 : 1 }]}
+          className="w-[38px] h-[38px] rounded-full items-center justify-center"
+          style={{ backgroundColor: colors.backgroundElement, opacity: uploadingMedia ? 0.6 : 1 }}
           hitSlop={6}
         >
           {uploadingMedia ? (
@@ -139,20 +136,16 @@ const ChatComposer: React.FC<ChatComposerProps> = ({
           onChangeText={setText}
           placeholder="Message..."
           placeholderTextColor={colors.textSecondary}
-          style={[
-            styles.input,
-            { backgroundColor: colors.backgroundElement, color: colors.text },
-          ]}
+          className="flex-1 min-h-[38px] max-h-[100px] rounded-[19px] px-3.5 py-2.5 text-sm"
+          style={{ backgroundColor: colors.backgroundElement, color: colors.text }}
           multiline
         />
 
         <Pressable
           onPress={handleSend}
           disabled={!canSend}
-          style={[
-            styles.sendButton,
-            { backgroundColor: canSend ? colors.primary : colors.backgroundElement },
-          ]}
+          className="w-[38px] h-[38px] rounded-full items-center justify-center"
+          style={{ backgroundColor: canSend ? colors.primary : colors.backgroundElement }}
         >
           <MaterialCommunityIcons
             name="send"
@@ -167,59 +160,3 @@ const ChatComposer: React.FC<ChatComposerProps> = ({
 
 export default ChatComposer;
 
-const styles = StyleSheet.create({
-  wrap: {
-    borderTopWidth: 1,
-    paddingHorizontal: 10,
-    paddingTop: 8,
-    paddingBottom: 10,
-    gap: 8,
-  },
-  stagedChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-  stagedText: { flex: 1, fontSize: 12, fontWeight: "500" },
-  stagedMediaWrap: { width: 64, height: 64 },
-  stagedMediaThumb: { width: 64, height: 64, borderRadius: 10 },
-  stagedVideoThumb: { alignItems: "center", justifyContent: "center" },
-  removeMediaButton: {
-    position: "absolute",
-    top: -6,
-    right: -6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  inputRow: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
-  iconButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  input: {
-    flex: 1,
-    minHeight: 38,
-    maxHeight: 100,
-    borderRadius: 19,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    fontSize: 14,
-  },
-  sendButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

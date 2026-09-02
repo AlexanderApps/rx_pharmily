@@ -1,4 +1,3 @@
-import { StyleSheet } from "react-native";
 import { ThemedText } from "@/shared/components/themed-text";
 import { ThemedView } from "@/shared/components/themed-view";
 import RxRfqsResponseForm from "@/features/rxrfqs/components/rxrfq-res-form";
@@ -25,13 +24,13 @@ export default function AddRxRfqResponse() {
   if (!item) {
     if (isLoadingRfqs) {
       return (
-        <ThemedView style={styles.container}>
+        <ThemedView className="flex-1">
           <DetailSkeleton rows={3} />
         </ThemedView>
       );
     }
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView className="flex-1">
         <ThemedText>No RFQ found for id: {id}</ThemedText>
       </ThemedView>
     );
@@ -57,7 +56,7 @@ export default function AddRxRfqResponse() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView className="flex-1">
       <RxRfqsResponseForm
         rxRfqRequest={item}
         initialData={initialData}
@@ -67,11 +66,3 @@ export default function AddRxRfqResponse() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-});

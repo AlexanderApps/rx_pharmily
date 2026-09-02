@@ -49,7 +49,7 @@ const MediscopeResponseSheet = forwardRef<BottomSheetModal, MediscopeResponseShe
         return;
       }
 
-      await onSubmit({
+      const ok = await onSubmit({
         requestId,
         vendorFacility: facilityWhereAvailable.trim(),
         availability,
@@ -58,6 +58,9 @@ const MediscopeResponseSheet = forwardRef<BottomSheetModal, MediscopeResponseShe
         currency: "GHS",
         comment: comment.trim() || undefined,
       });
+      if (!ok) {
+        setError("Couldn't submit this response. Please try again.");
+      }
     };
 
     return (
@@ -71,35 +74,33 @@ const MediscopeResponseSheet = forwardRef<BottomSheetModal, MediscopeResponseShe
         onChange={handleBottomSheetChange}
         backgroundColor={colors.backgroundSecondary}
       >
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.title, { color: colors.text }]}>Respond</Text>
+        <View className="px-5 pb-3.5 gap-0.5" style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
+          <Text className="text-base font-bold" style={{ color: colors.text }}>Respond</Text>
           {productName && (
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+            <Text className="text-xs" style={{ color: colors.textSecondary }} numberOfLines={1}>
               {productName}
             </Text>
           )}
         </View>
 
-        <View style={styles.content}>
-          <Text style={[styles.label, { color: colors.text }]}>Availability</Text>
-          <View style={styles.chipRow}>
+        <View className="px-5 pt-4 gap-1">
+          <Text className="text-xs font-semibold" style={{ color: colors.text }}>Availability</Text>
+          <View className="flex-row flex-wrap gap-2 mt-1.5">
             {(["full", "partial"] as MediscopeAvailability[]).map((option) => {
               const active = availability === option;
               return (
                 <Pressable
                   key={option}
                   onPress={() => setAvailability(option)}
-                  style={[
-                    styles.chip,
-                    { backgroundColor: active ? colors.success : colors.backgroundElement },
-                  ]}
+                  className="flex-row items-center gap-1.5 px-3 py-2 rounded-full"
+                  style={{ backgroundColor: active ? colors.success : colors.backgroundElement }}
                 >
                   <MaterialCommunityIcons
                     name={option === "full" ? "check-circle-outline" : "circle-half-full"}
                     size={14}
                     color={active ? "#fff" : colors.textSecondary}
                   />
-                  <Text style={[styles.chipText, { color: active ? "#fff" : colors.textSecondary }]}>
+                  <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
                     {option === "full" ? "Fully available" : "Partially available"}
                   </Text>
                 </Pressable>
@@ -107,7 +108,7 @@ const MediscopeResponseSheet = forwardRef<BottomSheetModal, MediscopeResponseShe
             })}
           </View>
 
-          <Text style={[styles.label, { color: colors.text, marginTop: 14 }]}>
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>
             Facility where available <Text style={{ color: colors.error }}>*</Text>
           </Text>
           <TextInput
@@ -115,13 +116,11 @@ const MediscopeResponseSheet = forwardRef<BottomSheetModal, MediscopeResponseShe
             onChangeText={setFacilityWhereAvailable}
             placeholder="e.g. Ridge Hospital Pharmacy"
             placeholderTextColor={colors.textSecondary}
-            style={[
-              styles.input,
-              { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-            ]}
+            className="border rounded-lg px-3 py-[11px] text-sm mt-1.5"
+            style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
           />
 
-          <Text style={[styles.label, { color: colors.text, marginTop: 14 }]}>
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>
             Cost (GHS) <Text style={{ color: colors.error }}>*</Text>
           </Text>
           <TextInput
@@ -130,13 +129,11 @@ const MediscopeResponseSheet = forwardRef<BottomSheetModal, MediscopeResponseShe
             placeholder="0.00"
             placeholderTextColor={colors.textSecondary}
             keyboardType="decimal-pad"
-            style={[
-              styles.input,
-              { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-            ]}
+            className="border rounded-lg px-3 py-[11px] text-sm mt-1.5"
+            style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
           />
 
-          <Text style={[styles.label, { color: colors.text, marginTop: 14 }]}>
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>
             Comment (optional)
           </Text>
           <TextInput
@@ -144,16 +141,13 @@ const MediscopeResponseSheet = forwardRef<BottomSheetModal, MediscopeResponseShe
             onChangeText={setComment}
             placeholder="Any additional detail..."
             placeholderTextColor={colors.textSecondary}
-            style={[
-              styles.input,
-              styles.textArea,
-              { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-            ]}
+            className="border rounded-lg px-3 py-[11px] text-sm mt-1.5 min-h-[70px]"
+            style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
             multiline
             textAlignVertical="top"
           />
 
-          {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
+          {error && <Text className="text-xs font-medium mt-2" style={{ color: colors.error }}>{error}</Text>}
 
           <SubmitButton
             label="Submit Response"
@@ -171,35 +165,3 @@ MediscopeResponseSheet.displayName = "MediscopeResponseSheet";
 
 export default MediscopeResponseSheet;
 
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 2,
-  },
-  title: { fontSize: 16, fontWeight: "700" },
-  subtitle: { fontSize: 12 },
-  content: { paddingHorizontal: 20, paddingTop: 16, gap: 4 },
-  label: { fontSize: 12, fontWeight: "600" },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 },
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  chipText: { fontSize: 12, fontWeight: "600" },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    fontSize: 14,
-    marginTop: 6,
-  },
-  textArea: { minHeight: 70 },
-  errorText: { fontSize: 12, fontWeight: "500", marginTop: 8 },
-});

@@ -5,13 +5,16 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { View, Text, StyleSheet, TextInput, Pressable } from "react-native";
+import { View, Text, TextInput, Pressable } from "react-native";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { BsFlatList } from "@/shared/components/bs/bs-primitives";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import BottomSheet from "@/shared/components/bottom-sheet";
-import { ChatLinkedEntity, ChatLinkedEntityType } from "@/features/chat/types/chat.types";
+import {
+  ChatLinkedEntity,
+  ChatLinkedEntityType,
+} from "@/features/chat/types/chat.types";
 import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
 import { useMediscopeStore } from "@/features/mediscope/hooks/use-mediscope-data";
 import { useDonationStore } from "@/features/donations/hooks/use-donation-data";
@@ -38,7 +41,6 @@ export const LinkPickerSheet = forwardRef<
   const { colors } = useTheme();
   const modalRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ["70%"], []);
-
   const [tab, setTab] = useState<ChatLinkedEntityType>("rfq");
   const [query, setQuery] = useState("");
 
@@ -95,7 +97,12 @@ export const LinkPickerSheet = forwardRef<
   );
 
   const source =
-    tab === "rfq" ? linkableRfqs : tab === "mediscope" ? linkableMediscope : linkableDonations;
+    tab === "rfq"
+      ? linkableRfqs
+      : tab === "mediscope"
+        ? linkableMediscope
+        : linkableDonations;
+
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return source;
@@ -128,25 +135,32 @@ export const LinkPickerSheet = forwardRef<
       backgroundColor={colors.backgroundSecondary}
     >
       {/* Outer flex column — fills the full sheet height */}
-      <View style={styles.sheetBody}>
+      <View className="flex-1 flex-col px-5">
         {/* Fixed header: title/subtitle + type tabs + search */}
-        <View style={styles.headerBlock}>
-          <Text style={[styles.title, { color: colors.text }]}>Attach a link</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        <View className="shrink-0">
+          <Text className="text-base font-bold" style={{ color: colors.text }}>
+            Attach a link
+          </Text>
+          <Text
+            className="text-xs mt-0.5"
+            style={{ color: colors.textSecondary }}
+          >
             Share an RFQ, Mediscope request, or donation in this chat
           </Text>
 
-          <View style={styles.tabRow}>
+          <View className="flex-row gap-2 mt-3.5">
             {TABS.map((t) => {
               const active = tab === t.key;
               return (
                 <Pressable
                   key={t.key}
                   onPress={() => handleRuleTypeChange(t.key)}
-                  style={[
-                    styles.tab,
-                    { backgroundColor: active ? colors.primary : colors.backgroundElement },
-                  ]}
+                  className="flex-row items-center gap-1.5 px-3 py-[7px] rounded-full"
+                  style={{
+                    backgroundColor: active
+                      ? colors.primary
+                      : colors.backgroundElement,
+                  }}
                 >
                   <MaterialCommunityIcons
                     name={t.icon as any}
@@ -154,7 +168,10 @@ export const LinkPickerSheet = forwardRef<
                     color={active ? "#fff" : colors.textSecondary}
                   />
                   <Text
-                    style={[styles.tabText, { color: active ? "#fff" : colors.textSecondary }]}
+                    className="text-xs font-semibold"
+                    style={{
+                      color: active ? "#fff" : colors.textSecondary,
+                    }}
                   >
                     {t.label}
                   </Text>
@@ -163,46 +180,56 @@ export const LinkPickerSheet = forwardRef<
             })}
           </View>
 
-          <View style={[styles.searchBox, { backgroundColor: colors.backgroundElement }]}>
-            <MaterialCommunityIcons name="magnify" size={16} color={colors.textSecondary} />
+          <View
+            className="flex-row items-center gap-2 mt-3 px-3 py-[9px] rounded-[10px]"
+            style={{ backgroundColor: colors.backgroundElement }}
+          >
+            <MaterialCommunityIcons
+              name="magnify"
+              size={16}
+              color={colors.textSecondary}
+            />
             <TextInput
               value={query}
               onChangeText={setQuery}
               placeholder={`Search ${TABS.find((t) => t.key === tab)?.label ?? ""}...`}
               placeholderTextColor={colors.textSecondary}
-              style={[styles.searchInput, { color: colors.text }]}
+              className="flex-1 text-[13px] p-0"
+              style={{ color: colors.text }}
             />
           </View>
         </View>
 
         {/* Expanding list — takes all remaining vertical space */}
-        <View style={styles.listBlock}>
+        <View className="flex-1 mt-1 mb-5">
           <BsFlatList
-            style={{ flex: 1 }}
+            className="flex-1"
             data={results}
             keyExtractor={(item: ChatLinkedEntity) => `${item.type}-${item.id}`}
-            contentContainerStyle={styles.listContent}
+            contentContainerClassName="pb-6 gap-2"
             keyboardShouldPersistTaps="handled"
             ListEmptyComponent={
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              <Text
+                className="text-center text-[13px] mt-6"
+                style={{ color: colors.textSecondary }}
+              >
                 No matches found.
               </Text>
             }
             renderItem={({ item }: { item: ChatLinkedEntity }) => (
               <Pressable
                 onPress={() => handleSelect(item)}
-                style={({ pressed }) => [
-                  styles.resultRow,
-                  {
-                    backgroundColor: pressed
-                      ? colors.backgroundSelected
-                      : colors.backgroundElement,
-                    borderColor: colors.border,
-                  },
-                ]}
+                className="flex-row items-center gap-2.5 border rounded-xl p-2.5"
+                style={({ pressed }) => ({
+                  backgroundColor: pressed
+                    ? colors.backgroundSelected
+                    : colors.backgroundElement,
+                  borderColor: colors.border,
+                })}
               >
                 <View
-                  style={[styles.resultIcon, { backgroundColor: colors.backgroundSecondary }]}
+                  className="w-8 h-8 rounded-[9px] items-center justify-center"
+                  style={{ backgroundColor: colors.backgroundSecondary }}
                 >
                   <MaterialCommunityIcons
                     name={
@@ -216,16 +243,24 @@ export const LinkPickerSheet = forwardRef<
                     color={colors.primary}
                   />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.resultCode, { color: colors.textSecondary }]}>
+                <View className="flex-1">
+                  <Text
+                    className="text-[10px] font-semibold uppercase"
+                    style={{ color: colors.textSecondary }}
+                  >
                     {item.code}
                   </Text>
-                  <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
+                  <Text
+                    className="text-[13px] font-semibold mt-px"
+                    style={{ color: colors.text }}
+                    numberOfLines={1}
+                  >
                     {item.title}
                   </Text>
                   {item.subtitle ? (
                     <Text
-                      style={[styles.resultSubtitle, { color: colors.textSecondary }]}
+                      className="text-[11px] mt-px"
+                      style={{ color: colors.textSecondary }}
                       numberOfLines={1}
                     >
                       {item.subtitle}
@@ -247,57 +282,4 @@ export const LinkPickerSheet = forwardRef<
 });
 
 LinkPickerSheet.displayName = "LinkPickerSheet";
-
 export default LinkPickerSheet;
-
-const styles = StyleSheet.create({
-  sheetBody: {
-    flex: 1,
-    flexDirection: "column",
-    paddingHorizontal: 20,
-  },
-  headerBlock: { flexShrink: 0 },
-  listBlock: { flex: 1, marginTop: 4, marginBottom: 20 },
-  title: { fontSize: 16, fontWeight: "700" },
-  subtitle: { fontSize: 12, marginTop: 2 },
-  tabRow: { flexDirection: "row", gap: 8, marginTop: 14 },
-  tab: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-  },
-  tabText: { fontSize: 12, fontWeight: "600" },
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 10,
-  },
-  searchInput: { flex: 1, fontSize: 13, padding: 0 },
-  listContent: { paddingBottom: 24, gap: 8 },
-  resultRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 10,
-  },
-  resultIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  resultCode: { fontSize: 10, fontWeight: "600", textTransform: "uppercase" },
-  resultTitle: { fontSize: 13, fontWeight: "600", marginTop: 1 },
-  resultSubtitle: { fontSize: 11, marginTop: 1 },
-  emptyText: { textAlign: "center", fontSize: 13, marginTop: 24 },
-});

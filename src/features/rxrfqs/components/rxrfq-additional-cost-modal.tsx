@@ -1,11 +1,9 @@
 import React, { useMemo, useState, forwardRef, useEffect } from "react";
 import {
   View,
-  StyleSheet,
   Text,
   TouchableOpacity,
   TextInput,
-  ScrollView,
 } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -23,6 +21,11 @@ interface RxRfqAdditionalCostModalProps {
   onSave: (item: RxRfqAdditionalCostItem) => void;
   initialData?: RxRfqAdditionalCostItem | null;
   isEditing?: boolean;
+  // The request's own currency — displayed next to Amount so the
+  // vendor knows what they're entering, not offered as a choice. Same
+  // "respect, don't let them pick" treatment as PriceComboBox gets in
+  // rxrfq-res-item-modal.tsx.
+  currency?: string;
 }
 
 const COST_TYPES: {
@@ -40,7 +43,7 @@ const COST_TYPES: {
 const RxRfqAdditionalCostModal = forwardRef<
   BottomSheetModal,
   RxRfqAdditionalCostModalProps
->(({ onClose, onSave, initialData, isEditing = false }, ref) => {
+>(({ onClose, onSave, initialData, isEditing = false, currency = "GHS" }, ref) => {
   const { colors } = useTheme();
   const snapPoints = useMemo(() => ["75%", "90%"], []);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -107,42 +110,40 @@ const RxRfqAdditionalCostModal = forwardRef<
       backgroundColor={colors.backgroundSecondary}
     >
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.text }]}>
+      <View className="flex-row justify-between items-center px-5 py-4 border-b" style={{ borderBottomColor: colors.border }}>
+        <Text className="text-lg font-bold" style={{ color: colors.text }}>
           {isEditing ? "Edit Cost" : "Add Cost"}
         </Text>
         <TouchableOpacity
           onPress={() =>
             (ref as React.RefObject<BottomSheetModal>).current?.dismiss()
           }
-          style={styles.closeButton}
+          className="p-1"
         >
           <MaterialCommunityIcons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.contentContainer}>
+      <View className="flex-1">
+        <View className="px-5 pt-5 pb-10 gap-5">
           {/* Cost type selector */}
-          <View style={styles.section}>
-            <Text style={[styles.label, { color: colors.text }]}>
+          <View className="w-full gap-2">
+            <Text className="text-sm font-semibold" style={{ color: colors.text }}>
               Cost Type <Text style={{ color: colors.error }}>*</Text>
             </Text>
-            <View style={styles.typeGrid}>
+            <View className="flex-row flex-wrap gap-2">
               {COST_TYPES.map((type) => {
                 const selected = formData.costType === type.value;
                 return (
                   <TouchableOpacity
                     key={type.value}
-                    style={[
-                      styles.typeChip,
-                      {
-                        backgroundColor: selected
-                          ? colors.text
-                          : colors.backgroundElement,
-                        borderColor: selected ? colors.text : colors.border,
-                      },
-                    ]}
+                    className="flex-row items-center gap-1.5 px-3 py-2 rounded-lg border"
+                    style={{
+                      backgroundColor: selected
+                        ? colors.text
+                        : colors.backgroundElement,
+                      borderColor: selected ? colors.text : colors.border,
+                    }}
                     onPress={() =>
                       setFormData((prev) => ({
                         ...prev,
@@ -161,14 +162,12 @@ const RxRfqAdditionalCostModal = forwardRef<
                       }
                     />
                     <Text
-                      style={[
-                        styles.typeChipText,
-                        {
-                          color: selected
-                            ? colors.backgroundSecondary
-                            : colors.text,
-                        },
-                      ]}
+                      className="text-[13px] font-medium"
+                      style={{
+                        color: selected
+                          ? colors.backgroundSecondary
+                          : colors.text,
+                      }}
                     >
                       {type.label}
                     </Text>
@@ -179,21 +178,19 @@ const RxRfqAdditionalCostModal = forwardRef<
           </View>
 
           {/* Description */}
-          <View style={styles.section}>
-            <Text style={[styles.label, { color: colors.text }]}>
+          <View className="w-full gap-2">
+            <Text className="text-sm font-semibold" style={{ color: colors.text }}>
               Description <Text style={{ color: colors.error }}>*</Text>
             </Text>
             <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.backgroundElement,
-                  borderColor: errors.description
-                    ? colors.error
-                    : colors.border,
-                  color: colors.text,
-                },
-              ]}
+              className="border rounded-lg px-3 py-3 text-[15px]"
+              style={{
+                backgroundColor: colors.backgroundElement,
+                borderColor: errors.description
+                  ? colors.error
+                  : colors.border,
+                color: colors.text,
+              }}
               value={formData.description}
               onChangeText={(description) =>
                 setFormData((prev) => ({ ...prev, description }))
@@ -202,26 +199,24 @@ const RxRfqAdditionalCostModal = forwardRef<
               placeholderTextColor={colors.textSecondary}
             />
             {errors.description && (
-              <Text style={[styles.error, { color: colors.error }]}>
+              <Text className="text-xs font-medium mt-0.5" style={{ color: colors.error }}>
                 {errors.description}
               </Text>
             )}
           </View>
 
           {/* Amount */}
-          <View style={styles.section}>
-            <Text style={[styles.label, { color: colors.text }]}>
-              Amount <Text style={{ color: colors.error }}>*</Text>
+          <View className="w-full gap-2">
+            <Text className="text-sm font-semibold" style={{ color: colors.text }}>
+              Amount ({currency}) <Text style={{ color: colors.error }}>*</Text>
             </Text>
             <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.backgroundElement,
-                  borderColor: errors.amount ? colors.error : colors.border,
-                  color: colors.text,
-                },
-              ]}
+              className="border rounded-lg px-3 py-3 text-[15px]"
+              style={{
+                backgroundColor: colors.backgroundElement,
+                borderColor: errors.amount ? colors.error : colors.border,
+                color: colors.text,
+              }}
               value={formData.amount === 0 ? "" : formData.amount.toString()}
               onChangeText={(value) => {
                 const num = parseFloat(value);
@@ -235,15 +230,15 @@ const RxRfqAdditionalCostModal = forwardRef<
               keyboardType="decimal-pad"
             />
             {errors.amount && (
-              <Text style={[styles.error, { color: colors.error }]}>
+              <Text className="text-xs font-medium mt-0.5" style={{ color: colors.error }}>
                 {errors.amount}
               </Text>
             )}
           </View>
 
           {/* Required toggle */}
-          <View style={styles.section}>
-            <Text style={[styles.label, { color: colors.text }]}>
+          <View className="w-full gap-2">
+            <Text className="text-sm font-semibold" style={{ color: colors.text }}>
               Mandatory Charge
             </Text>
             <ActiveCheckbox
@@ -256,15 +251,14 @@ const RxRfqAdditionalCostModal = forwardRef<
           </View>
 
           <TouchableOpacity
-            style={[styles.saveButton, { backgroundColor: colors.text }]}
+            className="rounded-[10px] py-3.5 items-center justify-center mt-2.5"
+            style={{ backgroundColor: colors.text }}
             onPress={handleSave}
             activeOpacity={0.8}
           >
             <Text
-              style={[
-                styles.saveButtonText,
-                { color: colors.backgroundSecondary },
-              ]}
+              className="text-base font-semibold"
+              style={{ color: colors.backgroundSecondary }}
             >
               {isEditing ? "Save Changes" : "Add Cost"}
             </Text>
@@ -275,57 +269,5 @@ const RxRfqAdditionalCostModal = forwardRef<
   );
 });
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  title: { fontSize: 18, fontWeight: "700" },
-  closeButton: { padding: 4 },
-  content: { flex: 1 },
-  contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    gap: 20,
-  },
-  section: { width: "100%", gap: 8 },
-  label: { fontSize: 14, fontWeight: "600" },
-  typeGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  typeChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  typeChipText: { fontSize: 13, fontWeight: "500" },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 15,
-  },
-  error: { fontSize: 12, fontWeight: "500", marginTop: 2 },
-  saveButton: {
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
-  },
-  saveButtonText: { fontSize: 16, fontWeight: "600" },
-});
-
 export default RxRfqAdditionalCostModal;
+

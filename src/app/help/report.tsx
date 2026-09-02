@@ -5,7 +5,6 @@ import {
   TextInput,
   Pressable,
   ScrollView,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -14,6 +13,7 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import ScreenHeader from "@/shared/components/screen-header";
 import { useHelpStore } from "@/features/help/hooks/use-help-data";
 import { ReportType } from "@/features/help/types/help.types";
 import { toast } from "@/shared/hooks/use-toast";
@@ -57,32 +57,32 @@ export default function ReportScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={() => router.back()} style={styles.back}>
-            <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-          </Pressable>
-          <Text style={[styles.title, { color: colors.text }]}>Report</Text>
-        </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
+        
+        {/* Navigation Header Element */}
+        <ScreenHeader title="Report" />
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Text style={[styles.label, { color: colors.text }]}>What are you reporting?</Text>
-          <View style={styles.chipRow}>
+        <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
+          
+          {/* Main Category Selection Chips */}
+          <Text className="text-xs font-semibold" style={{ color: colors.text }}>What are you reporting?</Text>
+          <View className="flex-row flex-wrap gap-2 mt-2">
             {REPORT_TYPES.map((option) => {
               const active = type === option.value;
               return (
                 <Pressable
                   key={option.value}
                   onPress={() => setType(option.value)}
-                  style={[styles.chip, { backgroundColor: active ? colors.primary : colors.backgroundElement }]}
+                  className="flex-row items-center gap-1.5 px-3 py-2 rounded-full"
+                  style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
                 >
                   <MaterialCommunityIcons
                     name={option.icon}
                     size={14}
                     color={active ? "#fff" : colors.textSecondary}
                   />
-                  <Text style={[styles.chipText, { color: active ? "#fff" : colors.textSecondary }]}>
+                  <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
                     {option.label}
                   </Text>
                 </Pressable>
@@ -90,9 +90,10 @@ export default function ReportScreen() {
             })}
           </View>
 
+          {/* Conditional User Target Reporting Input */}
           {type === "user" && (
             <>
-              <Text style={[styles.label, { color: colors.text, marginTop: 16 }]}>
+              <Text className="text-xs font-semibold mt-4" style={{ color: colors.text }}>
                 Who are you reporting?
               </Text>
               <TextInput
@@ -100,15 +101,14 @@ export default function ReportScreen() {
                 onChangeText={setReportedUser}
                 placeholder="Name or facility"
                 placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.input,
-                  { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-                ]}
+                className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+                style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
               />
             </>
           )}
 
-          <Text style={[styles.label, { color: colors.text, marginTop: 16 }]}>
+          {/* Required Subject Context Field */}
+          <Text className="text-xs font-semibold mt-4" style={{ color: colors.text }}>
             Subject <Text style={{ color: colors.error }}>*</Text>
           </Text>
           <TextInput
@@ -116,13 +116,12 @@ export default function ReportScreen() {
             onChangeText={setSubject}
             placeholder="Briefly summarize the issue"
             placeholderTextColor={colors.textSecondary}
-            style={[
-              styles.input,
-              { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-            ]}
+            className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+            style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
           />
 
-          <Text style={[styles.label, { color: colors.text, marginTop: 16 }]}>
+          {/* Multi-line Description Field */}
+          <Text className="text-xs font-semibold mt-4" style={{ color: colors.text }}>
             Description <Text style={{ color: colors.error }}>*</Text>
           </Text>
           <TextInput
@@ -130,15 +129,13 @@ export default function ReportScreen() {
             onChangeText={setDescription}
             placeholder="What happened? Steps to reproduce, if it's a bug."
             placeholderTextColor={colors.textSecondary}
-            style={[
-              styles.input,
-              styles.textArea,
-              { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-            ]}
+            className="border rounded-lg px-3 py-2.5 text-sm mt-1.5 min-h-[110px]"
+            style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
             multiline
             textAlignVertical="top"
           />
 
+          {/* Core Submission Trigger Button */}
           <SubmitButton
             label="Submit Report"
             onPress={handleSubmit}
@@ -146,36 +143,9 @@ export default function ReportScreen() {
             style={{ marginTop: 20 }}
           />
 
-          <View style={{ height: 24 }} />
+          <View className="h-6" />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  content: { padding: 16 },
-  label: { fontSize: 12, fontWeight: "600" },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
-  chip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20 },
-  chipText: { fontSize: 12, fontWeight: "600" },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    fontSize: 14,
-    marginTop: 6,
-  },
-  textArea: { minHeight: 110 },
-});

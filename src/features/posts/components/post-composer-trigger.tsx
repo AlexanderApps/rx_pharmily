@@ -1,37 +1,53 @@
-import React from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import React, { useMemo } from "react";
+import { View, Text, Pressable } from "react-native";
 import { router } from "expo-router";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 
-
 const PostComposerTrigger: React.FC = () => {
   const { colors } = useTheme();
   const currentUser = useProfileStore((state) => state.user);
-  const initials = currentUser.fullName
-    .split(" ")
-    .map((p) => p[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+
+  // Computes fallback safely
+  const initials = useMemo(() => {
+    if (!currentUser?.fullName) return "?";
+
+    return currentUser.fullName
+      .trim()
+      .split(/\s+/)
+      .map((part) => part[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+  }, [currentUser?.fullName]);
+
+  // Fallback string values for custom properties
+  const avatarBgColor = currentUser?.avatarColor || "#ccc";
 
   return (
     <Pressable
       onPress={() => router.push("/posts/create-post")}
-      style={({ pressed }) => [
-        styles.wrap,
-        {
-          backgroundColor: colors.backgroundSecondary,
-          borderColor: colors.border,
-          opacity: pressed ? 0.8 : 1,
-        },
-      ]}
+      // NativeWind applies active/pressed states uniformly via `active:opacity-80`
+      className="flex-row items-center border rounded-[14px] px-3 py-2.5 w-full active:opacity-80"
+      style={{
+        backgroundColor: colors.backgroundSecondary,
+        borderColor: colors.border,
+      }}
     >
-      <View style={[styles.avatar, { backgroundColor: currentUser.avatarColor }]}>
-        <Text style={styles.avatarText}>{initials}</Text>
+      {/* Avatar Container */}
+      <View
+        className="w-[34px] h-[34px] rounded-full items-center justify-center"
+        style={{ backgroundColor: avatarBgColor }}
+      >
+        <Text className="text-white text-[12px] font-bold">{initials}</Text>
       </View>
-      <Text style={[styles.placeholder, { color: colors.textSecondary }]}>
+
+      {/* Input Placeholder Text */}
+      <Text
+        className="text-[13px] flex-1 ml-2.5"
+        style={{ color: colors.textSecondary }}
+      >
         Share something with the community...
       </Text>
     </Pressable>
@@ -39,24 +55,3 @@ const PostComposerTrigger: React.FC = () => {
 };
 
 export default PostComposerTrigger;
-
-const styles = StyleSheet.create({
-  wrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  placeholder: { fontSize: 13, flex: 1 },
-});

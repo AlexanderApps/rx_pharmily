@@ -1,5 +1,5 @@
 import React, { useMemo, useRef } from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView, Share } from "react-native";
+import { View, Text, Pressable, ScrollView, Share, Platform} from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -17,6 +17,7 @@ import PrintButton from "@/shared/components/print-button";
 import { buildDonationItemListHtml } from "@/features/donations/utils/donation-pdf";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
 function daysUntil(date: Date) {
   return Math.ceil((new Date(date).getTime() - Date.now()) / DAY_MS);
 }
@@ -26,26 +27,33 @@ function daysUntil(date: Date) {
 export default function DonationMarketDetailsScreen() {
   const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-
   const donations = useDonationStore((state) => state.donations);
   const isLoadingDonations = useDonationStore((state) => state.isLoading);
   const addResponse = useDonationStore((state) => state.addResponse);
-
   const claimSheetRef = useRef<DonationClaimSheetHandle>(null);
 
-  const donation = useMemo(() => donations.find((d) => d.id === id), [donations, id]);
+  const donation = useMemo(
+    () => donations.find((d) => d.id === id),
+    [donations, id]
+  );
 
   if (!donation) {
     if (isLoadingDonations) {
       return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <SafeAreaView
+          className="flex-1"
+          style={{ backgroundColor: colors.background }}
+        >
           <DetailSkeleton rows={4} />
         </SafeAreaView>
       );
     }
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <Text style={{ color: colors.text, padding: 16 }}>
+      <SafeAreaView
+        className="flex-1"
+        style={{ backgroundColor: colors.background }}
+      >
+        <Text className="p-4" style={{ color: colors.text }}>
           No donation found for id: {id}
         </Text>
       </SafeAreaView>
@@ -76,29 +84,62 @@ export default function DonationMarketDetailsScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.navbar, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
+    <SafeAreaView
+      className="flex-1"
+      style={{ backgroundColor: colors.background }}
+    >
+      {/* Navbar */}
+      <View
+        className="flex-row items-center px-4 py-3 border-b-[0.5px] gap-3"
+        style={{ borderBottomColor: colors.border }}
+      >
+        {Platform.OS !== "web" && (
+        <Pressable
+          onPress={() => router.back()}
+          className="w-9 h-9 justify-center items-center"
+          hitSlop={8}
+        >
           <Ionicons name="arrow-back-outline" size={22} color={colors.text} />
         </Pressable>
-        <View style={styles.navbarMeta}>
-          <Text style={[styles.navbarCode, { color: colors.text }]}>{donation.code}</Text>
-          <Text style={[styles.navbarTime, { color: colors.textSecondary }]}>
+        )}
+
+        <View className="flex-1">
+          <Text
+            className="text-[15px] font-medium"
+            style={{ color: colors.text }}
+          >
+            {donation.code}
+          </Text>
+          <Text
+            className="text-xs mt-px"
+            style={{ color: colors.textSecondary }}
+          >
             {format(donation.createdAt)}
           </Text>
         </View>
+
         <PrintButton
           variant="icon"
           fileName={`Donation-${donation.code}-Items`}
           getHtml={() => buildDonationItemListHtml(donation)}
         />
-        <Pressable onPress={handleShare} style={styles.shareBtn} hitSlop={8}>
-          <Ionicons name="share-outline" size={20} color={colors.textSecondary} />
+
+        <Pressable
+          onPress={handleShare}
+          className="w-9 h-9 justify-center items-center"
+          hitSlop={8}
+        >
+          <Ionicons
+            name="share-outline"
+            size={20}
+            color={colors.textSecondary}
+          />
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.hero}>
+      <ScrollView contentContainerClassName="px-4 pt-4">
+        {/* Hero */}
+        <View className="flex-row items-center gap-3 mb-3">
           <ClickableAvatar
             entityType="facility"
             entityId={donation.facility}
@@ -107,69 +148,125 @@ export default function DonationMarketDetailsScreen() {
             subtitle="Posted this donation"
             size={52}
           />
-          <View style={styles.heroMeta}>
-            <Text style={[styles.heroName, { color: colors.text }]}>{donation.facilityName}</Text>
-            <View style={styles.heroLocationRow}>
-              <MaterialCommunityIcons name="map-marker-outline" size={14} color={colors.textSecondary} />
-              <Text style={[styles.heroLocation, { color: colors.textSecondary }]}>
+          <View className="flex-1 gap-1">
+            <Text
+              className="text-lg font-semibold"
+              style={{ color: colors.text }}
+            >
+              {donation.facilityName}
+            </Text>
+            <View className="flex-row items-center gap-1">
+              <MaterialCommunityIcons
+                name="map-marker-outline"
+                size={14}
+                color={colors.textSecondary}
+              />
+              <Text
+                className="text-[13px]"
+                style={{ color: colors.textSecondary }}
+              >
                 {donation.facilityLocation}
               </Text>
             </View>
           </View>
         </View>
 
+        {/* Categories */}
         {donation.categories.length > 0 && (
-          <View style={styles.chipRow}>
+          <View className="flex-row flex-wrap gap-1.5 mb-3">
             {donation.categories.map((c) => (
-              <View key={c} style={[styles.chip, { backgroundColor: colors.backgroundElement }]}>
-                <Text style={[styles.chipText, { color: colors.textSecondary }]}>{c}</Text>
+              <View
+                key={c}
+                className="px-2.5 py-1.5 rounded-full"
+                style={{ backgroundColor: colors.backgroundElement }}
+              >
+                <Text
+                  className="text-[11px] font-semibold"
+                  style={{ color: colors.textSecondary }}
+                >
+                  {c}
+                </Text>
               </View>
             ))}
           </View>
         )}
 
+        {/* Comment */}
         {donation.comment ? (
-          <Text style={[styles.description, { color: colors.textSecondary }]}>
+          <Text
+            className="text-sm leading-5 mb-4"
+            style={{ color: colors.textSecondary }}
+          >
             {donation.comment}
           </Text>
         ) : null}
 
+        {/* Terms */}
         {donation.termsOfService ? (
           <View
-            style={[styles.termsCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+            className="rounded-[14px] border p-3.5 gap-1 mb-4"
+            style={{
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
+            }}
           >
-            <Text style={[styles.termsTitle, { color: colors.text }]}>Terms</Text>
-            <Text style={[styles.termsText, { color: colors.textSecondary }]}>
+            <Text
+              className="text-[13px] font-bold"
+              style={{ color: colors.text }}
+            >
+              Terms
+            </Text>
+            <Text
+              className="text-[13px] leading-[19px]"
+              style={{ color: colors.textSecondary }}
+            >
               {donation.termsOfService}
             </Text>
           </View>
         ) : null}
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        {/* Available Items */}
+        <Text
+          className="text-xs font-medium uppercase tracking-wide mb-2"
+          style={{ color: colors.text }}
+        >
           Available Items ({activeItems.length})
         </Text>
+
         <View
-          style={[styles.card, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+          className="rounded-2xl border-[0.5px] overflow-hidden"
+          style={{
+            backgroundColor: colors.backgroundSecondary,
+            borderColor: colors.border,
+          }}
         >
           {activeItems.map((item, index) => {
             const days = daysUntil(item.expiryDate);
-            const expiryColor = days <= 30 ? colors.warning : colors.textSecondary;
+            const expiryColor =
+              days <= 30 ? colors.warning : colors.textSecondary;
+
             return (
               <View
                 key={item.id}
-                style={[
-                  styles.itemRow,
-                  index !== activeItems.length - 1 && {
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderBottomColor: colors.border,
-                  },
-                ]}
+                className="p-3.5"
+                style={
+                  index !== activeItems.length - 1
+                    ? { borderBottomWidth: 0.5, borderBottomColor: colors.border }
+                    : undefined
+                }
               >
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.itemName, { color: colors.text }]} numberOfLines={1}>
+                <View className="flex-1">
+                  <Text
+                    className="text-sm font-semibold"
+                    style={{ color: colors.text }}
+                    numberOfLines={1}
+                  >
                     {item.product}
                   </Text>
-                  <Text style={[styles.itemMeta, { color: expiryColor }]}>
+                  <Text
+                    className="text-xs mt-[3px]"
+                    style={{ color: expiryColor }}
+                  >
                     {item.quantity} available · expires{" "}
                     {new Date(item.expiryDate).toLocaleDateString(undefined, {
                       day: "2-digit",
@@ -180,24 +277,36 @@ export default function DonationMarketDetailsScreen() {
               </View>
             );
           })}
+
           {activeItems.length === 0 && (
-            <Text style={{ color: colors.textSecondary, fontSize: 13, padding: 14 }}>
+            <Text
+              className="text-[13px] p-3.5"
+              style={{ color: colors.textSecondary }}
+            >
               No items currently available.
             </Text>
           )}
         </View>
 
-        <View style={{ height: canClaim ? 100 : 24 }} />
+        <View className={canClaim ? "h-[100px]" : "h-6"} />
       </ScrollView>
 
+      {/* Claim FAB */}
       {canClaim && (
-        <View style={styles.fabGroup}>
+        <View className="absolute bottom-6 left-4 right-4">
           <Pressable
             onPress={() => claimSheetRef.current?.open()}
-            style={[styles.fabPrimary, { backgroundColor: colors.primary }]}
+            className="h-12 rounded-[14px] flex-row items-center justify-center gap-2 active:opacity-90"
+            style={{ backgroundColor: colors.primary }}
           >
-            <MaterialCommunityIcons name="hand-heart-outline" size={18} color="#fff" />
-            <Text style={styles.fabPrimaryText}>Claim Items</Text>
+            <MaterialCommunityIcons
+              name="hand-heart-outline"
+              size={18}
+              color="#fff"
+            />
+            <Text className="text-white text-[15px] font-semibold">
+              Claim Items
+            </Text>
           </Pressable>
         </View>
       )}
@@ -211,54 +320,3 @@ export default function DonationMarketDetailsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  navbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    gap: 12,
-  },
-  backBtn: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
-  navbarMeta: { flex: 1 },
-  navbarCode: { fontSize: 15, fontWeight: "500" },
-  navbarTime: { fontSize: 12, marginTop: 1 },
-  shareBtn: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 16 },
-  hero: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
-  heroIcon: { width: 56, height: 56, borderRadius: 14, justifyContent: "center", alignItems: "center" },
-  heroMeta: { flex: 1, gap: 4 },
-  heroName: { fontSize: 18, fontWeight: "600" },
-  heroLocationRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  heroLocation: { fontSize: 13 },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 12 },
-  chip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-  chipText: { fontSize: 11, fontWeight: "600" },
-  description: { fontSize: 14, lineHeight: 20, marginBottom: 16 },
-  termsCard: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 4, marginBottom: 16 },
-  termsTitle: { fontSize: 13, fontWeight: "700" },
-  termsText: { fontSize: 13, lineHeight: 19 },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-    marginBottom: 8,
-  },
-  card: { borderRadius: 16, borderWidth: 0.5, overflow: "hidden" },
-  itemRow: { padding: 14 },
-  itemName: { fontSize: 14, fontWeight: "600" },
-  itemMeta: { fontSize: 12, marginTop: 3 },
-  fabGroup: { position: "absolute", bottom: 24, left: 16, right: 16 },
-  fabPrimary: {
-    height: 48,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  fabPrimaryText: { color: "#fff", fontSize: 15, fontWeight: "600" },
-});

@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, TextInput, ScrollView, Pressable, StyleSheet } from "react-native";
+import { View, Text, TextInput, ScrollView, Pressable } from "react-native";
 import { router, useLocalSearchParams, Redirect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import ScreenHeader from "@/shared/components/screen-header";
 import { confirm } from "@/shared/hooks/use-confirm";
 import { toast } from "@/shared/hooks/use-toast";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
@@ -11,6 +12,8 @@ import LoadingImage from "@/shared/components/loading-image";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { isAdminRole } from "@/features/auth/types/auth.types";
 import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
+import ReferencePicker from "@/shared/components/forms/reference-picker";
+import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 
 export default function FormularyMergeScreen() {
   const { colors } = useTheme();
@@ -26,7 +29,10 @@ export default function FormularyMergeScreen() {
     fetchFormularyRequests();
   }, []);
 
-  const request = useMemo(() => formularyRequests.find((r) => r.id === id), [formularyRequests, id]);
+  const request = useMemo(
+    () => formularyRequests.find((r) => r.id === id),
+    [formularyRequests, id],
+  );
 
   // Pre-filled from the request as submitted, but every field here is
   // editable — this is the actual cleanup step (fixing casing, expanding
@@ -39,6 +45,20 @@ export default function FormularyMergeScreen() {
   const [atcCode, setAtcCode] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const referenceCategories = useReferenceDataStore((state) => state.categories);
+  const referenceUnits = useReferenceDataStore((state) => state.units);
+  const categoryOptions = useMemo(
+    () => referenceCategories.map((c) => ({ id: c.name, label: c.name })),
+    [referenceCategories],
+  );
+  const unitOptions = useMemo(
+    () =>
+      referenceUnits.map((u) => ({
+        id: u.name,
+        label: u.abbreviation ? `${u.name} (${u.abbreviation})` : u.name,
+      })),
+    [referenceUnits],
+  );
 
   useEffect(() => {
     if (request) {
@@ -55,13 +75,16 @@ export default function FormularyMergeScreen() {
   if (!request) {
     if (isLoadingFormularyRequests) {
       return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
           <DetailSkeleton rows={3} />
         </SafeAreaView>
       );
     }
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
+      <SafeAreaView
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: colors.background }}
+      >
         <Text style={{ color: colors.textSecondary }}>Request not found.</Text>
       </SafeAreaView>
     );
@@ -69,9 +92,12 @@ export default function FormularyMergeScreen() {
 
   if (request.status !== "approved") {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <SafeAreaView
+        className="flex-1 items-center justify-center p-6"
+        style={{ backgroundColor: colors.background }}
+      >
         <MaterialCommunityIcons name="information-outline" size={28} color={colors.textSecondary} />
-        <Text style={{ color: colors.textSecondary, marginTop: 10, textAlign: "center" }}>
+        <Text className="mt-2.5 text-center" style={{ color: colors.textSecondary }}>
           {request.status === "merged"
             ? "This request has already been merged into the catalog."
             : "This request needs to be approved before it can be merged."}
@@ -90,7 +116,6 @@ export default function FormularyMergeScreen() {
       confirmLabel: "Merge",
     });
     if (!ok) return;
-
     setSaving(true);
     await mergeFormularyRequest(request.id, {
       name: name.trim(),
@@ -105,42 +130,96 @@ export default function FormularyMergeScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-        </Pressable>
-        <Text style={[styles.title, { color: colors.text }]}>Merge to Catalog</Text>
-      </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Header */}
+      <ScreenHeader title="Merge to Catalog" />
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={[styles.originalCard, { backgroundColor: colors.backgroundSecondary }]}>
-          <Text style={[styles.originalLabel, { color: colors.textSecondary }]}>AS REQUESTED</Text>
-          <View style={styles.originalRow}>
+      <ScrollView contentContainerClassName="p-4 pb-10">
+        {/* Original request card */}
+        <View
+          className="rounded-[14px] p-3.5 mb-5 gap-2"
+          style={{ backgroundColor: colors.backgroundSecondary }}
+        >
+          <Text
+            className="text-[10px] font-bold tracking-wide uppercase"
+            style={{ color: colors.textSecondary }}
+          >
+            As requested
+          </Text>
+          <View className="flex-row items-center gap-2.5">
             {request.imageUri ? (
-              <LoadingImage source={{ uri: request.imageUri }} style={styles.originalThumb} />
+              <LoadingImage
+                source={{ uri: request.imageUri }}
+                style={{ width: 36, height: 36, borderRadius: 8 }}
+              />
             ) : (
-              <View style={[styles.originalThumb, { backgroundColor: colors.backgroundElement, alignItems: "center", justifyContent: "center" }]}>
+              <View
+                className="w-9 h-9 rounded-lg items-center justify-center"
+                style={{ backgroundColor: colors.backgroundElement }}
+              >
                 <MaterialCommunityIcons name="pill" size={16} color={colors.textSecondary} />
               </View>
             )}
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.originalName, { color: colors.text }]}>{request.productName}</Text>
-              <Text style={[styles.originalMeta, { color: colors.textSecondary }]}>
-                {[request.category, request.defaultUnit].filter(Boolean).join(" · ") || "No category/unit given"}
+            <View className="flex-1">
+              <Text className="text-sm font-bold" style={{ color: colors.text }}>
+                {request.productName}
+              </Text>
+              <Text className="text-[11px] mt-0.5" style={{ color: colors.textSecondary }}>
+                {[request.category, request.defaultUnit].filter(Boolean).join(" · ") ||
+                  "No category/unit given"}
               </Text>
             </View>
           </View>
           {request.notes ? (
-            <Text style={[styles.originalNotes, { color: colors.textSecondary }]}>"{request.notes}"</Text>
+            <Text
+              className="text-xs italic leading-[17px]"
+              style={{ color: colors.textSecondary }}
+            >
+              "{request.notes}"
+            </Text>
           ) : null}
         </View>
 
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>CLEANED-UP CATALOG ENTRY</Text>
+        <Text
+          className="text-[11px] font-bold tracking-wide uppercase mb-3"
+          style={{ color: colors.textSecondary }}
+        >
+          Cleaned-up catalog entry
+        </Text>
 
-        <Field label="Product name" value={name} onChangeText={setName} colors={colors} placeholder="e.g. Azithromycin 500mg Tablet" />
-        <Field label="Category" value={category} onChangeText={setCategory} colors={colors} placeholder="e.g. Antibiotic" />
-        <Field label="Default unit" value={defaultUnit} onChangeText={setDefaultUnit} colors={colors} placeholder="e.g. Tablet, Vial, Box" />
+        <Field
+          label="Product name"
+          value={name}
+          onChangeText={setName}
+          colors={colors}
+          placeholder="e.g. Azithromycin 500mg Tablet"
+        />
+        <View className="mb-3.5">
+          <Text className="text-xs font-semibold mb-1.5" style={{ color: colors.text }}>
+            Category
+          </Text>
+          <ReferencePicker
+            title="Select Category"
+            options={categoryOptions}
+            value={category}
+            onChange={setCategory}
+            placeholder="Select a category"
+            emptyMessage="No categories set up yet."
+          />
+        </View>
+        <View className="mb-3.5">
+          <Text className="text-xs font-semibold mb-1.5" style={{ color: colors.text }}>
+            Default unit
+          </Text>
+          <ReferencePicker
+            title="Select Unit"
+            options={unitOptions}
+            value={defaultUnit}
+            onChange={setDefaultUnit}
+            placeholder="Select a unit"
+            emptyMessage="No units set up yet."
+          />
+        </View>
         <Field
           label="ATC code(s)"
           value={atcCode}
@@ -161,13 +240,21 @@ export default function FormularyMergeScreen() {
         <Pressable
           onPress={handleMerge}
           disabled={!canSave || saving}
-          style={[
-            styles.mergeButton,
-            { backgroundColor: canSave ? colors.primary : colors.backgroundElement, opacity: saving ? 0.6 : 1 },
-          ]}
+          className="flex-row items-center justify-center gap-2 rounded-xl py-3.5 mt-2"
+          style={{
+            backgroundColor: canSave ? colors.primary : colors.backgroundElement,
+            opacity: saving ? 0.6 : 1,
+          }}
         >
-          <MaterialCommunityIcons name="check-circle-outline" size={18} color={canSave ? "#fff" : colors.textSecondary} />
-          <Text style={[styles.mergeButtonText, { color: canSave ? "#fff" : colors.textSecondary }]}>
+          <MaterialCommunityIcons
+            name="check-circle-outline"
+            size={18}
+            color={canSave ? "#fff" : colors.textSecondary}
+          />
+          <Text
+            className="text-sm font-bold"
+            style={{ color: canSave ? "#fff" : colors.textSecondary }}
+          >
             {saving ? "Merging..." : "Merge into Catalog"}
           </Text>
         </Pressable>
@@ -194,42 +281,29 @@ function Field({
   hint?: string;
 }) {
   return (
-    <View style={{ marginBottom: 14 }}>
-      <Text style={[styles.fieldLabel, { color: colors.text }]}>{label}</Text>
+    <View className="mb-3.5">
+      <Text className="text-xs font-semibold mb-1.5" style={{ color: colors.text }}>
+        {label}
+      </Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={colors.textSecondary}
         multiline={multiline}
-        style={[
-          styles.fieldInput,
-          multiline && styles.fieldInputMultiline,
-          { backgroundColor: colors.backgroundElement, color: colors.text, borderColor: colors.border },
-        ]}
+        className={`border rounded-[10px] px-3 py-2.5 text-sm ${multiline ? "min-h-20" : ""}`}
+        style={{
+          backgroundColor: colors.backgroundElement,
+          color: colors.text,
+          borderColor: colors.border,
+          ...(multiline ? { textAlignVertical: "top" as const } : {}),
+        }}
       />
-      {hint ? <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>{hint}</Text> : null}
+      {hint ? (
+        <Text className="text-[11px] mt-1" style={{ color: colors.textSecondary }}>
+          {hint}
+        </Text>
+      ) : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  header: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1 },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  content: { padding: 16, paddingBottom: 40 },
-  originalCard: { borderRadius: 14, padding: 14, marginBottom: 20, gap: 8 },
-  originalLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5 },
-  originalRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  originalThumb: { width: 36, height: 36, borderRadius: 8 },
-  originalName: { fontSize: 14, fontWeight: "700" },
-  originalMeta: { fontSize: 11, marginTop: 2 },
-  originalNotes: { fontSize: 12, fontStyle: "italic", lineHeight: 17 },
-  sectionLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5, marginBottom: 12 },
-  fieldLabel: { fontSize: 12, fontWeight: "600", marginBottom: 6 },
-  fieldInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
-  fieldInputMultiline: { minHeight: 80, textAlignVertical: "top" },
-  fieldHint: { fontSize: 11, marginTop: 4 },
-  mergeButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, paddingVertical: 14, marginTop: 8 },
-  mergeButtonText: { fontSize: 14, fontWeight: "700" },
-});

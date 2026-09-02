@@ -1,10 +1,11 @@
 import React from "react";
-import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { StyleProp, Text, View, ViewStyle } from "react-native";
 import { useTheme } from "@/shared/hooks/use-theme";
 
 interface MediscopeNamePlaceholderProps {
   product: string;
   style?: StyleProp<ViewStyle>;
+  className?: string;
   fontSize?: number;
 }
 
@@ -15,20 +16,25 @@ interface MediscopeNamePlaceholderProps {
 const MediscopeNamePlaceholder: React.FC<MediscopeNamePlaceholderProps> = ({
   product,
   style,
+  className,
   fontSize = 16,
 }) => {
   const { colors } = useTheme();
 
   return (
     <View
+      className={`items-center justify-center border px-3.5 ${className ?? ""}`}
       style={[
-        styles.container,
-        { backgroundColor: colors.primary + "12", borderColor: colors.primary + "22" },
+        {
+          backgroundColor: colors.primary + "12",
+          borderColor: colors.primary + "22",
+        },
         style,
       ]}
     >
       <Text
-        style={[styles.text, { color: colors.primary, fontSize }]}
+        className="text-center font-extrabold tracking-wide"
+        style={{ color: colors.primary, fontSize }}
         numberOfLines={3}
         adjustsFontSizeToFit
         minimumFontScale={0.6}
@@ -40,17 +46,3 @@ const MediscopeNamePlaceholder: React.FC<MediscopeNamePlaceholderProps> = ({
 };
 
 export default MediscopeNamePlaceholder;
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    paddingHorizontal: 14,
-  },
-  text: {
-    fontWeight: "800",
-    letterSpacing: 0.5,
-    textAlign: "center",
-  },
-});

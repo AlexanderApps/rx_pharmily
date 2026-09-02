@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
-  StyleSheet,
   FlatList,
   NativeSyntheticEvent,
   NativeScrollEvent,
@@ -26,10 +25,10 @@ const SingleVideoAttachment: React.FC<{ uri: string }> = ({ uri }) => {
   });
 
   return (
-    <View style={[styles.singleVideoWrap, { backgroundColor: colors.backgroundElement }]}>
+    <View className="rounded-xl overflow-hidden" style={{ backgroundColor: colors.backgroundElement }}>
       <VideoView
         player={player}
-        style={styles.singleVideo}
+        style={{ width: "100%", height: CAROUSEL_HEIGHT }}
         nativeControls
         allowsFullscreen
         contentFit="cover"
@@ -70,7 +69,7 @@ const AdMediaCarousel: React.FC<AdMediaCarouselProps> = ({ media }) => {
   );
 
   const imageStyle = useMemo(
-    () => [styles.image, { width: containerWidth, backgroundColor: colors.backgroundElement }],
+    () => [{ height: CAROUSEL_HEIGHT, borderRadius: 12 }, { width: containerWidth, backgroundColor: colors.backgroundElement }],
     [containerWidth, colors.backgroundElement],
   );
 
@@ -105,22 +104,20 @@ const AdMediaCarousel: React.FC<AdMediaCarouselProps> = ({ media }) => {
       )}
 
       {media.length > 1 && (
-        <View style={styles.footerRow}>
-          <View style={styles.dots}>
+        <View className="flex-row items-center justify-between mt-2">
+          <View className="flex-row items-center gap-[5px]">
             {media.map((_, index) => (
               <View
                 key={index}
-                style={[
-                  styles.dot,
-                  {
-                    backgroundColor: index === activeIndex ? colors.primary : colors.border,
-                    width: index === activeIndex ? 16 : 6,
-                  },
-                ]}
+                className="h-1.5 rounded-[3px]"
+                style={{
+                  backgroundColor: index === activeIndex ? colors.primary : colors.border,
+                  width: index === activeIndex ? 16 : 6,
+                }}
               />
             ))}
           </View>
-          <Text style={[styles.counter, { color: colors.textSecondary }]}>
+          <Text className="text-[11px] font-semibold" style={{ color: colors.textSecondary }}>
             {activeIndex + 1}/{media.length}
           </Text>
         </View>
@@ -131,17 +128,3 @@ const AdMediaCarousel: React.FC<AdMediaCarouselProps> = ({ media }) => {
 
 export default AdMediaCarousel;
 
-const styles = StyleSheet.create({
-  image: { height: CAROUSEL_HEIGHT, borderRadius: 12 },
-  singleVideoWrap: { borderRadius: 12, overflow: "hidden" },
-  singleVideo: { width: "100%", height: CAROUSEL_HEIGHT },
-  footerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
-  dots: { flexDirection: "row", alignItems: "center", gap: 5 },
-  dot: { height: 6, borderRadius: 3 },
-  counter: { fontSize: 11, fontWeight: "600" },
-});

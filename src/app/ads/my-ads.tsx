@@ -1,10 +1,11 @@
 import React, { useMemo } from "react";
-import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View, Text, FlatList, Pressable, Platform} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { format } from "timeago.js";
 import { useTheme } from "@/shared/hooks/use-theme";
+import EmptyState from "@/shared/components/empty-state";
 import { confirm } from "@/shared/hooks/use-confirm";
 import { toast } from "@/shared/hooks/use-toast";
 import { useAdsStore } from "@/features/ads/hooks/use-ads-data";
@@ -15,6 +16,7 @@ import { formatAmount } from "@/shared/utils/format";
 
 export default function MyAdsScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const currentUserId = useAuthStore((state) => state.user?.id);
   const ads = useAdsStore((state) => state.ads);
   const deleteAd = useAdsStore((state) => state.deleteAd);
@@ -40,13 +42,25 @@ export default function MyAdsScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
+    <View
+      className="flex-1"
+      style={{
+        backgroundColor: colors.background,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingLeft: insets.left,
+        paddingRight: insets.right,
+      }}
+    >
+      {/* Header View Container */}
+      <View className="flex-row items-center justify-between px-3 py-3 border-b" style={{ borderBottomColor: colors.border }}>
+        {Platform.OS !== "web" && (
+        <Pressable onPress={() => router.back()} className="p-1.5">
           <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.text }]}>My Ads</Text>
-        <Pressable onPress={() => router.push("/ads/create-ad")} style={styles.back}>
+        )}
+        <Text className="text-base font-bold" style={{ color: colors.text }}>My Ads</Text>
+        <Pressable onPress={() => router.push("/ads/create-ad")} className="p-1.5">
           <MaterialCommunityIcons name="plus" size={22} color={colors.primary} />
         </Pressable>
       </View>
@@ -54,116 +68,81 @@ export default function MyAdsScreen() {
       <FlatList
         data={myAds}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        contentContainerStyle={{ padding: 16, flexGrow: 1 }}
+        ItemSeparatorComponent={() => <View className="h-2.5" />}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <MaterialCommunityIcons name="bullhorn-outline" size={36} color={colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              You haven't created any ads yet.
-            </Text>
-          </View>
+          <EmptyState icon="bullhorn-outline" message="You haven't created any ads yet." />
         }
         renderItem={({ item }) => (
           <Pressable
             onPress={() => router.push({ pathname: "/ads/ad-details", params: { id: item.id } })}
-            style={[styles.card, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+            className="rounded-[14px] border p-[14px] gap-1.5"
+            style={{ backgroundColor: colors.backgroundSecondary, borderColor: colors.border }}
           >
-            <View style={styles.cardTopRow}>
+            {/* Top row alignment content */}
+            <View className="flex-row items-center justify-between">
               <AdStatusPill status={item.status} compact />
-              <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>
+              <Text className="text-[11px]" style={{ color: colors.textSecondary }}>
                 {format(item.createdAt)}
               </Text>
             </View>
 
-            <Text style={[styles.adTitle, { color: colors.text }]} numberOfLines={1}>
+            <Text className="text-semibold text-[15px]" style={{ color: colors.text }} numberOfLines={1}>
               {item.title}
             </Text>
 
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
+            {/* Interaction stats wrapper */}
+            <View className="flex-row items-center gap-3 flex-wrap">
+              <View className="flex-row items-center gap-1">
                 <MaterialCommunityIcons name="thumb-up-outline" size={13} color={colors.textSecondary} />
-                <Text style={[styles.statText, { color: colors.textSecondary }]}>{item.likeCount}</Text>
+                <Text className="text-xs" style={{ color: colors.textSecondary }}>{item.likeCount}</Text>
               </View>
-              <View style={styles.statItem}>
+              <View className="flex-row items-center gap-1">
                 <MaterialCommunityIcons name="thumb-down-outline" size={13} color={colors.textSecondary} />
-                <Text style={[styles.statText, { color: colors.textSecondary }]}>{item.dislikeCount}</Text>
+                <Text className="text-xs" style={{ color: colors.textSecondary }}>{item.dislikeCount}</Text>
               </View>
-              <View style={styles.statItem}>
+              <View className="flex-row items-center gap-1">
                 <MaterialCommunityIcons name="comment-outline" size={13} color={colors.textSecondary} />
-                <Text style={[styles.statText, { color: colors.textSecondary }]}>{item.commentCount}</Text>
+                <Text className="text-xs" style={{ color: colors.textSecondary }}>{item.commentCount}</Text>
               </View>
-              <Text style={[styles.planText, { color: colors.textSecondary }]}>
-                · {item.plan.name} · {item.payment.currency} {formatAmount(item.payment.amount)} (
+              <Text className="text-[11px]" style={{ color: colors.textSecondary }}>
+                · {item.plan.name} · {item.payment.currency} {formatAmount(item.payment.amountDue)} (
                 {item.payment.status})
               </Text>
             </View>
 
             {!!item.statusReason && (
-              <Text style={[styles.reasonText, { color: colors.error }]} numberOfLines={2}>
+              <Text className="text-xs leading-4" style={{ color: colors.error }} numberOfLines={2}>
                 {item.statusReason}
               </Text>
             )}
 
-            <View style={[styles.rowActions, { borderTopColor: colors.border }]}>
+            {/* Card dynamic action controls footer */}
+            <View className="flex-row gap-4 border-t pt-2 mt-0.5" style={{ borderTopColor: colors.border }}>
               {(item.status === "pending" || item.status === "rejected") && (
                 <Pressable
                   onPress={() =>
                     router.push({ pathname: "/ads/create-ad", params: { id: item.id } })
                   }
-                  style={styles.rowActionButton}
+                  className="flex-row items-center gap-1.5"
                   hitSlop={6}
                 >
                   <MaterialCommunityIcons name="pencil-outline" size={14} color={colors.text} />
-                  <Text style={[styles.rowActionText, { color: colors.text }]}>Edit</Text>
+                  <Text className="text-xs font-semibold" style={{ color: colors.text }}>Edit</Text>
                 </Pressable>
               )}
               <Pressable
                 onPress={() => handleDelete(item)}
-                style={styles.rowActionButton}
+                className="flex-row items-center gap-1.5"
                 hitSlop={6}
               >
                 <MaterialCommunityIcons name="trash-can-outline" size={14} color={colors.error} />
-                <Text style={[styles.rowActionText, { color: colors.error }]}>Delete</Text>
+                <Text className="text-xs font-semibold" style={{ color: colors.error }}>Delete</Text>
               </Pressable>
             </View>
           </Pressable>
         )}
       />
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  title: { fontSize: 16, fontWeight: "700" },
-  listContent: { padding: 16, flexGrow: 1 },
-  empty: { alignItems: "center", justifyContent: "center", gap: 10, paddingTop: 80 },
-  emptyText: { fontSize: 13 },
-  card: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 6 },
-  cardTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  timeAgo: { fontSize: 11 },
-  adTitle: { fontSize: 15, fontWeight: "600" },
-  statsRow: { flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap" },
-  statItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  statText: { fontSize: 12 },
-  planText: { fontSize: 11 },
-  reasonText: { fontSize: 12, lineHeight: 16 },
-  rowActions: {
-    flexDirection: "row",
-    gap: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 8,
-    marginTop: 2,
-  },
-  rowActionButton: { flexDirection: "row", alignItems: "center", gap: 5 },
-  rowActionText: { fontSize: 12, fontWeight: "600" },
-});

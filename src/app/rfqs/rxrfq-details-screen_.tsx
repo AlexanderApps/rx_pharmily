@@ -5,8 +5,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
-} from "react-native";
+  Dimensions, Platform} from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { RxRfqCardData } from "@/features/rxrfqs/types/rxrfqs.types";
@@ -131,6 +130,7 @@ const RxRfqDetailScreen: React.FC<RxRfqDetailScreenProps> = () => {
     <SafeAreaView style={[styles.screenContainer, themeStyles.screen]}>
       {/* Top Navbar */}
       <View style={[styles.navBar, themeStyles.borderBottom]}>
+        {Platform.OS !== "web" && (
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.navButton}
@@ -142,6 +142,7 @@ const RxRfqDetailScreen: React.FC<RxRfqDetailScreenProps> = () => {
             color={colors.text}
           />
         </TouchableOpacity>
+        )}
 
         <Text
           style={[styles.navTitle, { color: colors.text }]}

@@ -5,82 +5,122 @@ import {
   TextInput,
   Pressable,
   FlatList,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   Linking,
+  StyleSheet,
+  Modal,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { format } from "timeago.js";
 import { useTheme } from "@/shared/hooks/use-theme";
+import ScreenHeader from "@/shared/components/screen-header";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useAdsStore } from "@/features/ads/hooks/use-ads-data";
+import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import AdMediaCarousel from "@/features/ads/components/ad-media-carousel";
 import AdCommentRow from "@/features/ads/components/ad-comment-row";
+import { toast } from "@/shared/hooks/use-toast";
 
 const fmtDate = (d?: Date) =>
   d
-    ? new Date(d).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })
+    ? new Date(d).toLocaleDateString(undefined, {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "-";
 
 // Public view — anyone browsing the feed lands here (like/dislike/comment,
 // Learn More). Owners are routed to /ads/ad-details for management instead.
 export default function AdMarketDetailsScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const currentUserId = useAuthStore((state) => state.user?.id);
 
   const ads = useAdsStore((state) => state.ads);
   const isLoadingAds = useAdsStore((state) => state.isLoading);
   const commentsByAd = useAdsStore((state) => state.commentsByAd);
   const toggleReaction = useAdsStore((state) => state.toggleReaction);
   const addComment = useAdsStore((state) => state.addComment);
+  const reportAd = useAdsStore((state) => state.reportAd);
 
   const listRef = useRef<FlatList>(null);
   const [commentText, setCommentText] = useState("");
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
 
   const ad = useMemo(() => ads.find((a) => a.id === id), [ads, id]);
-  const comments = useMemo(() => (id ? commentsByAd[id] ?? [] : []), [commentsByAd, id]);
-
-  if (!ad) {
-    if (isLoadingAds) {
-      return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-          <DetailSkeleton rows={3} />
-        </SafeAreaView>
-      );
-    }
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <Text style={{ color: colors.text, padding: 16 }}>No ad found for id: {id}</Text>
-      </SafeAreaView>
-    );
-  }
+  const isOwner = ad?.advertiser.id === currentUserId;
+  const comments = useMemo(
+    () => (id ? (commentsByAd[id] ?? []) : []),
+    [commentsByAd, id],
+  );
 
   const handleSendComment = () => {
-    if (!commentText.trim()) return;
+    if (!ad || !commentText.trim()) return;
     addComment(ad.id, commentText);
     setCommentText("");
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
   };
 
   const handleOpenLink = () => {
-    if (ad.linkUrl) Linking.openURL(ad.linkUrl).catch(() => {});
+    if (ad?.linkUrl) Linking.openURL(ad.linkUrl).catch(() => {});
   };
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.text} />
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Ad</Text>
-      </View>
+  const handleSubmitReport = async () => {
+    if (!ad || !reportReason.trim()) return;
+    const ok = await reportAd(ad.id, reportReason.trim());
+    if (ok) {
+      toast.success("Report submitted — an admin will review it.");
+      setReportModalOpen(false);
+      setReportReason("");
+    } else {
+      toast.error("Couldn't submit the report.");
+    }
+  };
+
+  // A single, persistent outer wrapper for the whole component (rather
+  // than a separate one per branch below) so layout doesn't remount
+  // between the loading/not-found/main-content branches. This uses a
+  // plain View with explicit useSafeAreaInsets() padding rather than
+  // SafeAreaView — on this screen, SafeAreaView's own inset application
+  // lagged a couple of frames behind the initial mount, visible as the
+  // header briefly rendering under the status bar before snapping into
+  // its correct position. useSafeAreaInsets() reads the same underlying
+  // measurement synchronously during render, with no extra internal
+  // effect/measurement step of its own to lag behind.
+  let content: React.ReactNode;
+
+  if (!ad) {
+    content = isLoadingAds ? (
+      <DetailSkeleton rows={3} />
+    ) : (
+      <Text className="p-4" style={{ color: colors.text }}>
+        No ad found for id: {id}
+      </Text>
+    );
+  } else {
+    content = (
+      <>
+      {/* Header */}
+      <ScreenHeader
+        title="Ad"
+        actions={
+          !isOwner && (
+            <Pressable onPress={() => setReportModalOpen(true)} className="p-1.5">
+              <MaterialCommunityIcons name="flag-outline" size={20} color={colors.textSecondary} />
+            </Pressable>
+          )
+        }
+      />
 
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.flex1}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
       >
@@ -88,18 +128,26 @@ export default function AdMarketDetailsScreen() {
           ref={listRef}
           data={comments}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerClassName="p-4 grow"
           ListHeaderComponent={
-            <View style={{ marginBottom: 8, gap: 12 }}>
-              <View style={styles.sponsoredRow}>
-                <MaterialCommunityIcons name="bullhorn-outline" size={12} color={colors.primary} />
-                <Text style={[styles.sponsoredText, { color: colors.primary }]}>Sponsored</Text>
-                <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>
+            <View className="mb-2 gap-3">
+              {/* Sponsored label */}
+              <View className="flex-row items-center gap-1">
+                <MaterialCommunityIcons
+                  name="bullhorn-outline"
+                  size={12}
+                  color={colors.primary}
+                />
+                <Text className="text-xs font-bold" style={{ color: colors.primary }}>
+                  Sponsored
+                </Text>
+                <Text className="text-xs" style={{ color: colors.textSecondary }}>
                   · {format(ad.createdAt)}
                 </Text>
               </View>
 
-              <View style={styles.headerRow}>
+              {/* Advertiser */}
+              <View className="flex-row items-center gap-2.5">
                 <ClickableAvatar
                   entityType="user"
                   entityId={ad.advertiser.id}
@@ -108,23 +156,39 @@ export default function AdMarketDetailsScreen() {
                   subtitle={ad.advertiser.role}
                   size={40}
                 />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.authorName, { color: colors.text }]}>{ad.advertiser.name}</Text>
-                  <Text style={[styles.authorRole, { color: colors.textSecondary }]}>
+                <View className="flex-1">
+                  <Text className="text-sm font-semibold" style={{ color: colors.text }}>
+                    {ad.advertiser.name}
+                  </Text>
+                  <Text
+                    className="text-[11px] mt-0.5"
+                    style={{ color: colors.textSecondary }}
+                  >
                     {ad.advertiser.role}
                   </Text>
                 </View>
               </View>
 
-              <Text style={[styles.title, { color: colors.text }]}>{ad.title}</Text>
-              <Text style={[styles.text, { color: colors.textSecondary }]}>{ad.text}</Text>
+              <Text className="text-lg font-bold" style={{ color: colors.text }}>
+                {ad.title}
+              </Text>
+              <Text className="text-sm leading-5" style={{ color: colors.textSecondary }}>
+                {ad.text}
+              </Text>
 
               {ad.media && ad.media.length > 0 && <AdMediaCarousel media={ad.media} />}
 
               {ad.fdaApprovalId && (
-                <View style={[styles.fdaRow, { backgroundColor: colors.success + "12" }]}>
-                  <MaterialCommunityIcons name="shield-check-outline" size={14} color={colors.success} />
-                  <Text style={[styles.fdaText, { color: colors.success }]}>
+                <View
+                  className="flex-row items-center gap-1.5 px-2.5 py-2 rounded-lg"
+                  style={{ backgroundColor: colors.success + "12" }}
+                >
+                  <MaterialCommunityIcons
+                    name="shield-check-outline"
+                    size={14}
+                    color={colors.success}
+                  />
+                  <Text className="text-xs font-semibold" style={{ color: colors.success }}>
                     FDA Approved · {ad.fdaApprovalId}
                   </Text>
                 </View>
@@ -133,77 +197,114 @@ export default function AdMarketDetailsScreen() {
               {ad.linkUrl && (
                 <Pressable
                   onPress={handleOpenLink}
-                  style={[styles.linkButton, { backgroundColor: colors.primary }]}
+                  className="flex-row items-center justify-center gap-1.5 py-3 rounded-[10px]"
+                  style={{ backgroundColor: colors.primary }}
                 >
-                  <Text style={styles.linkButtonText}>Learn More</Text>
+                  <Text className="text-white text-sm font-semibold">Learn More</Text>
                   <Ionicons name="open-outline" size={14} color="#fff" />
                 </Pressable>
               )}
 
-              <View style={[styles.actionsRow, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
+              {/* Reactions */}
+              <View
+                className="flex-row gap-6 border-t border-b py-2.5"
+                style={{ borderColor: colors.border }}
+              >
                 <Pressable
                   onPress={() => toggleReaction(ad.id, "like")}
-                  style={styles.actionButton}
+                  className="flex-row items-center gap-1.5"
                   hitSlop={6}
                 >
                   <MaterialCommunityIcons
                     name={ad.userReaction === "like" ? "thumb-up" : "thumb-up-outline"}
                     size={18}
-                    color={ad.userReaction === "like" ? colors.primary : colors.textSecondary}
+                    color={
+                      ad.userReaction === "like" ? colors.primary : colors.textSecondary
+                    }
                   />
                   <Text
-                    style={[styles.actionText, { color: ad.userReaction === "like" ? colors.primary : colors.textSecondary }]}
+                    className="text-[13px] font-semibold"
+                    style={{
+                      color:
+                        ad.userReaction === "like" ? colors.primary : colors.textSecondary,
+                    }}
                   >
                     {ad.likeCount}
                   </Text>
                 </Pressable>
                 <Pressable
                   onPress={() => toggleReaction(ad.id, "dislike")}
-                  style={styles.actionButton}
+                  className="flex-row items-center gap-1.5"
                   hitSlop={6}
                 >
                   <MaterialCommunityIcons
-                    name={ad.userReaction === "dislike" ? "thumb-down" : "thumb-down-outline"}
+                    name={
+                      ad.userReaction === "dislike" ? "thumb-down" : "thumb-down-outline"
+                    }
                     size={18}
-                    color={ad.userReaction === "dislike" ? colors.error : colors.textSecondary}
+                    color={
+                      ad.userReaction === "dislike" ? colors.error : colors.textSecondary
+                    }
                   />
                   <Text
-                    style={[styles.actionText, { color: ad.userReaction === "dislike" ? colors.error : colors.textSecondary }]}
+                    className="text-[13px] font-semibold"
+                    style={{
+                      color:
+                        ad.userReaction === "dislike"
+                          ? colors.error
+                          : colors.textSecondary,
+                    }}
                   >
                     {ad.dislikeCount}
                   </Text>
                 </Pressable>
               </View>
 
-              <Text style={[styles.commentsHeading, { color: colors.textSecondary }]}>
+              <Text className="text-xs font-semibold" style={{ color: colors.textSecondary }}>
                 Comments ({comments.length})
               </Text>
             </View>
           }
           ListEmptyComponent={
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+            <Text
+              className="text-[13px] text-center mt-6"
+              style={{ color: colors.textSecondary }}
+            >
               No comments yet.
             </Text>
           }
           renderItem={({ item }) => <AdCommentRow comment={item} />}
         />
 
-        <View style={[styles.composer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
+        {/* Comment composer */}
+        <View
+          className="flex-row items-end gap-2 px-3 pt-2 pb-2.5 border-t"
+          style={{
+            backgroundColor: colors.background,
+            borderTopColor: colors.border,
+          }}
+        >
           <TextInput
             value={commentText}
             onChangeText={setCommentText}
             placeholder="Write a comment..."
             placeholderTextColor={colors.textSecondary}
-            style={[styles.input, { backgroundColor: colors.backgroundElement, color: colors.text }]}
+            className="flex-1 min-h-9 max-h-[100px] rounded-[18px] px-3.5 py-2 text-sm"
+            style={{
+              backgroundColor: colors.backgroundElement,
+              color: colors.text,
+            }}
             multiline
           />
           <Pressable
             onPress={handleSendComment}
             disabled={!commentText.trim()}
-            style={[
-              styles.sendButton,
-              { backgroundColor: commentText.trim() ? colors.primary : colors.backgroundElement },
-            ]}
+            className="w-9 h-9 rounded-full items-center justify-center"
+            style={{
+              backgroundColor: commentText.trim()
+                ? colors.primary
+                : colors.backgroundElement,
+            }}
           >
             <MaterialCommunityIcons
               name="send"
@@ -213,42 +314,86 @@ export default function AdMarketDetailsScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </>
+    );
+  }
+
+  return (
+    <View
+      className="flex-1"
+      style={{
+        backgroundColor: colors.background,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingLeft: insets.left,
+        paddingRight: insets.right,
+      }}
+    >
+      {content}
+
+      <Modal visible={reportModalOpen} transparent animationType="fade">
+        <View className="flex-1 bg-black/50 justify-center p-6">
+          <View
+            className="rounded-2xl p-[18px] gap-2.5"
+            style={{ backgroundColor: colors.backgroundSecondary }}
+          >
+            <Text className="text-base font-bold" style={{ color: colors.text }}>
+              Report this ad
+            </Text>
+            <Text className="text-xs" style={{ color: colors.textSecondary }}>
+              Tell us what's wrong — an admin will review it.
+            </Text>
+            <TextInput
+              value={reportReason}
+              onChangeText={setReportReason}
+              placeholder="Reason..."
+              placeholderTextColor={colors.textSecondary}
+              className="min-h-20 border rounded-[10px] p-3 text-sm"
+              style={{
+                backgroundColor: colors.backgroundElement,
+                color: colors.text,
+                borderColor: colors.border,
+                textAlignVertical: "top",
+              }}
+              multiline
+              autoFocus
+            />
+            <View className="flex-row gap-2.5 mt-1">
+              <Pressable
+                onPress={() => {
+                  setReportModalOpen(false);
+                  setReportReason("");
+                }}
+                className="flex-1 py-2.5 rounded-[10px] items-center"
+                style={{ backgroundColor: colors.backgroundElement }}
+              >
+                <Text className="text-sm font-semibold" style={{ color: colors.text }}>
+                  Cancel
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSubmitReport}
+                disabled={!reportReason.trim()}
+                className="flex-1 py-2.5 rounded-[10px] items-center"
+                style={{
+                  backgroundColor: reportReason.trim() ? colors.error : colors.backgroundElement,
+                }}
+              >
+                <Text
+                  className="text-sm font-semibold"
+                  style={{ color: reportReason.trim() ? "#fff" : colors.textSecondary }}
+                >
+                  Submit
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  back: { padding: 6 },
-  headerTitle: { fontSize: 16, fontWeight: "700", flex: 1 },
-  listContent: { padding: 16, flexGrow: 1 },
-  sponsoredRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  sponsoredText: { fontSize: 12, fontWeight: "700" },
-  timeAgo: { fontSize: 12 },
-  headerRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  avatar: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  avatarText: { color: "#fff", fontSize: 13, fontWeight: "700" },
-  authorName: { fontSize: 14, fontWeight: "600" },
-  authorRole: { fontSize: 11, marginTop: 1 },
-  title: { fontSize: 18, fontWeight: "700" },
-  text: { fontSize: 14, lineHeight: 20 },
-  fdaRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8 },
-  fdaText: { fontSize: 12, fontWeight: "600" },
-  linkButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 12, borderRadius: 10 },
-  linkButtonText: { color: "#fff", fontSize: 14, fontWeight: "600" },
-  actionsRow: { flexDirection: "row", gap: 24, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 10 },
-  actionButton: { flexDirection: "row", alignItems: "center", gap: 6 },
-  actionText: { fontSize: 13, fontWeight: "600" },
-  commentsHeading: { fontSize: 12, fontWeight: "600" },
-  emptyText: { fontSize: 13, textAlign: "center", marginTop: 24 },
-  composer: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 10, borderTopWidth: 1 },
-  input: { flex: 1, minHeight: 36, maxHeight: 100, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8, fontSize: 14 },
-  sendButton: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  flex1: { flex: 1 },
 });

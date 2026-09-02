@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Pressable, Text, StyleSheet } from "react-native";
+import { View, Pressable, Text } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import PublicProfileCard from "@/features/profile/components/public-profile-card";
+import LoadingImage from "@/shared/components/loading-image";
 import { KycEntityType } from "@/features/profile/types/profile.types";
 
 interface ClickableAvatarProps {
@@ -9,6 +10,7 @@ interface ClickableAvatarProps {
   entityId: string;
   name: string;
   avatarColor?: string;
+  imageUri?: string;
   subtitle?: string;
   size?: number;
 }
@@ -24,6 +26,7 @@ const ClickableAvatar: React.FC<ClickableAvatarProps> = ({
   entityId,
   name,
   avatarColor = "#64748b",
+  imageUri,
   subtitle,
   size = 36,
 }) => {
@@ -43,18 +46,24 @@ const ClickableAvatar: React.FC<ClickableAvatarProps> = ({
 
   return (
     <>
-      <Pressable
-        onPress={() => setOpen(true)}
-        style={[
-          styles.avatar,
-          { width: size, height: size, borderRadius: size / 2, backgroundColor: avatarColor },
-        ]}
-        hitSlop={4}
-      >
-        {entityType === "user" ? (
-          <Text style={[styles.initials, { fontSize: size * 0.4 }]}>{initials}</Text>
+      <Pressable onPress={() => setOpen(true)} hitSlop={4}>
+        {imageUri ? (
+          <LoadingImage
+            source={{ uri: imageUri }}
+            style={{ width: size, height: size }}
+            borderRadius={size / 2}
+          />
         ) : (
-          <MaterialCommunityIcons name={ENTITY_ICON[entityType]} size={size * 0.55} color="#fff" />
+          <View
+            className="items-center justify-center"
+            style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: avatarColor }}
+          >
+            {entityType === "user" ? (
+              <Text className="text-white font-bold" style={{ fontSize: size * 0.4 }}>{initials}</Text>
+            ) : (
+              <MaterialCommunityIcons name={ENTITY_ICON[entityType]} size={size * 0.55} color="#fff" />
+            )}
+          </View>
         )}
       </Pressable>
 
@@ -73,7 +82,3 @@ const ClickableAvatar: React.FC<ClickableAvatarProps> = ({
 
 export default ClickableAvatar;
 
-const styles = StyleSheet.create({
-  avatar: { alignItems: "center", justifyContent: "center" },
-  initials: { color: "#fff", fontWeight: "700" },
-});

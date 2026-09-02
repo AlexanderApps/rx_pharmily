@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, ScrollView, Pressable } from "react-native";
-
+import { ScrollView, Pressable } from "react-native";
 import { ThemedText } from "@/shared/components/themed-text";
 import { ThemedView } from "@/shared/components/themed-view";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -80,40 +79,38 @@ export default function DiscoverScreen() {
   );
 
   return (
-    // Replaced safeArea view with dynamic layout backing
-    <ThemedView style={styles.safeArea}>
-      <SafeAreaView style={{ flex: 1 }}>
-        {/* 1. App Screen Header */}
-        <ThemedView style={styles.header}>
-          <ThemedText style={styles.headerTitle}>Discover</ThemedText>
-          <ThemedText style={styles.headerSubtitle}>
+    <ThemedView className="flex-1">
+      <SafeAreaView className="flex-1">
+        {/* Header */}
+        <ThemedView className="px-5 pb-1">
+          <ThemedText className="text-[28px] font-extrabold">Discover</ThemedText>
+          <ThemedText className="text-sm opacity-60 mt-1">
             Explore curated topics below
           </ThemedText>
         </ThemedView>
 
-        {/* 2. Scrollable Button Row Container */}
-        <ThemedView style={styles.scrollWrapper}>
+        {/* Category chips */}
+        <ThemedView className="py-[15px]">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ flexGrow: 0, maxHeight: 56 }}
-            contentContainerStyle={styles.scrollContainer}
+            className="grow-0 max-h-14"
+            contentContainerClassName="px-5 gap-2.5"
           >
             {CATEGORIES.map((category) => {
               const isActive = activeCategory === category;
-
               return (
                 <Pressable
                   key={category}
                   onPress={() => setActiveCategory(category)}
-                  style={[
-                    styles.button,
-                    isActive ? styles.activeButton : styles.inactiveButton,
-                  ]}
+                  className={`px-[18px] py-2 rounded-full border-[1.5px] items-center justify-center ${
+                    isActive
+                      ? "bg-emerald-500 border-emerald-500"
+                      : "bg-transparent border-neutral-500/20"
+                  }`}
                 >
-                  {/* Text switches dynamically between theme engine style and white selection text */}
                   <ThemedText
-                    style={[styles.buttonText, isActive && styles.activeText]}
+                    className={`text-sm font-semibold ${isActive ? "text-white" : ""}`}
                   >
                     {category}
                   </ThemedText>
@@ -123,25 +120,32 @@ export default function DiscoverScreen() {
           </ScrollView>
         </ThemedView>
 
-        {/* 3. Content Display Area */}
-        <ScrollView contentContainerStyle={styles.contentContainer}>
+        {/* Content */}
+        <ScrollView contentContainerClassName="p-5 gap-[15px]">
           {filteredItems.length > 0 ? (
             filteredItems.map((item) => (
-              <ThemedView key={item.id} style={styles.card}>
-                <ThemedView style={styles.cardHeader}>
-                  <ThemedText style={styles.cardTitle}>{item.title}</ThemedText>
-                  <ThemedView style={styles.tag}>
-                    <ThemedText style={styles.tagText}>
+              <ThemedView
+                key={item.id}
+                className="p-4 rounded-xl border border-neutral-500/15"
+              >
+                <ThemedView className="flex-row justify-between items-center mb-1.5 bg-transparent">
+                  <ThemedText className="text-base font-bold flex-1 mr-2.5">
+                    {item.title}
+                  </ThemedText>
+                  <ThemedView className="bg-neutral-500/10 px-2 py-1 rounded-md">
+                    <ThemedText className="text-[11px] font-bold uppercase">
                       {item.category}
                     </ThemedText>
                   </ThemedView>
                 </ThemedView>
-                <ThemedText style={styles.cardDesc}>{item.desc}</ThemedText>
+                <ThemedText className="text-sm opacity-70 leading-5">
+                  {item.desc}
+                </ThemedText>
               </ThemedView>
             ))
           ) : (
-            <ThemedView style={styles.emptyState}>
-              <ThemedText style={styles.emptyStateText}>
+            <ThemedView className="items-center justify-center py-10">
+              <ThemedText className="opacity-50 text-sm">
                 No articles found in this category.
               </ThemedText>
             </ThemedView>
@@ -151,101 +155,3 @@ export default function DiscoverScreen() {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 20,
-    // paddingTop: 60, // Adjusted padding safely without native SafeAreaView import wrapper
-    paddingBottom: 5,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "800",
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    opacity: 0.6, // Relative contrast step for subheaders across themes
-    marginTop: 4,
-  },
-  scrollWrapper: {
-    paddingVertical: 15,
-  },
-  scrollContainer: {
-    paddingHorizontal: 20,
-    gap: 10,
-  },
-  button: {
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  inactiveButton: {
-    backgroundColor: "transparent",
-    borderColor: "rgba(128,128,128,0.2)", // Subtle adaptivity for borders
-  },
-  activeButton: {
-    backgroundColor: "#10B981", // Keeps your exact active emerald filter theme green
-    borderColor: "#10B981",
-  },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  activeText: {
-    color: "#FFFFFF", // Forces contrast readability explicitly on active background state
-  },
-  contentContainer: {
-    padding: 20,
-    gap: 15,
-  },
-  card: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(128,128,128,0.15)",
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
-    backgroundColor: "transparent",
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    flex: 1,
-    marginRight: 10,
-  },
-  tag: {
-    backgroundColor: "rgba(128,128,128,0.1)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  tagText: {
-    fontSize: 11,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  cardDesc: {
-    fontSize: 14,
-    opacity: 0.7,
-    lineHeight: 20,
-  },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 40,
-  },
-  emptyStateText: {
-    opacity: 0.5,
-    fontSize: 14,
-  },
-});

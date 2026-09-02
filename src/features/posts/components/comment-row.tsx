@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
 import { format } from "timeago.js";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Comment } from "@/features/posts/types/posts.types";
@@ -19,25 +19,23 @@ const CommentRow: React.FC<CommentRowProps> = ({ comment }) => {
     .toUpperCase();
 
   return (
-    <View style={styles.row}>
-      <View style={[styles.avatar, { backgroundColor: comment.author.avatarColor }]}>
-        <Text style={styles.avatarText}>{initials}</Text>
+    <View className="flex-row gap-2.5 py-2">
+      <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: comment.author.avatarColor }}>
+        <Text className="text-white text-[11px] font-bold">{initials}</Text>
       </View>
       <View
-        style={[
-          styles.bubble,
-          { backgroundColor: colors.backgroundElement },
-        ]}
+        className="flex-1 rounded-xl p-2.5 gap-[3px]"
+        style={{ backgroundColor: colors.backgroundElement }}
       >
-        <View style={styles.topLine}>
-          <Text style={[styles.authorName, { color: colors.text }]} numberOfLines={1}>
+        <View className="flex-row justify-between gap-2">
+          <Text className="text-xs font-semibold flex-1" style={{ color: colors.text }} numberOfLines={1}>
             {comment.author.name}
           </Text>
-          <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>
+          <Text className="text-[10px]" style={{ color: colors.textSecondary }}>
             {format(comment.createdAt)}
           </Text>
         </View>
-        <Text style={[styles.text, { color: colors.text }]}>{comment.text}</Text>
+        <Text className="text-[13px] leading-[18px]" style={{ color: colors.text }}>{comment.text}</Text>
       </View>
     </View>
   );
@@ -45,19 +43,3 @@ const CommentRow: React.FC<CommentRowProps> = ({ comment }) => {
 
 export default CommentRow;
 
-const styles = StyleSheet.create({
-  row: { flexDirection: "row", gap: 10, paddingVertical: 8 },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: { color: "#fff", fontSize: 11, fontWeight: "700" },
-  bubble: { flex: 1, borderRadius: 12, padding: 10, gap: 3 },
-  topLine: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
-  authorName: { fontSize: 12, fontWeight: "600", flex: 1 },
-  timeAgo: { fontSize: 10 },
-  text: { fontSize: 13, lineHeight: 18 },
-});

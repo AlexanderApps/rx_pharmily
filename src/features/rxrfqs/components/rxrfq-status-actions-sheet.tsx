@@ -1,5 +1,5 @@
 import React, { forwardRef, useMemo, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import BottomSheet from "@/shared/components/bottom-sheet";
@@ -167,26 +167,24 @@ const RxRfqStatusActionsSheet = forwardRef<
       onChange={handleBottomSheetChange}
       backgroundColor={colors.backgroundSecondary}
     >
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.text }]}>RFQ Actions</Text>
+      <View className="flex-row justify-between items-center px-5 py-4 border-b" style={{ borderBottomColor: colors.border }}>
+        <Text className="text-[17px] font-bold" style={{ color: colors.text }}>RFQ Actions</Text>
         <TouchableOpacity
           onPress={() =>
             (ref as React.RefObject<BottomSheetModal>).current?.dismiss()
           }
-          style={styles.closeButton}
+          className="p-1"
         >
           <MaterialCommunityIcons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.content}>
+      <View className="px-5 pt-4 pb-[30px] gap-2.5">
         {confirming ? (
-          <View style={styles.confirmBlock}>
+          <View className="items-center gap-2 pt-2.5">
             <View
-              style={[
-                styles.confirmIcon,
-                { backgroundColor: colors.error + "18" },
-              ]}
+              className="w-14 h-14 rounded-full items-center justify-center mb-1"
+              style={{ backgroundColor: colors.error + "18" }}
             >
               <MaterialCommunityIcons
                 name="alert-outline"
@@ -194,46 +192,39 @@ const RxRfqStatusActionsSheet = forwardRef<
                 color={colors.error}
               />
             </View>
-            <Text style={[styles.confirmTitle, { color: colors.text }]}>
+            <Text className="text-[17px] font-bold" style={{ color: colors.text }}>
               {confirming.label}?
             </Text>
             <Text
-              style={[
-                styles.confirmDescription,
-                { color: colors.textSecondary },
-              ]}
+              className="text-[13px] text-center px-2.5 leading-[19px]"
+              style={{ color: colors.textSecondary }}
             >
               {confirming.description} This action cannot be undone.
             </Text>
-            <View style={styles.confirmActions}>
+            <View className="flex-row gap-2.5 w-full mt-4">
               <TouchableOpacity
-                style={[
-                  styles.confirmCancelButton,
-                  {
-                    backgroundColor: colors.backgroundElement,
-                    borderColor: colors.border,
-                  },
-                ]}
+                className="flex-1 rounded-[10px] border py-[13px] items-center"
+                style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.border,
+                }}
                 onPress={() => setConfirming(null)}
               >
                 <Text
-                  style={[styles.confirmCancelText, { color: colors.text }]}
+                  className="text-sm font-semibold"
+                  style={{ color: colors.text }}
                 >
                   Go Back
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[
-                  styles.confirmDestructiveButton,
-                  { backgroundColor: colors.error },
-                ]}
+                className="flex-1 rounded-[10px] py-[13px] items-center"
+                style={{ backgroundColor: colors.error }}
                 onPress={handleConfirm}
               >
                 <Text
-                  style={[
-                    styles.confirmDestructiveText,
-                    { color: colors.backgroundSecondary },
-                  ]}
+                  className="text-sm font-semibold"
+                  style={{ color: colors.backgroundSecondary }}
                 >
                   {confirming.label}
                 </Text>
@@ -241,13 +232,13 @@ const RxRfqStatusActionsSheet = forwardRef<
             </View>
           </View>
         ) : actions.length === 0 ? (
-          <View style={styles.emptyBlock}>
+          <View className="items-center gap-2 py-[30px]">
             <MaterialCommunityIcons
               name="information-outline"
               size={32}
               color={colors.textSecondary}
             />
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+            <Text className="text-[13px] text-center px-5" style={{ color: colors.textSecondary }}>
               No further actions are available for this RFQ's current status.
             </Text>
           </View>
@@ -255,25 +246,21 @@ const RxRfqStatusActionsSheet = forwardRef<
           actions.map((action) => (
             <TouchableOpacity
               key={action.key}
-              style={[
-                styles.actionRow,
-                {
-                  borderColor: colors.border,
-                  backgroundColor: colors.backgroundElement,
-                },
-              ]}
+              className="flex-row items-center gap-3 rounded-xl border p-3.5"
+              style={{
+                borderColor: colors.border,
+                backgroundColor: colors.backgroundElement,
+              }}
               onPress={() => handlePress(action)}
               activeOpacity={0.7}
             >
               <View
-                style={[
-                  styles.actionIcon,
-                  {
-                    backgroundColor: action.destructive
-                      ? colors.error + "18"
-                      : colors.backgroundSecondary,
-                  },
-                ]}
+                className="w-[38px] h-[38px] rounded-[10px] items-center justify-center"
+                style={{
+                  backgroundColor: action.destructive
+                    ? colors.error + "18"
+                    : colors.backgroundSecondary,
+                }}
               >
                 <MaterialCommunityIcons
                   name={action.icon as any}
@@ -283,18 +270,14 @@ const RxRfqStatusActionsSheet = forwardRef<
               </View>
               <View style={{ flex: 1 }}>
                 <Text
-                  style={[
-                    styles.actionLabel,
-                    { color: action.destructive ? colors.error : colors.text },
-                  ]}
+                  className="text-sm font-semibold"
+                  style={{ color: action.destructive ? colors.error : colors.text }}
                 >
                   {action.label}
                 </Text>
                 <Text
-                  style={[
-                    styles.actionDescription,
-                    { color: colors.textSecondary },
-                  ]}
+                  className="text-xs mt-0.5"
+                  style={{ color: colors.textSecondary }}
                 >
                   {action.description}
                 </Text>
@@ -312,82 +295,5 @@ const RxRfqStatusActionsSheet = forwardRef<
   );
 });
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  title: { fontSize: 17, fontWeight: "700" },
-  closeButton: { padding: 4 },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 30,
-    gap: 10,
-  },
-
-  actionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 14,
-  },
-  actionIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionLabel: { fontSize: 14, fontWeight: "600" },
-  actionDescription: { fontSize: 12, marginTop: 2 },
-
-  emptyBlock: { alignItems: "center", gap: 8, paddingVertical: 30 },
-  emptyText: { fontSize: 13, textAlign: "center", paddingHorizontal: 20 },
-
-  confirmBlock: { alignItems: "center", gap: 8, paddingTop: 10 },
-  confirmIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
-  },
-  confirmTitle: { fontSize: 17, fontWeight: "700" },
-  confirmDescription: {
-    fontSize: 13,
-    textAlign: "center",
-    paddingHorizontal: 10,
-    lineHeight: 19,
-  },
-  confirmActions: {
-    flexDirection: "row",
-    gap: 10,
-    width: "100%",
-    marginTop: 16,
-  },
-  confirmCancelButton: {
-    flex: 1,
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingVertical: 13,
-    alignItems: "center",
-  },
-  confirmCancelText: { fontSize: 14, fontWeight: "600" },
-  confirmDestructiveButton: {
-    flex: 1,
-    borderRadius: 10,
-    paddingVertical: 13,
-    alignItems: "center",
-  },
-  confirmDestructiveText: { fontSize: 14, fontWeight: "600" },
-});
-
 export default RxRfqStatusActionsSheet;
+

@@ -45,28 +45,27 @@ const NotificationListItem: React.FC<NotificationListItemProps> = ({
   return (
     <Pressable
       onPress={() => onPress(notification)}
-      style={[
-        styles.row,
-        {
-          backgroundColor: notification.read ? colors.backgroundSecondary : colors.primary + "0d",
-          borderColor: colors.border,
-        },
-      ]}
+      className="flex-row items-start gap-3 rounded-[14px] p-3.5"
+      style={{
+        backgroundColor: notification.read ? colors.backgroundSecondary : colors.primary + "0d",
+        borderColor: colors.border,
+        borderWidth: StyleSheet.hairlineWidth,
+      }}
     >
-      <View style={[styles.iconWrap, { backgroundColor: colors.primary + "18" }]}>
+      <View className="w-9 h-9 rounded-[10px] items-center justify-center" style={{ backgroundColor: colors.primary + "18" }}>
         <MaterialCommunityIcons name={icon} size={18} color={colors.primary} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
+        <Text className="text-sm font-bold" style={{ color: colors.text }} numberOfLines={2}>
           {notification.title}
         </Text>
-        <Text style={[styles.body, { color: colors.textSecondary }]} numberOfLines={2}>
+        <Text className="text-xs mt-0.5 leading-[17px]" style={{ color: colors.textSecondary }} numberOfLines={2}>
           {notification.body}
         </Text>
-        <Text style={[styles.time, { color: colors.textSecondary }]}>{format(notification.createdAt)}</Text>
+        <Text className="text-[11px] mt-1.5" style={{ color: colors.textSecondary }}>{format(notification.createdAt)}</Text>
       </View>
-      {!notification.read && <View style={[styles.dot, { backgroundColor: colors.primary }]} />}
-      <Pressable onPress={() => onDelete(notification.id)} hitSlop={8} style={styles.deleteButton}>
+      {!notification.read && <View className="w-2 h-2 rounded-full mt-1.5" style={{ backgroundColor: colors.primary }} />}
+      <Pressable onPress={() => onDelete(notification.id)} hitSlop={8} className="p-0.5">
         <MaterialCommunityIcons name="close" size={16} color={colors.textSecondary} />
       </Pressable>
     </Pressable>
@@ -75,19 +74,3 @@ const NotificationListItem: React.FC<NotificationListItemProps> = ({
 
 export default NotificationListItem;
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 14,
-  },
-  iconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 14, fontWeight: "700" },
-  body: { fontSize: 12, marginTop: 2, lineHeight: 17 },
-  time: { fontSize: 11, marginTop: 6 },
-  dot: { width: 8, height: 8, borderRadius: 4, marginTop: 6 },
-  deleteButton: { padding: 2 },
-});

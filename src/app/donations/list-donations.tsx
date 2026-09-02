@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { router } from "expo-router";
-import { Pressable } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { Pressable, Platform} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -23,16 +23,25 @@ export default function Donations() {
   const currentUserId = useAuthStore((state) => state.user?.id);
   const donations = useDonationStore((state) => state.donations);
   const deleteDonation = useDonationStore((state) => state.deleteDonation);
+  const { mine } = useLocalSearchParams<{ mine?: string }>();
 
+  // "View All" from the index page's "My Active Donations" section links
+  // here with ?mine=true, scoping the list to donations this user created
+  // — otherwise this is the public marketplace view, which (like every
+  // other browse screen) only shows what's actually open to claim; hidden
+  // and closed donations aren't available regardless of who created them.
   const donationCards = useMemo(
     () =>
       [...donations]
+        .filter((d) =>
+          mine === "true" ? d.createdBy === currentUserId : d.status === "opened",
+        )
         .sort(
           (a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         )
         .map(convertToCardData),
-    [donations],
+    [donations, mine, currentUserId],
   );
 
   const handleDelete = async (id: string) => {
@@ -69,6 +78,7 @@ export default function Donations() {
             }}
           >
             {/* Back Button */}
+            {Platform.OS !== "web" && (
             <Pressable
               onPress={() => router.back()}
               style={{
@@ -82,6 +92,7 @@ export default function Donations() {
             >
               <Ionicons name="arrow-back" size={22} color={colors.text} />
             </Pressable>
+            )}
 
             {/* Search */}
             <ThemedView style={{ flex: 1 }}>

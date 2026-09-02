@@ -2,7 +2,6 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   View,
   ScrollView,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -20,7 +19,6 @@ import FormSectionContainer from "@/shared/components/forms/form-section-contain
 import { ThemedView } from "@/shared/components/themed-view";
 import FormButton from "@/shared/components/forms/form-button";
 import MyFacilityPicker from "@/shared/components/forms/my-facility-picker";
-import CategoriesMultiSelect from "@/shared/components/forms/categories-multiselect";
 import StatusDropdown from "@/features/rxrfqs/components/rxrfq-status-dropdown";
 import { useTheme } from "@/shared/hooks/use-theme";
 import DatePicker from "@/shared/components/date-picker";
@@ -72,45 +70,45 @@ const RxRfqsResponseForm: React.FC<{
 
   return (
     <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: colors.background }]}
+      className="flex-1"
+      style={{ backgroundColor: colors.background }}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
+        className="flex-1"
       >
         {/* Enhanced Header Section with Back Navigation */}
         <ThemedView
-          style={[
-            styles.headerContainer,
-            {
-              backgroundColor: colors.background,
-              borderBottomColor: colors.border,
-            },
-          ]}
+          className="flex-row items-center justify-center px-4 py-3.5 border-b-[0.5px] relative min-h-14"
+          style={{
+            backgroundColor: colors.background,
+            borderBottomColor: colors.border,
+          }}
         >
           {/* 1. Left Action Button */}
+          {Platform.OS !== "web" && (
           <TouchableOpacity
             onPress={() => router.back()}
-            style={[
-              styles.backButton,
-              {
-                backgroundColor:
-                  colors.backgroundElement || "rgba(128,128,128,0.08)",
-              },
-            ]}
+            className="absolute left-4 z-10 p-2 rounded-xl w-10 h-10 items-center justify-center"
+            style={{
+              backgroundColor:
+                colors.backgroundElement || "rgba(128,128,128,0.08)",
+            }}
             accessibilityLabel="Go back"
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="arrow-back-sharp" size={22} color={colors.text} />
           </TouchableOpacity>
+          )}
 
           {/* 2. Centered Content Container */}
-          <ThemedView style={styles.headerTextContainer}>
-            <ThemedText style={[styles.headerTitle, { color: colors.text }]}>
+          <ThemedView className="items-center justify-center max-w-[70%]">
+            <ThemedText className="text-[17px] font-bold -tracking-[0.2px]" style={{ color: colors.text }}>
               RxRFQ Response
             </ThemedText>
             <ThemedText
-              style={[styles.headerSubtitle, { color: colors.textSecondary }]}
+              className="text-xs font-normal mt-0.5 opacity-80"
+              style={{ color: colors.textSecondary }}
             >
               Create a new response for quote entry
             </ThemedText>
@@ -118,8 +116,8 @@ const RxRfqsResponseForm: React.FC<{
         </ThemedView>
 
         <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          className="flex-1"
+          contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: 16 }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Facility Section */}
@@ -191,25 +189,25 @@ const RxRfqsResponseForm: React.FC<{
           </FormSectionContainer>
 
           {/* Action Buttons */}
-          <View style={styles.buttonContainer}>
+          <View className="flex-row gap-3 mt-8 mb-4">
             <FormButton
               title="Reset"
               onPress={handleReset}
               variant="secondary"
-              style={styles.resetButton}
+              style={{ flex: 1 }}
               disabled={isLoading || isSubmitting}
             />
             <FormButton
               title="Submit RFQ"
               onPress={handleSubmitPress}
               variant="primary"
-              style={styles.submitButton}
+              style={{ flex: 1.2 }}
               isLoading={isLoading || isSubmitting}
             />
           </View>
 
           {/* Bottom Spacing */}
-          <View style={styles.bottomSpacing} />
+          <View className="h-5" />
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -232,88 +230,5 @@ const RxRfqsResponseForm: React.FC<{
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
-  header: {
-    marginBottom: 24,
-    paddingBottom: 16,
-    // borderBottomWidth: 2,
-  },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center", // Keeps the title perfectly centered
-    paddingHorizontal: 16,
-    paddingVertical: 14, // Marginally taller for a premium feel
-    borderBottomWidth: 0.5, // Injected distinct standard separation lines
-    position: "relative", // Establishes anchor boundary for child nodes
-    minHeight: 56, // Guarantees reliable structural consistency
-  },
-  backButton: {
-    position: "absolute", // Pulls button out of the structural flex line
-    left: 16, // Pin safely to the left layout margin
-    zIndex: 10, // Guarantees tap precedence over title blocks
-    padding: 8,
-    borderRadius: 12, // Softer premium edge curve
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTextContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    maxWidth: "70%", // Safely prevents long titles from clipping beneath the back button
-  },
-  headerTitle: {
-    fontSize: 17, // Mobile optimal text tracking weight
-    fontWeight: "700",
-    letterSpacing: -0.2, // Subtle text tracking tightener for high-end look
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    fontWeight: "400",
-    marginTop: 2,
-    opacity: 0.8,
-  },
-  statusStack: {
-    flexDirection: "column",
-    gap: 16,
-    width: "100%",
-  },
-  // Added layout alignment adjustments specifically for the active toggle container
-  checkboxWrapper: {
-    marginTop: 6, // Pushes checkbox down slightly to account for the dropdown's top label space
-    width: "100%",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 32,
-    marginBottom: 16,
-  },
-  resetButton: {
-    flex: 1,
-  },
-  submitButton: {
-    flex: 1.2,
-  },
-  bottomSpacing: {
-    height: 20,
-  },
-});
 
 export default RxRfqsResponseForm;

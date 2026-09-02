@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { ChatMedia } from "@/features/chat/types/chat.types";
@@ -18,13 +18,16 @@ const ChatVideoMessage: React.FC<{ uri: string }> = ({ uri }) => {
   });
 
   return (
-    <View style={[styles.media, { backgroundColor: colors.backgroundElement }]}>
+    <View
+      className="w-[220px] h-[220px] rounded-[14px] overflow-hidden"
+      style={{ backgroundColor: colors.backgroundElement }}
+    >
       <VideoView
         player={player}
-        style={styles.media}
+        className="w-[220px] h-[220px] rounded-[14px]"
         nativeControls
-        allowsFullscreen
         contentFit="cover"
+        fullscreenOptions={{ enable: true }}
       />
     </View>
   );
@@ -38,7 +41,7 @@ const ChatMediaMessage: React.FC<ChatMediaMessageProps> = ({ media }) => {
   return (
     <LoadingImage
       source={{ uri: media.uri }}
-      style={styles.media}
+      style={{ width: 220, height: 220, borderRadius: 14 }}
       borderRadius={14}
       resizeMode="cover"
       expandable
@@ -47,11 +50,3 @@ const ChatMediaMessage: React.FC<ChatMediaMessageProps> = ({ media }) => {
 };
 
 export default ChatMediaMessage;
-
-const styles = StyleSheet.create({
-  media: {
-    width: 220,
-    height: 220,
-    borderRadius: 14,
-  },
-});

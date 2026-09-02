@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, Platform} from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,12 +15,10 @@ type HistoryLink = {
 };
 
 export default function HistoryNavScreen() {
-  const {colors} = useTheme();
+  const { colors } = useTheme();
 
-  const pressedOverlay =
-    colors.text === "#ffffff"
-      ? "rgba(255, 255, 255, 0.05)"
-      : "rgba(0, 0, 0, 0.03)";
+  // Platform-safe dynamic press highlights matching other screens
+  const activeBg = colors.text === "#ffffff" ? "active:bg-white/5" : "active:bg-black/3";
 
   const historySections: { title: string; links: HistoryLink[] }[] = [
     {
@@ -57,101 +55,82 @@ export default function HistoryNavScreen() {
   ];
 
   return (
-    <ThemedView style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        {/* Top Custom Header */}
-        <View style={styles.headerRow}>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && { opacity: 0.7 },
-            ]}
+    <ThemedView className="flex-1">
+      <SafeAreaView className="flex-1">
+        {/* Header Row */}
+        <View className="flex-row items-center px-4 py-3">
+          {Platform.OS !== "web" && (
+          <Pressable 
+            onPress={() => router.back()} 
+            className="p-1 mr-3 active:opacity-70"
           >
-            <MaterialCommunityIcons
-              name="arrow-left"
-              size={24}
-              color={colors.text}
-            />
+            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
           </Pressable>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
+          )}
+          <Text 
+            className="text-[20px] font-semibold" 
+            style={{ color: colors.text }}
+          >
             History
           </Text>
         </View>
 
-        <ScrollView
-          style={[styles.container, { backgroundColor: colors.background }]}
-          contentContainerStyle={styles.contentContainer}
+        {/* Scrollable Container */}
+        <ScrollView 
+          className="flex-1"
+          style={{ backgroundColor: colors.background }}
+          contentContainerClassName="px-4 pt-4 pb-10 gap-6"
           showsVerticalScrollIndicator={false}
         >
           {historySections.map((section) => (
-            <View key={section.title} style={styles.sectionContainer}>
-              <Text
-                style={[styles.sectionTitle, { color: colors.textSecondary }]}
+            <View key={section.title} className="gap-2">
+              <Text 
+                className="text-[12px] font-semibold uppercase tracking-[0.6px] pl-1" 
+                style={{ color: colors.textSecondary }}
               >
                 {section.title}
               </Text>
-
-              <View
-                style={[
-                  styles.linksWrapper,
-                  { backgroundColor: colors.backgroundSecondary },
-                ]}
+              
+              <View 
+                className="rounded-[16px] overflow-hidden" 
+                style={{ backgroundColor: colors.backgroundSecondary }}
               >
                 {section.links.map((link, index) => {
                   const isLast = index === section.links.length - 1;
-
                   return (
                     <Pressable
                       key={link.id}
                       onPress={link.onPress}
-                      style={({ pressed }) => [
-                        styles.linkItem,
-                        {
-                          backgroundColor: pressed
-                            ? pressedOverlay
-                            : "transparent",
-                        },
-                        !isLast && {
-                          borderBottomColor: colors.border,
-                          borderBottomWidth: 0.5,
-                        },
-                      ]}
+                      className={`flex-row items-center justify-between px-4 py-4 ${activeBg}`}
+                      style={!isLast ? { borderBottomColor: colors.border, borderBottomWidth: 0.5 } : undefined}
                     >
-                      <View style={styles.linkLeftContent}>
-                        <View
-                          style={[
-                            styles.iconWrapper,
-                            { backgroundColor: colors.backgroundElement },
-                          ]}
+                      <View className="flex-row items-center gap-3.5 flex-1">
+                        {/* Icon Wrapper Badge */}
+                        <View 
+                          className="w-10 h-10 rounded-[10px] items-center justify-center"
+                          style={{ backgroundColor: colors.backgroundElement }}
                         >
-                          <MaterialCommunityIcons
-                            name={link.icon}
-                            size={22}
-                            color={colors.text}
-                          />
+                          <MaterialCommunityIcons name={link.icon} size={22} color={colors.text} />
                         </View>
-                        <View style={styles.textMetaWrapper}>
-                          <Text
-                            style={[styles.linkText, { color: colors.text }]}
+                        
+                        {/* Text Meta Content */}
+                        <View className="flex-1 gap-0.5">
+                          <Text 
+                            className="text-[16px] font-semibold" 
+                            style={{ color: colors.text }}
                           >
                             {link.label}
                           </Text>
-                          <Text
-                            style={[
-                              styles.descriptionText,
-                              { color: colors.textSecondary },
-                            ]}
+                          <Text 
+                            className="text-[12px] font-normal" 
+                            style={{ color: colors.textSecondary }}
                           >
                             {link.description}
                           </Text>
                         </View>
                       </View>
-                      <MaterialCommunityIcons
-                        name="chevron-right"
-                        size={20}
-                        color={colors.border}
-                      />
+                      
+                      <MaterialCommunityIcons name="chevron-right" size={20} color={colors.border} />
                     </Pressable>
                   );
                 })}
@@ -163,80 +142,3 @@ export default function HistoryNavScreen() {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backButton: {
-    padding: 4,
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-  },
-  contentContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 40,
-    gap: 24,
-  },
-  sectionContainer: {
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-    paddingLeft: 4,
-  },
-  linksWrapper: {
-    borderRadius: 16,
-    overflow: "hidden",
-    // elevation: 2,
-    // shadowColor: "#000",
-    // shadowOpacity: 0.04,
-    // shadowRadius: 8,
-    // shadowOffset: { width: 0, height: 2 },
-  },
-  linkItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  linkLeftContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    flex: 1,
-  },
-  iconWrapper: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  textMetaWrapper: {
-    flex: 1,
-    gap: 2,
-  },
-  linkText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  descriptionText: {
-    fontSize: 12,
-    fontWeight: "400",
-  },
-});

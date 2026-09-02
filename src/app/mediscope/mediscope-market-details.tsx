@@ -1,5 +1,5 @@
 import React, { useMemo, useRef } from "react";
-import { View, Text, Pressable, ScrollView, StyleSheet, Share } from "react-native";
+import { View, Text, Pressable, ScrollView, Share, Platform} from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -32,21 +32,21 @@ export default function MediscopeMarketDetailsScreen() {
 
   const request = useMemo(() => requests.find((r) => r.id === id), [requests, id]);
   const responses = useMemo(
-    () => (id ? responsesByRequest[id] ?? [] : []),
+    () => (id ? (responsesByRequest[id] ?? []) : []),
     [responsesByRequest, id],
   );
 
   if (!request) {
     if (isLoadingRequests) {
       return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
           <DetailSkeleton rows={4} />
         </SafeAreaView>
       );
     }
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <Text style={{ color: colors.text, padding: 16 }}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <Text className="p-4" style={{ color: colors.text }}>
           No MediScope request found for id: {id}
         </Text>
       </SafeAreaView>
@@ -75,14 +75,26 @@ export default function MediscopeMarketDetailsScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={[styles.navbar, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      {/* Navbar */}
+      <View
+        className="flex-row items-center px-4 py-3 border-b gap-3"
+        style={{ borderBottomColor: colors.border }}
+      >
+        {Platform.OS !== "web" && (
+        <Pressable
+          onPress={() => router.back()}
+          className="w-9 h-9 justify-center items-center"
+          hitSlop={8}
+        >
           <Ionicons name="arrow-back-outline" size={22} color={colors.text} />
         </Pressable>
-        <View style={styles.navbarMeta}>
-          <Text style={[styles.navbarCode, { color: colors.text }]}>{request.code}</Text>
-          <Text style={[styles.navbarTime, { color: colors.textSecondary }]}>
+        )}
+        <View className="flex-1">
+          <Text className="text-[15px] font-medium" style={{ color: colors.text }}>
+            {request.code}
+          </Text>
+          <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>
             {format(request.createdAt)}
           </Text>
         </View>
@@ -91,21 +103,37 @@ export default function MediscopeMarketDetailsScreen() {
           fileName={`MediScope-${request.code}`}
           getHtml={() => buildMediscopeSummaryHtml(request, responses)}
         />
-        <Pressable onPress={handleShare} style={styles.shareBtn} hitSlop={8}>
+        <Pressable
+          onPress={handleShare}
+          className="w-9 h-9 justify-center items-center"
+          hitSlop={8}
+        >
           <Ionicons name="share-outline" size={20} color={colors.textSecondary} />
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerClassName="px-4 pt-4">
         {request.imageUrl ? (
-          <LoadingImage source={{ uri: request.imageUrl }} style={styles.image} resizeMode="cover" expandable />
+          <LoadingImage
+            source={{ uri: request.imageUrl }}
+            style={{ width: "100%", height: 200, borderRadius: 16, marginBottom: 14 }}
+            resizeMode="cover"
+            expandable
+          />
         ) : (
-          <MediscopeNamePlaceholder product={request.product} style={styles.image} fontSize={24} />
+          <MediscopeNamePlaceholder
+            product={request.product}
+            className="w-full h-[200px] rounded-2xl mb-3.5"
+            fontSize={24}
+          />
         )}
 
-        <Text style={[styles.productTitle, { color: colors.text }]}>{request.product}</Text>
+        <Text className="text-[19px] font-bold mb-3" style={{ color: colors.text }}>
+          {request.product}
+        </Text>
 
-        <View style={styles.hero}>
+        {/* Facility hero */}
+        <View className="flex-row items-center gap-2.5 mb-3.5">
           <ClickableAvatar
             entityType="facility"
             entityId={request.facility}
@@ -114,11 +142,17 @@ export default function MediscopeMarketDetailsScreen() {
             subtitle="Posted this request"
             size={44}
           />
-          <View style={styles.heroMeta}>
-            <Text style={[styles.heroName, { color: colors.text }]}>{request.facilityName}</Text>
-            <View style={styles.heroLocationRow}>
-              <MaterialCommunityIcons name="map-marker-outline" size={13} color={colors.textSecondary} />
-              <Text style={[styles.heroLocation, { color: colors.textSecondary }]}>
+          <View className="flex-1 gap-0.5">
+            <Text className="text-sm font-semibold" style={{ color: colors.text }}>
+              {request.facilityName}
+            </Text>
+            <View className="flex-row items-center gap-1">
+              <MaterialCommunityIcons
+                name="map-marker-outline"
+                size={13}
+                color={colors.textSecondary}
+              />
+              <Text className="text-xs" style={{ color: colors.textSecondary }}>
                 {request.facilityLocation}
               </Text>
             </View>
@@ -126,17 +160,25 @@ export default function MediscopeMarketDetailsScreen() {
         </View>
 
         {request.comment ? (
-          <Text style={[styles.description, { color: colors.textSecondary }]}>
+          <Text
+            className="text-sm leading-5 mb-3.5"
+            style={{ color: colors.textSecondary }}
+          >
             {request.comment}
           </Text>
         ) : null}
 
         {request.submissionDeadline && (
           <View
-            style={[styles.deadlineBanner, { backgroundColor: colors.warning + "14" }]}
+            className="flex-row items-center gap-1.5 rounded-[10px] px-3 py-2.5"
+            style={{ backgroundColor: colors.warning + "14" }}
           >
-            <MaterialCommunityIcons name="calendar-clock-outline" size={14} color={colors.warning} />
-            <Text style={[styles.deadlineText, { color: colors.warning }]}>
+            <MaterialCommunityIcons
+              name="calendar-clock-outline"
+              size={14}
+              color={colors.warning}
+            />
+            <Text className="text-xs font-semibold" style={{ color: colors.warning }}>
               Responses needed by{" "}
               {new Date(request.submissionDeadline).toLocaleDateString(undefined, {
                 day: "2-digit",
@@ -147,17 +189,18 @@ export default function MediscopeMarketDetailsScreen() {
           </View>
         )}
 
-        <View style={{ height: canRespond ? 100 : 24 }} />
+        <View className={canRespond ? "h-[100px]" : "h-6"} />
       </ScrollView>
 
       {canRespond && (
-        <View style={styles.fabGroup}>
+        <View className="absolute bottom-6 left-4 right-4">
           <Pressable
             onPress={() => responseSheetRef.current?.present()}
-            style={[styles.fabPrimary, { backgroundColor: colors.primary }]}
+            className="h-12 rounded-[14px] flex-row items-center justify-center gap-2"
+            style={{ backgroundColor: colors.primary }}
           >
             <MaterialCommunityIcons name="reply-outline" size={18} color="#fff" />
-            <Text style={styles.fabPrimaryText}>Respond</Text>
+            <Text className="text-white text-[15px] font-semibold">Respond</Text>
           </Pressable>
         </View>
       )}
@@ -172,48 +215,3 @@ export default function MediscopeMarketDetailsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  navbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    gap: 12,
-  },
-  backBtn: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
-  navbarMeta: { flex: 1 },
-  navbarCode: { fontSize: 15, fontWeight: "500" },
-  navbarTime: { fontSize: 12, marginTop: 1 },
-  shareBtn: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 16 },
-  image: { width: "100%", height: 200, borderRadius: 16, marginBottom: 14 },
-  productTitle: { fontSize: 19, fontWeight: "700", marginBottom: 12 },
-  hero: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 },
-  heroIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: "center", alignItems: "center" },
-  heroMeta: { flex: 1, gap: 2 },
-  heroName: { fontSize: 14, fontWeight: "600" },
-  heroLocationRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  heroLocation: { fontSize: 12 },
-  description: { fontSize: 14, lineHeight: 20, marginBottom: 14 },
-  deadlineBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  deadlineText: { fontSize: 12, fontWeight: "600" },
-  fabGroup: { position: "absolute", bottom: 24, left: 16, right: 16 },
-  fabPrimary: {
-    height: 48,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  fabPrimaryText: { color: "#fff", fontSize: 15, fontWeight: "600" },
-});

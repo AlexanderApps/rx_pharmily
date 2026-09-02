@@ -12,10 +12,26 @@ import { useNotificationStore } from "@/features/notifications/hooks/use-notific
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 
 function mapJobRow(row: any): Job {
+  // companyName is only stored for a custom (unregistered) company —
+  // when linked to a real facility or organization, derive the display
+  // name from the already-loaded store, same pattern mapDonationRow
+  // already uses for donations.facility_id -> facilityName.
+  let companyName = row.company_name ?? "";
+  if (!row.is_custom) {
+    if (row.facility_id) {
+      companyName =
+        useProfileStore.getState().facilities.find((f) => f.id === row.facility_id)?.name ?? "Unknown facility";
+    } else if (row.organization_id) {
+      companyName =
+        useProfileStore.getState().organizations.find((o) => o.id === row.organization_id)?.name ??
+        "Unknown organization";
+    }
+  }
+
   return {
     id: row.id,
     title: row.title,
-    companyName: row.company_name,
+    companyName,
     companyLogo: row.company_logo ?? "",
     location: row.location,
     jobType: row.job_type,
@@ -31,6 +47,10 @@ function mapJobRow(row: any): Job {
     applicationDeadline: row.application_deadline ? new Date(row.application_deadline) : undefined,
     postedBy: row.posted_by,
     status: row.status,
+    categories: row.categories ?? [],
+    facilityId: row.facility_id ?? undefined,
+    organizationId: row.organization_id ?? undefined,
+    isCustom: row.is_custom,
   };
 }
 
@@ -67,7 +87,7 @@ type RxJobsStore = {
   isSaved: (jobId: string) => boolean;
 
   addJob: (data: JobFormData) => Promise<string | undefined>;
-  updateJob: (id: string, data: JobFormData) => Promise<void>;
+  updateJob: (id: string, data: JobFormData) => Promise<boolean>;
   closeJob: (id: string) => Promise<void>;
   cancelJob: (id: string) => Promise<void>;
   reopenJob: (id: string) => Promise<void>;
@@ -169,7 +189,7 @@ export const useRxJobsStore = create<RxJobsStore>((set, get) => ({
       .from("jobs")
       .insert({
         title: data.title,
-        company_name: data.companyName,
+        company_name: data.isCustom ? data.companyName : null,
         company_logo: data.companyLogo || null,
         location: data.location,
         job_type: data.jobType,
@@ -180,6 +200,10 @@ export const useRxJobsStore = create<RxJobsStore>((set, get) => ({
         application_deadline: data.applicationDeadline?.toISOString() ?? null,
         posted_by: userId,
         status: "open",
+        categories: data.categories,
+        facility_id: data.isCustom ? null : data.facilityId ?? null,
+        organization_id: data.isCustom ? null : data.organizationId ?? null,
+        is_custom: data.isCustom,
       })
       .select()
       .single();
@@ -206,7 +230,7 @@ export const useRxJobsStore = create<RxJobsStore>((set, get) => ({
       .from("jobs")
       .update({
         title: data.title,
-        company_name: data.companyName,
+        company_name: data.isCustom ? data.companyName : null,
         company_logo: data.companyLogo || null,
         location: data.location,
         job_type: data.jobType,
@@ -215,13 +239,18 @@ export const useRxJobsStore = create<RxJobsStore>((set, get) => ({
         description: data.description,
         urgency: data.urgency,
         application_deadline: data.applicationDeadline?.toISOString() ?? null,
+        categories: data.categories,
+        facility_id: data.isCustom ? null : data.facilityId ?? null,
+        organization_id: data.isCustom ? null : data.organizationId ?? null,
+        is_custom: data.isCustom,
       })
       .eq("id", id);
     if (error) {
       console.warn("[rxjobs] updateJob failed:", error.message);
-      return;
+      return false;
     }
     await get().fetchJob(id);
+    return true;
   },
 
   closeJob: async (id) => {

@@ -18,7 +18,7 @@ const RxRfqReadonlyItemsList: React.FC<RxRfqReadonlyItemsListProps> = ({
 
   if (items.length === 0) {
     return (
-      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+      <Text className="text-[13px] italic" style={{ color: colors.textSecondary }}>
         No items added to this RFQ.
       </Text>
     );
@@ -26,53 +26,50 @@ const RxRfqReadonlyItemsList: React.FC<RxRfqReadonlyItemsListProps> = ({
 
   return (
     <View
-      style={[
-        styles.list,
-        {
-          backgroundColor: colors.backgroundElement,
-          borderColor: colors.border,
-        },
-      ]}
+      className="rounded-xl border overflow-hidden"
+      style={{
+        backgroundColor: colors.backgroundElement,
+        borderColor: colors.border,
+      }}
     >
       {items.map((item, idx) => (
         <View
           key={item.id}
-          style={[
-            styles.row,
-            idx < items.length - 1 && {
-              borderBottomWidth: StyleSheet.hairlineWidth,
-              borderBottomColor: colors.border,
-            },
-          ]}
+          className="flex-row items-center justify-between px-3.5 py-3 gap-3"
+          style={
+            idx < items.length - 1
+              ? { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }
+              : undefined
+          }
         >
-          <View style={styles.rowLeft}>
+          <View className="flex-1 gap-0.5">
             <Text
-              style={[styles.product, { color: colors.text }]}
+              className="text-sm font-medium"
+              style={{ color: colors.text }}
               numberOfLines={1}
             >
               {getProductName(item.productId)}
             </Text>
             {item.comment?.trim() ? (
               <Text
-                style={[styles.comment, { color: colors.textSecondary }]}
+                className="text-xs"
+                style={{ color: colors.textSecondary }}
                 numberOfLines={1}
               >
                 {item.comment}
               </Text>
             ) : null}
           </View>
-          <View style={styles.rowRight}>
-            <Text style={[styles.qty, { color: colors.text }]}>
+          <View className="items-end gap-1">
+            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
               {item.quantity} {item.uom}
             </Text>
             {item.allowAlternatives && (
               <View
-                style={[
-                  styles.altPill,
-                  { backgroundColor: colors.info + "18" },
-                ]}
+                className="px-2 py-0.5 rounded-md"
+                style={{ backgroundColor: colors.info + "18" }}
               >
-                <Text style={[styles.altPillText, { color: colors.info }]}>
+                <Text className="text-[11px] font-semibold" style={{ color: colors.info }}>
                   Alt. OK
                 </Text>
               </View>
@@ -84,24 +81,5 @@ const RxRfqReadonlyItemsList: React.FC<RxRfqReadonlyItemsListProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  list: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  rowLeft: { flex: 1, gap: 2 },
-  product: { fontSize: 14, fontWeight: "500" },
-  comment: { fontSize: 12 },
-  rowRight: { alignItems: "flex-end", gap: 4 },
-  qty: { fontSize: 13, fontWeight: "500" },
-  altPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
-  altPillText: { fontSize: 11, fontWeight: "600" },
-  emptyText: { fontSize: 13, fontStyle: "italic" },
-});
-
 export default RxRfqReadonlyItemsList;
+

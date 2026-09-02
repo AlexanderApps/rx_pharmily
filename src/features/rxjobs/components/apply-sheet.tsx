@@ -40,17 +40,17 @@ const ApplySheet = forwardRef<BottomSheetModal, ApplySheetProps>(
         onChange={handleBottomSheetChange}
         backgroundColor={colors.backgroundSecondary}
       >
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.title, { color: colors.text }]}>
+        <View className="px-5 pb-3.5 gap-0.5" style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
+          <Text className="text-base font-bold" style={{ color: colors.text }}>
             Apply to {job?.title ?? "this job"}
           </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          <Text className="text-xs" style={{ color: colors.textSecondary }}>
             {job?.companyName}
           </Text>
         </View>
 
-        <View style={styles.content}>
-          <Text style={[styles.label, { color: colors.text }]}>
+        <View className="px-5 pt-4 gap-2.5">
+          <Text className="text-[13px] font-semibold" style={{ color: colors.text }}>
             Cover note (optional)
           </Text>
           <TextInput
@@ -58,36 +58,35 @@ const ApplySheet = forwardRef<BottomSheetModal, ApplySheetProps>(
             onChangeText={setCoverNote}
             placeholder="Briefly introduce yourself and why you're a good fit..."
             placeholderTextColor={colors.textSecondary}
-            style={[
-              styles.textArea,
-              {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
-                color: colors.text,
-              },
-            ]}
+            className="min-h-[120px] border rounded-[10px] p-3 text-sm"
+            style={{
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+              color: colors.text,
+            }}
             multiline
             textAlignVertical="top"
           />
 
-          <View style={styles.infoRow}>
+          <View className="flex-row items-center gap-1.5">
             <MaterialCommunityIcons
               name="information-outline"
               size={14}
               color={colors.textSecondary}
             />
-            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+            <Text className="text-[11px] flex-1" style={{ color: colors.textSecondary }}>
               Your application is sent immediately — you can't undo this.
             </Text>
           </View>
 
           <TouchableOpacity
-            style={[styles.submitButton, { backgroundColor: colors.primary }]}
+            className="flex-row items-center justify-center gap-2 py-3.5 rounded-xl mt-2"
+            style={{ backgroundColor: colors.primary }}
             onPress={handleSubmit}
             activeOpacity={0.85}
           >
             <MaterialCommunityIcons name="send-outline" size={17} color="#fff" />
-            <Text style={styles.submitButtonText}>Submit Application</Text>
+            <Text className="text-white text-[15px] font-semibold">Submit Application</Text>
           </TouchableOpacity>
         </View>
       </BottomSheet>
@@ -99,34 +98,3 @@ ApplySheet.displayName = "ApplySheet";
 
 export default ApplySheet;
 
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 2,
-  },
-  title: { fontSize: 16, fontWeight: "700" },
-  subtitle: { fontSize: 12 },
-  content: { paddingHorizontal: 20, paddingTop: 16, gap: 10 },
-  label: { fontSize: 13, fontWeight: "600" },
-  textArea: {
-    minHeight: 120,
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 14,
-  },
-  infoRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  infoText: { fontSize: 11, flex: 1 },
-  submitButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  submitButtonText: { color: "#fff", fontSize: 15, fontWeight: "600" },
-});

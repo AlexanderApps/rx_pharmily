@@ -1,7 +1,6 @@
 import React from "react";
 import {
   TouchableOpacity,
-  StyleSheet,
   Text,
   ActivityIndicator,
   View,
@@ -10,6 +9,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { noSelectStyle } from "@/shared/constants/text-selection";
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
 
@@ -56,70 +56,39 @@ const FormButton: React.FC<FormButtonProps> = ({
       },
     };
 
-    return [
-      styles.button,
-      variantStyles[variant],
-      isDisabled && { opacity: 0.6 },
-      style,
-    ];
+    return [variantStyles[variant], isDisabled && { opacity: 0.6 }, style];
   };
 
   const textColor = variant === "secondary" ? colors.text : "#ffffff";
 
   return (
     <TouchableOpacity
+      className={`py-3 px-4 rounded-md items-center justify-center min-h-11 ${
+        isDisabled ? "cursor-not-allowed" : "cursor-pointer hover:opacity-90"
+      }`}
       style={getButtonStyles()}
       onPress={onPress}
       disabled={isDisabled}
       activeOpacity={isDisabled ? 1 : 0.7}
     >
       {isLoading ? (
-        <View style={styles.loadingContainer}>
+        <View className="flex-row items-center justify-center gap-2">
           <ActivityIndicator size="small" color={textColor} />
 
-          <Text style={[styles.text, { color: textColor }]}>Loading...</Text>
+          <Text className="text-sm font-semibold" style={[{ color: textColor }, noSelectStyle]}>Loading...</Text>
         </View>
       ) : (
-        <View style={styles.content}>
+        <View className="flex-row items-center justify-center gap-2">
           {icon && (
             <MaterialCommunityIcons name={icon} size={18} color={textColor} />
           )}
 
-          <Text style={[styles.text, { color: textColor }]}>{title}</Text>
+          <Text className="text-sm font-semibold" style={[{ color: textColor }, noSelectStyle]}>{title}</Text>
         </View>
       )}
     </TouchableOpacity>
   );
 };
 
-const styles = StyleSheet.create({
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 44,
-  },
-
-  content: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-
-  loadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-
-  text: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-});
-
 export default FormButton;
+

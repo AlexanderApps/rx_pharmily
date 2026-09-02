@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
   TextInput,
   Pressable,
   ScrollView,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
@@ -25,6 +24,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const passwordRef = useRef<TextInput>(null);
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -43,18 +43,40 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Platform.OS === "web" ? colors.backgroundSecondary : colors.background }}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.brandBlock}>
+        <ScrollView
+          contentContainerStyle={
+            Platform.OS === "web"
+              ? { flexGrow: 1, alignItems: "center", justifyContent: "center", padding: 24 }
+              : { padding: 24 }
+          }
+          keyboardShouldPersistTaps="handled"
+        >
+          <View
+            style={
+              Platform.OS === "web"
+                ? {
+                    width: "100%",
+                    maxWidth: 440,
+                    backgroundColor: colors.background,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    padding: 32,
+                  }
+                : undefined
+            }
+          >
+          <View className="items-center mb-7 mt-3">
             <LogoMark size={64} style={{ marginBottom: 12 }} />
-            <Text style={[styles.brandName, { color: colors.text }]}>RxPharmily</Text>
-            <Text style={[styles.brandSubtitle, { color: colors.textSecondary }]}>
+            <Text className="text-[22px] font-extrabold" style={{ color: colors.text }}>RxPharmily</Text>
+            <Text className="text-[13px] mt-1" style={{ color: colors.textSecondary }}>
               Sign in to continue
             </Text>
           </View>
 
-          <Text style={[styles.label, { color: colors.text }]}>Email</Text>
+          <Text className="text-xs font-semibold" style={{ color: colors.text }}>Email</Text>
           <TextInput
             value={email}
             onChangeText={setEmail}
@@ -63,76 +85,59 @@ export default function LoginScreen() {
             autoCapitalize="none"
             keyboardType="email-address"
             editable={!submitting}
-            style={[
-              styles.input,
-              { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-            ]}
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
+            blurOnSubmit={false}
+            className="border rounded-[10px] px-3.5 py-3 text-sm mt-1.5"
+            style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
           />
 
-          <Text style={[styles.label, { color: colors.text, marginTop: 14 }]}>Password</Text>
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>Password</Text>
           <TextInput
+            ref={passwordRef}
             value={password}
             onChangeText={setPassword}
             placeholder="••••••••"
             placeholderTextColor={colors.textSecondary}
             secureTextEntry
             editable={!submitting}
-            style={[
-              styles.input,
-              { backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text },
-            ]}
+            returnKeyType="go"
+            onSubmitEditing={handleLogin}
+            className="border rounded-[10px] px-3.5 py-3 text-sm mt-1.5"
+            style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
           />
 
           {error && (
-            <View style={[styles.errorBox, { backgroundColor: colors.error + "12" }]}>
+            <View className="flex-row items-start gap-1.5 rounded-lg p-2.5 mt-3.5" style={{ backgroundColor: colors.error + "12" }}>
               <MaterialCommunityIcons name="alert-circle-outline" size={14} color={colors.error} />
-              <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+              <Text className="text-xs flex-1 leading-[17px]" style={{ color: colors.error }}>{error}</Text>
             </View>
           )}
 
           <Pressable
             onPress={handleLogin}
             disabled={submitting}
-            style={[styles.submitButton, { backgroundColor: colors.primary, opacity: submitting ? 0.7 : 1 }]}
+            className="rounded-[10px] py-3.5 items-center mt-5"
+            style={{ backgroundColor: colors.primary, opacity: submitting ? 0.7 : 1 }}
           >
             {submitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.submitButtonText}>Sign In</Text>
+              <Text className="text-white text-[15px] font-bold">Sign In</Text>
             )}
           </Pressable>
 
-          <Pressable onPress={() => router.push("/signup")} style={styles.signUpRow}>
-            <Text style={[styles.signUpText, { color: colors.textSecondary }]}>
+          <Pressable onPress={() => router.push("/signup")} className="items-center mt-4 mb-6">
+            <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
               Don't have an account? <Text style={{ color: colors.primary, fontWeight: "700" }}>Sign up</Text>
             </Text>
           </Pressable>
 
           <View style={{ height: 24 }} />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  content: { padding: 24 },
-  brandBlock: { alignItems: "center", marginBottom: 28, marginTop: 12 },
-  brandName: { fontSize: 22, fontWeight: "800" },
-  brandSubtitle: { fontSize: 13, marginTop: 4 },
-  label: { fontSize: 12, fontWeight: "600" },
-  input: {
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 14,
-    marginTop: 6,
-  },
-  errorBox: { flexDirection: "row", alignItems: "flex-start", gap: 6, borderRadius: 8, padding: 10, marginTop: 14 },
-  errorText: { fontSize: 12, flex: 1, lineHeight: 17 },
-  submitButton: { borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 20 },
-  submitButtonText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  signUpRow: { alignItems: "center", marginTop: 16, marginBottom: 24 },
-  signUpText: { fontSize: 13 },
-});
