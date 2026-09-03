@@ -7,6 +7,8 @@ import LogoMark from "@/shared/components/logo-mark";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { noSelectStyle } from "@/shared/constants/text-selection";
+import { useBreakpoint } from "@/shared/hooks/use-breakpoint";
+import { useMobileSidebarStore } from "@/shared/hooks/use-mobile-sidebar";
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
@@ -26,6 +28,7 @@ const WORKSPACE_NAV: NavItem[] = [
   { label: "RxRFQs", href: "/rfqs", icon: "file-document-outline", matchPrefixes: ["/rfqs"] },
   { label: "Donations", href: "/donations", icon: "heart-outline", matchPrefixes: ["/donations"] },
   { label: "MediScope", href: "/mediscope", icon: "heart-search", matchPrefixes: ["/mediscope"] },
+  { label: "RxLink", href: "/rxlink", icon: "pill", matchPrefixes: ["/rxlink"] },
   { label: "RxJobs", href: "/jobs", icon: "office-building-outline", matchPrefixes: ["/jobs"] },
   { label: "RxAds", href: "/ads", icon: "bullhorn-outline", matchPrefixes: ["/ads"] },
   { label: "RxChat", href: "/chat", icon: "chat-outline", matchPrefixes: ["/chat"] },
@@ -79,14 +82,25 @@ const WebSidebar: React.FC = () => {
   const pathname = usePathname();
   const user = useProfileStore((state) => state.user);
   const isAdmin = useAuthStore((state) => state.profile?.accountRole === "admin");
-  const [collapsed, setCollapsedState] = useState(readPersistedCollapsed);
+  const [desktopCollapsed, setDesktopCollapsedState] = useState(readPersistedCollapsed);
+  const breakpoint = useBreakpoint();
+  const isCompact = breakpoint === "compact";
+  const mobileOpen = useMobileSidebarStore((state) => state.isOpen);
+  const closeMobileSidebar = useMobileSidebarStore((state) => state.close);
+  // The desktop "collapsed to icons only" preference doesn't apply to
+  // the mobile overlay drawer — that's a space-saving feature for a
+  // sidebar competing with content side by side, which isn't the
+  // situation on compact (the drawer overlays, it doesn't share space).
+  // Every render decision below reads this derived value, not the raw
+  // persisted one.
+  const collapsed = isCompact ? false : desktopCollapsed;
 
   // Wraps setCollapsed so every call site that toggles the sidebar
   // persists automatically, rather than relying on a useEffect keyed off
   // `collapsed` (which would also needlessly re-fire on mount, since
   // readPersistedCollapsed already reflects whatever's stored).
   const setCollapsed = (value: boolean) => {
-    setCollapsedState(value);
+    setDesktopCollapsedState(value);
     persistCollapsed(value);
   };
 
@@ -104,7 +118,10 @@ const WebSidebar: React.FC = () => {
     return (
       <Pressable
         key={item.href}
-        onPress={() => router.navigate(item.href as any)}
+        onPress={() => {
+          router.navigate(item.href as any);
+          if (isCompact) closeMobileSidebar();
+        }}
         className={`
           group mx-2 mb-0.5 flex-row items-center rounded-xl
           ${collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2.5"}
@@ -165,16 +182,46 @@ const WebSidebar: React.FC = () => {
     );
   };
 
+  // Compact + closed: the sidebar takes zero space, exactly as if it
+  // weren't rendered at all — WebAppShell's flex row collapses around
+  // it with no gap left behind.
+  if (isCompact && !mobileOpen) {
+    return null;
+  }
+
   return (
-    <View
-      className="h-full shrink-0 transition-all"
-      style={{
-        width: collapsed ? 72 : 256,
-        backgroundColor: colors.backgroundSecondary,
-        borderRightWidth: 1,
-        borderRightColor: colors.border,
-      }}
-    >
+    <>
+      {/* Compact + open: a backdrop behind the drawer, dismissible by
+          tapping anywhere outside it — same "tap outside to close"
+          convention as every Modal-based sheet elsewhere in this app. */}
+      {isCompact && (
+        <Pressable
+          onPress={closeMobileSidebar}
+          style={
+            {
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              zIndex: 40,
+            } as any
+          }
+        />
+      )}
+      <View
+        className="h-full shrink-0 transition-all"
+        style={{
+          width: collapsed ? 72 : 256,
+          backgroundColor: colors.backgroundSecondary,
+          borderRightWidth: 1,
+          borderRightColor: colors.border,
+          ...(isCompact
+            ? ({ position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 41 } as any)
+            : null),
+        }}
+      >
       {/* Brand + collapse toggle */}
       <View
         className={`flex-row items-center py-5 ${collapsed ? "justify-center px-2" : "justify-between px-4"}`}
@@ -297,7 +344,8 @@ const WebSidebar: React.FC = () => {
           </>
         )}
       </Pressable>
-    </View>
+      </View>
+    </>
   );
 };
 

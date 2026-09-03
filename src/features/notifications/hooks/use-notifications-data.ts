@@ -121,6 +121,20 @@ export const CATEGORY_META: NotificationCategoryMeta[] = [
     defaultEnabled: true,
   },
   {
+    category: "rxlink_new_entry",
+    section: "RxLink",
+    label: "New RxLink request",
+    description: "Someone submits a new medication search request.",
+    defaultEnabled: false,
+  },
+  {
+    category: "rxlink_response_received",
+    section: "RxLink",
+    label: "Response to my RxLink request",
+    description: "An admin responds to your medication search request.",
+    defaultEnabled: true,
+  },
+  {
     category: "chat_new_message",
     section: "Chat",
     label: "New messages",

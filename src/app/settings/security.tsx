@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Pressable, Platform} from "react-native";
+import { View, Text, ScrollView, Pressable, Platform, TextInput, Modal, Alert} from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { confirm } from "@/shared/hooks/use-confirm";
@@ -7,16 +7,19 @@ import { toast } from "@/shared/hooks/use-toast";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ThemedView } from "@/shared/components/themed-view";
-import ModernSwitch from "@/shared/components/switch";
+import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
+import SubmitButton from "@/shared/components/submit-button";
 
 export default function SecurityScreen() {
   const { colors } = useTheme();
+  const changePassword = useAuthStore((state) => state.changePassword);
+  const signOutOtherSessions = useAuthStore((state) => state.signOutOtherSessions);
 
-  // Security Toggles State
-  const [biometricsEnabled, setBiometricsEnabled] = useState(true);
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-  // Handler for session clearing
   const handleTerminateSessions = async () => {
     const ok = await confirm({
       title: "Sign Out Everywhere",
@@ -25,8 +28,39 @@ export default function SecurityScreen() {
       destructive: true,
     });
     if (!ok) return;
-    console.log("Other sessions terminated");
-    toast.success("Signed out of other sessions.");
+    const result = await signOutOtherSessions();
+    toast[result.ok ? "success" : "error"](
+      result.ok ? "Signed out of other sessions." : (result.error ?? "Couldn't sign out other sessions."),
+    );
+  };
+
+  const closePasswordModal = () => {
+    setPasswordModalOpen(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert("Missing information", "Fill in all three fields.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      Alert.alert("Password too short", "Use at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Passwords don't match", "Double-check your new password.");
+      return;
+    }
+    const result = await changePassword(currentPassword, newPassword);
+    if (result.ok) {
+      toast.success("Password updated.");
+      closePasswordModal();
+    } else {
+      toast.error(result.error ?? "Couldn't update your password.");
+    }
   };
 
   return (
@@ -58,89 +92,7 @@ export default function SecurityScreen() {
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* SECTION 1: Device Authentication */}
-          <View className="mt-6">
-            <Text
-              className="text-[13px] font-semibold uppercase mb-2 ml-1 tracking-[0.5px]"
-              style={{ color: colors.textSecondary }}
-            >
-              Access & Authentication
-            </Text>
-            <View
-              className="rounded-xl overflow-hidden"
-              style={{ backgroundColor: colors.backgroundSecondary }}
-            >
-              {/* Biometric Toggle Row */}
-              <Pressable
-                onPress={() => setBiometricsEnabled(!biometricsEnabled)}
-                className="flex-row items-center justify-between p-4"
-                style={({ pressed }) => ({
-                  borderBottomColor: colors.border,
-                  borderBottomWidth: 0.5,
-                  opacity: pressed ? 0.7 : 1,
-                })}
-              >
-                <View className="flex-row items-center flex-1 mr-4">
-                  <MaterialCommunityIcons
-                    name="fingerprint"
-                    size={22}
-                    color={colors.textSecondary}
-                  />
-                  <View className="ml-3 flex-1">
-                    <Text className="text-base font-medium mb-0.5" style={{ color: colors.text }}>
-                      Biometric Sign-In
-                    </Text>
-                    <Text
-                      className="text-[13px]"
-                      style={{ color: colors.textSecondary }}
-                    >
-                      Use Face ID or Fingerprint scanner
-                    </Text>
-                  </View>
-                </View>
-                <ModernSwitch
-                  value={biometricsEnabled}
-                  onValueChange={setBiometricsEnabled}
-                  inactiveColor={colors.border}
-                  activeColor={colors.secondary}
-                />
-              </Pressable>
-
-              {/* Two-Factor Toggle Row */}
-              <Pressable
-                onPress={() => setTwoFactorEnabled(!twoFactorEnabled)}
-                className="flex-row items-center justify-between p-4"
-                style={({ pressed }) => (pressed ? { opacity: 0.7 } : undefined)}
-              >
-                <View className="flex-row items-center flex-1 mr-4">
-                  <MaterialCommunityIcons
-                    name="shield-account-outline"
-                    size={22}
-                    color={colors.textSecondary}
-                  />
-                  <View className="ml-3 flex-1">
-                    <Text className="text-base font-medium mb-0.5" style={{ color: colors.text }}>
-                      Two-Factor Auth (2FA)
-                    </Text>
-                    <Text
-                      className="text-[13px]"
-                      style={{ color: colors.textSecondary }}
-                    >
-                      Secure account actions via SMS or App
-                    </Text>
-                  </View>
-                </View>
-                <ModernSwitch
-                  value={twoFactorEnabled}
-                  onValueChange={setTwoFactorEnabled}
-                  inactiveColor={colors.border}
-                  activeColor={colors.secondary}
-                />
-              </Pressable>
-            </View>
-          </View>
-
-          {/* SECTION 2: Credentials Management */}
+          {/* SECTION 1: Credentials Management */}
           <View className="mt-6">
             <Text
               className="text-[13px] font-semibold uppercase mb-2 ml-1 tracking-[0.5px]"
@@ -154,13 +106,9 @@ export default function SecurityScreen() {
             >
               {/* Change Password Link */}
               <Pressable
-                onPress={() => console.log("Navigate to Change Password")}
+                onPress={() => setPasswordModalOpen(true)}
                 className="flex-row items-center justify-between p-4"
-                style={({ pressed }) => ({
-                  borderBottomColor: colors.border,
-                  borderBottomWidth: 0.5,
-                  opacity: pressed ? 0.7 : 1,
-                })}
+                style={({ pressed }) => (pressed ? { opacity: 0.7 } : undefined)}
               >
                 <View className="flex-row items-center flex-1 mr-4">
                   <MaterialCommunityIcons
@@ -176,38 +124,7 @@ export default function SecurityScreen() {
                       className="text-[13px]"
                       style={{ color: colors.textSecondary }}
                     >
-                      Last updated 3 months ago
-                    </Text>
-                  </View>
-                </View>
-                <MaterialCommunityIcons
-                  name="chevron-right"
-                  size={20}
-                  color={colors.textSecondary}
-                />
-              </Pressable>
-
-              {/* Pin Code Setup */}
-              <Pressable
-                onPress={() => console.log("Navigate to Security PIN")}
-                className="flex-row items-center justify-between p-4"
-                style={({ pressed }) => (pressed ? { opacity: 0.7 } : undefined)}
-              >
-                <View className="flex-row items-center flex-1 mr-4">
-                  <MaterialCommunityIcons
-                    name="numeric"
-                    size={22}
-                    color={colors.textSecondary}
-                  />
-                  <View className="ml-3 flex-1">
-                    <Text className="text-base font-medium mb-0.5" style={{ color: colors.text }}>
-                      App Lock PIN
-                    </Text>
-                    <Text
-                      className="text-[13px]"
-                      style={{ color: colors.textSecondary }}
-                    >
-                      Configure backup 4-digit numeric code
+                      Update your account password
                     </Text>
                   </View>
                 </View>
@@ -220,7 +137,7 @@ export default function SecurityScreen() {
             </View>
           </View>
 
-          {/* SECTION 3: Session Management */}
+          {/* SECTION 2: Session Management */}
           <View className="mt-6">
             <Text
               className="text-[13px] font-semibold uppercase mb-2 ml-1 tracking-[0.5px]"
@@ -263,6 +180,62 @@ export default function SecurityScreen() {
             </View>
           </View>
         </ScrollView>
+
+        <Modal visible={passwordModalOpen} transparent animationType="fade">
+          <View className="flex-1 bg-black/50 justify-center p-6">
+            <View
+              className="rounded-2xl p-[18px] gap-2.5"
+              style={{ backgroundColor: colors.backgroundSecondary }}
+            >
+              <Text className="text-base font-bold" style={{ color: colors.text }}>
+                Change Password
+              </Text>
+
+              <TextInput
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                placeholder="Current password"
+                placeholderTextColor={colors.textSecondary}
+                secureTextEntry
+                className="border rounded-[10px] px-3 py-2.5 text-sm"
+                style={{ backgroundColor: colors.backgroundElement, color: colors.text, borderColor: colors.border }}
+              />
+              <TextInput
+                value={newPassword}
+                onChangeText={setNewPassword}
+                placeholder="New password"
+                placeholderTextColor={colors.textSecondary}
+                secureTextEntry
+                className="border rounded-[10px] px-3 py-2.5 text-sm"
+                style={{ backgroundColor: colors.backgroundElement, color: colors.text, borderColor: colors.border }}
+              />
+              <TextInput
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder="Confirm new password"
+                placeholderTextColor={colors.textSecondary}
+                secureTextEntry
+                className="border rounded-[10px] px-3 py-2.5 text-sm"
+                style={{ backgroundColor: colors.backgroundElement, color: colors.text, borderColor: colors.border }}
+              />
+
+              <View className="flex-row gap-2.5 mt-1">
+                <Pressable
+                  onPress={closePasswordModal}
+                  className="flex-1 py-2.5 rounded-[10px] items-center"
+                  style={{ backgroundColor: colors.backgroundElement }}
+                >
+                  <Text className="text-sm font-semibold" style={{ color: colors.text }}>
+                    Cancel
+                  </Text>
+                </Pressable>
+                <View className="flex-1">
+                  <SubmitButton label="Update" onPress={handleChangePassword} />
+                </View>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </ThemedView>
   );

@@ -104,6 +104,21 @@ export default function ServiceScreen() {
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
+                      name="pill"
+                      size={22}
+                      color="#0d9488"
+                    />
+                  }
+                  label="RxLink"
+                  tintColor="#0d9488"
+                  colors={colors}
+                  onPress={() => {
+                    router.push("/rxlink");
+                  }}
+                />
+                <ActionButton
+                  icon={
+                    <MaterialCommunityIcons
                       name="chat-outline"
                       size={22}
                       color="#0891b2"

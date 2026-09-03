@@ -5,34 +5,22 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ThemedView } from "@/shared/components/themed-view";
+import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import KycStatusBadge from "@/features/profile/components/kyc-status-badge";
 
 export default function PersonalInfoScreen() {
   const { colors } = useTheme();
-
-  // Simulated profile data placeholder
-  const profile = {
-    name: "Dr. Alex Mercer",
-    email: "alex.mercer@clinic.org",
-    username: "alexmercer_md",
-    profession: "Specialist Cardiologist",
-    licenseNumber: "LIC-88392-NY",
-    facilities: "Metro General Hospital, Oakridge Clinic",
-    kycStatus: "Verified", // Options: "Verified", "Pending", "Rejected"
-  };
-
-  // Helper helper to resolve verification badge colors
-  const getKycBadgeStyles = (status: string) => {
-    switch (status) {
-      case "Verified":
-        return { bg: "#E6F4EA", text: "#137333", icon: "check-circle" };
-      case "Pending":
-        return { bg: "#FEF7E0", text: "#B06000", icon: "clock-outline" };
-      default:
-        return { bg: "#FCE8E6", text: "#C5221F", icon: "alert-circle" };
-    }
-  };
-
-  const kyc = getKycBadgeStyles(profile.kycStatus);
+  const user = useProfileStore((state) => state.user);
+  // Subscribed directly (not just calling getMyFacilities() bare) so
+  // this re-renders correctly if facility membership data changes —
+  // same reasoning as the RxLink request-details fix earlier this
+  // session: a getter call alone doesn't subscribe to the state it
+  // reads.
+  const facilities = useProfileStore((state) => state.facilities);
+  const getMyFacilities = useProfileStore((state) => state.getMyFacilities);
+  const myFacilities = getMyFacilities();
+  const facilitiesLabel =
+    myFacilities.length > 0 ? myFacilities.map((f) => f.name).join(", ") : "None assigned";
 
   return (
     <ThemedView style={{ flex: 1 }}>
@@ -88,21 +76,7 @@ export default function PersonalInfoScreen() {
                     </Text>
                   </View>
                 </View>
-                <View className="flex-row items-center px-2.5 py-1.5 rounded-xl" style={{ backgroundColor: kyc.bg }}>
-                  <MaterialCommunityIcons
-                    name={
-                      kyc.icon as React.ComponentProps<
-                        typeof MaterialCommunityIcons
-                      >["name"]
-                    }
-                    size={14}
-                    color={kyc.text}
-                    style={{ marginRight: 4 }}
-                  />
-                  <Text className="text-xs font-semibold" style={{ color: kyc.text }}>
-                    {profile.kycStatus}
-                  </Text>
-                </View>
+                <KycStatusBadge status={user.kyc.status} />
               </View>
             </View>
           </View>
@@ -132,12 +106,12 @@ export default function PersonalInfoScreen() {
                     Full Name
                   </Text>
                   <Text className="text-base font-normal leading-[22px]" style={{ color: colors.text }}>
-                    {profile.name}
+                    {user.fullName}
                   </Text>
                 </View>
               </View>
 
-              {/* Username */}
+              {/* Phone */}
               <View
                 className="px-4 py-3.5"
                 style={{ borderBottomColor: colors.border, borderBottomWidth: 0.5 }}
@@ -147,10 +121,10 @@ export default function PersonalInfoScreen() {
                     className="text-xs font-medium uppercase mb-1 tracking-[0.3px]"
                     style={{ color: colors.textSecondary }}
                   >
-                    Username
+                    Phone
                   </Text>
                   <Text className="text-base font-normal leading-[22px]" style={{ color: colors.text }}>
-                    @{profile.username}
+                    {user.phone || "Not set"}
                   </Text>
                 </View>
               </View>
@@ -165,7 +139,7 @@ export default function PersonalInfoScreen() {
                     Email Address
                   </Text>
                   <Text className="text-base font-normal leading-[22px]" style={{ color: colors.text }}>
-                    {profile.email}
+                    {user.email}
                   </Text>
                 </View>
               </View>
@@ -194,10 +168,10 @@ export default function PersonalInfoScreen() {
                     className="text-xs font-medium uppercase mb-1 tracking-[0.3px]"
                     style={{ color: colors.textSecondary }}
                   >
-                    Profession
+                    Role
                   </Text>
                   <Text className="text-base font-normal leading-[22px]" style={{ color: colors.text }}>
-                    {profile.profession}
+                    {user.role}
                   </Text>
                 </View>
               </View>
@@ -215,7 +189,7 @@ export default function PersonalInfoScreen() {
                     Medical License Number
                   </Text>
                   <Text className="text-base font-normal leading-[22px]" style={{ color: colors.text }}>
-                    {profile.licenseNumber}
+                    {user.licenseNumber || "Not set"}
                   </Text>
                 </View>
               </View>
@@ -230,7 +204,7 @@ export default function PersonalInfoScreen() {
                     Assigned Facilities
                   </Text>
                   <Text className="text-base font-normal leading-[22px]" style={{ color: colors.text }}>
-                    {profile.facilities}
+                    {facilitiesLabel}
                   </Text>
                 </View>
               </View>
@@ -239,6 +213,7 @@ export default function PersonalInfoScreen() {
 
           {/* Edit Profile Callout Button */}
           <Pressable
+            onPress={() => router.push("/profile/user-profile")}
             className="flex-row items-center justify-center mt-8 py-3.5 rounded-xl"
             style={({ pressed }) => ({
               backgroundColor: colors.primary,
@@ -251,7 +226,7 @@ export default function PersonalInfoScreen() {
               color={colors.background}
             />
             <Text className="text-base font-semibold ml-2" style={{ color: colors.background }}>
-              Request Information Update
+              Edit Profile
             </Text>
           </Pressable>
         </ScrollView>

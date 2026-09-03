@@ -1,18 +1,11 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useRef, useMemo } from "react";
 import { View, Text, ScrollView, Pressable, Platform} from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { confirm } from "@/shared/hooks/use-confirm";
-import { toast } from "@/shared/hooks/use-toast";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ThemedView } from "@/shared/components/themed-view";
-import BottomSheet from "@/shared/components/bottom-sheet";
-
-interface SettingsScreenProps {
-  currentTheme: "light" | "dark" | "system";
-  onThemeChange: (theme: "light" | "dark" | "system") => void;
-}
+import BottomSheet, { BottomSheetModalHandle } from "@/shared/components/bottom-sheet";
 
 type SettingRow = {
   id: string;
@@ -22,18 +15,16 @@ type SettingRow = {
   onPress: () => void;
 };
 
-export default function SettingsScreen({
-  currentTheme,
-  onThemeChange,
-}: SettingsScreenProps) {
-  const { colors, setThemeMode } = useTheme();
+export default function SettingsScreen() {
+  // This is a route screen (app/settings/index.tsx) — Expo Router
+  // renders it with no props, so the currentTheme/onThemeChange props
+  // this component used to declare were always undefined at runtime.
+  // Read the real theme state directly, same as every other screen in
+  // this app does.
+  const { colors, themeMode, setThemeMode } = useTheme();
 
-  const changeTheme = (theme: "light" | "dark" | "system") => {
-    setThemeMode(theme === "system" ? "light" : theme);
-  };
-
-  const filterModalRef = useRef<any>(null);
-  const snapPoints = useMemo(() => ["35%"], []);
+  const filterModalRef = useRef<BottomSheetModalHandle>(null);
+  const snapPoints = useMemo(() => ["30%"], []);
 
   // Compute uniform platform active tints natively via string combinations
   const activeBg =
@@ -42,19 +33,6 @@ export default function SettingsScreen({
   const themeLabels = {
     light: "Light Mode",
     dark: "Dark Mode",
-    system: "System Default",
-  };
-
-  const handleClearCache = async () => {
-    const ok = await confirm({
-      title: "Clear Cache",
-      message:
-        "Are you sure you want to clear local app cache? This frees up storage space.",
-      confirmLabel: "Clear",
-      destructive: true,
-    });
-    if (!ok) return;
-    toast.success("Cache cleared.");
   };
 
   const settingsGroups: { title: string; rows: SettingRow[] }[] = [
@@ -71,7 +49,7 @@ export default function SettingsScreen({
           id: "notifications",
           label: "Notification Settings",
           icon: "bell-cog-outline",
-          onPress: () => router.push("/settings/notifications"),
+          onPress: () => router.push("/notifications/settings"),
         },
       ],
     },
@@ -82,27 +60,14 @@ export default function SettingsScreen({
           id: "appearance",
           label: "Appearance",
           icon: "palette-outline",
-          valueText: themeLabels[currentTheme],
-          onPress: () =>
-            filterModalRef.current?.expand?.() ||
-            filterModalRef.current?.present?.(),
+          valueText: themeLabels[themeMode],
+          onPress: () => filterModalRef.current?.expand(),
         },
         {
           id: "security",
           label: "Security & Privacy",
           icon: "shield-lock-outline",
           onPress: () => router.push("/settings/security"),
-        },
-      ],
-    },
-    {
-      title: "System Utilities",
-      rows: [
-        {
-          id: "cache",
-          label: "Clear Local Cache",
-          icon: "cached",
-          onPress: handleClearCache,
         },
       ],
     },
@@ -147,7 +112,7 @@ export default function SettingsScreen({
                 className="text-[12px] font-semibold uppercase tracking-[0.6px] pl-1"
                 style={{ color: colors.textSecondary }}
               >
-                group.title
+                {group.title}
               </Text>
 
               <View
@@ -227,20 +192,18 @@ export default function SettingsScreen({
             </Text>
 
             <View className="gap-1">
-              {(["light", "dark", "system"] as const).map((mode) => {
-                const isSelected = currentTheme === mode;
+              {(["light", "dark"] as const).map((mode) => {
+                const isSelected = themeMode === mode;
                 const icons = {
                   light: "white-balance-sunny",
                   dark: "weather-night",
-                  system: "cellphone-cog",
                 };
                 return (
                   <Pressable
                     key={mode}
                     onPress={() => {
-                      changeTheme(mode);
-                      filterModalRef.current?.close?.() ||
-                        filterModalRef.current?.dismiss?.();
+                      setThemeMode(mode);
+                      filterModalRef.current?.dismiss();
                     }}
                     className={`flex-row items-center justify-between py-3.5 px-3 rounded-[12px] ${activeBg}`}
                   >

@@ -26,6 +26,9 @@ export type NotificationCategory =
   | "consult_response_received"
   // RxHelp — Ask Your Pharmacist
   | "pharmacist_response_received"
+  // RxLink
+  | "rxlink_new_entry"
+  | "rxlink_response_received"
   // Chat
   | "chat_new_message"
   // Identity / KYC

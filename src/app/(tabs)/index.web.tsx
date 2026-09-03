@@ -78,6 +78,7 @@ const SHORTCUTS: {
   { label: "Jobs", icon: "briefcase-outline", color: "#16a34a", route: "/jobs" },
   { label: "Donations", icon: "hand-heart-outline", color: "#dc2626", route: "/donations" },
   { label: "MediScope", icon: "heart-pulse", color: "#9333ea", route: "/mediscope" },
+  { label: "RxLink", icon: "pill", color: "#0d9488", route: "/rxlink" },
   { label: "RxChat", icon: "chat-outline", color: "#0891b2", route: "/chat" },
   { label: "RxAds", icon: "bullhorn-outline", color: "#d97706", route: "/ads" },
 ];

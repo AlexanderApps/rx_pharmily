@@ -1,10 +1,11 @@
 import React, { useMemo } from "react";
-import { View, Text, Pressable, ScrollView, Switch } from "react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import ScreenHeader from "@/shared/components/screen-header";
+import ModernSwitch from "@/shared/components/switch";
 import {
   useNotificationStore,
   CATEGORY_META,
@@ -70,10 +71,11 @@ export default function NotificationSettingsScreen() {
                         {meta.description}
                       </Text>
                     </View>
-                    <Switch
+                    <ModernSwitch
                       value={settings[meta.category]}
                       onValueChange={(value) => updateSetting(meta.category, value)}
-                      trackColor={{ true: colors.primary }}
+                      activeColor={colors.primary}
+                      inactiveColor={colors.border}
                     />
                   </View>
                 ))}

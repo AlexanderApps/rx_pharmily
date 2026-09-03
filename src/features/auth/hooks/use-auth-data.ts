@@ -61,6 +61,18 @@ type AuthStore = {
   signUp: (data: SignUpFormData) => Promise<{ ok: boolean; error?: string; needsEmailConfirmation?: boolean }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  // Re-verifies currentPassword via signInWithPassword before actually
+  // changing anything — supabase.auth.updateUser() alone would accept
+  // any new password for the current session without checking the old
+  // one, which is the wrong UX for a security-sensitive change like
+  // this (anyone with an unlocked, still-signed-in device could change
+  // it without knowing the current password at all).
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ ok: boolean; error?: string }>;
+  // Ends every OTHER active session for this account, leaving the
+  // current one signed in — supabase-js's signOut({ scope: "others" }),
+  // stable since supabase-js 2.31. No local session state changes here
+  // since the current session stays valid.
+  signOutOtherSessions: () => Promise<{ ok: boolean; error?: string }>;
 };
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
@@ -138,6 +150,37 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   signOut: async () => {
     await supabase.auth.signOut();
     set({ session: null, user: null, profile: null });
+  },
+
+  changePassword: async (currentPassword, newPassword) => {
+    const email = get().user?.email;
+    if (!email) return { ok: false, error: "No active session." };
+
+    // Re-verify the current password first — see the interface comment
+    // for why this matters.
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email,
+      password: currentPassword,
+    });
+    if (verifyError) return { ok: false, error: "Current password is incorrect." };
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  },
+
+  signOutOtherSessions: async () => {
+    try {
+      const { error } = await supabase.auth.signOut({ scope: "others" });
+      if (error) return { ok: false, error: error.message };
+      return { ok: true };
+    } catch (err) {
+      // Defensive: falls back to a clear error rather than an
+      // unhandled crash if the installed supabase-js version doesn't
+      // support the scope option for some reason.
+      const message = err instanceof Error ? err.message : "Couldn't sign out other sessions.";
+      return { ok: false, error: message };
+    }
   },
 
   refreshProfile: async () => {

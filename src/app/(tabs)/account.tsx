@@ -19,16 +19,13 @@ type MenuLink = {
   onPress: () => void;
 };
 
-interface AccountScreenProps {
-  avatarUrl?: string | null;
-}
-
-export default function AccountScreen({ avatarUrl }: AccountScreenProps) {
+export default function AccountScreen() {
   const { colors } = useTheme();
   const { user } = useProfileStore();
   const profile = useAuthStore((state) => state.profile);
   const signOut = useAuthStore((state) => state.signOut);
   const isAdmin = isAdminRole(profile?.accountRole);
+  const avatarUrl = user.avatarUrl;
 
   const handleLogout = async () => {
     await signOut();
@@ -85,13 +82,13 @@ export default function AccountScreen({ avatarUrl }: AccountScreenProps) {
           id: "support",
           label: "Help & Support",
           icon: "help-circle-outline",
-          onPress: () => {},
+          onPress: () => router.push("/help"),
         },
         {
           id: "info",
           label: "Information & Terms",
           icon: "information-outline",
-          onPress: () => {},
+          onPress: () => router.push("/help/faq"),
         },
       ],
     },
@@ -143,6 +140,7 @@ export default function AccountScreen({ avatarUrl }: AccountScreenProps) {
               
               {/* Camera Edit Badge */}
               <Pressable 
+                onPress={() => router.push("/profile/user-profile")}
                 className="absolute bottom-0 right-0 w-[26px] h-[26px] rounded-full justify-center items-center active:opacity-80"
                 style={{ backgroundColor: colors.text }}
               >

@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { ThemedView } from "@/shared/components/themed-view";
 import { useAdsStore } from "@/features/ads/hooks/use-ads-data";
+import { useRxLinkStore } from "@/features/rxlink/hooks/use-rxlink-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { usePostsStore } from "@/features/posts/hooks/use-posts-data";
 import { useHelpStore } from "@/features/help/hooks/use-help-data";
@@ -20,6 +21,8 @@ export default function AdminHubScreen() {
   const isSuperadmin = useAuthStore((state) => isSuperadminRole(state.profile?.accountRole));
 
   const ads = useAdsStore((state) => state.ads);
+  const rxlinkRequests = useRxLinkStore((state) => state.requests);
+  const fetchRxLinkRequests = useRxLinkStore((state) => state.fetchRequests);
   const posts = usePostsStore((state) => state.posts);
   const user = useProfileStore((state) => state.user);
   const facilities = useProfileStore((state) => state.facilities);
@@ -63,11 +66,16 @@ export default function AdminHubScreen() {
     fetchReports();
     fetchUsersForKycReview();
     fetchPendingPayments();
+    fetchRxLinkRequests();
   }, []);
 
   const pendingAdsCount = useMemo(
     () => ads.filter((a) => a.status === "pending").length,
     [ads],
+  );
+  const pendingRxLinkCount = useMemo(
+    () => rxlinkRequests.filter((r) => r.status === "pending").length,
+    [rxlinkRequests],
   );
   const suspendedPostsCount = useMemo(
     () => posts.filter((p) => p.status === "suspended").length,
@@ -124,6 +132,15 @@ export default function AdminHubScreen() {
       color: "#dc2626",
       count: pendingAdsCount,
       route: "/admin/ads-moderation",
+    },
+    {
+      key: "rxlink",
+      title: "RxLink Requests",
+      description: "Find medications for uploaded prescriptions and respond.",
+      icon: "pill" as const,
+      color: "#0d9488",
+      count: pendingRxLinkCount,
+      route: "/admin/rxlink-requests",
     },
     {
       key: "kyc",
