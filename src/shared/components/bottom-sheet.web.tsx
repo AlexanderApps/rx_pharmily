@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    maxHeight: "85vh" as any,
+    maxHeight: "85dvh" as any,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.25,

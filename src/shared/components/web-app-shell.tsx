@@ -50,7 +50,7 @@ const WebAppShell: React.FC<WebAppShellProps> = ({ children, showChrome = true }
 
   if (!showChrome) {
     return (
-      <View className="flex-1 items-center" style={{ backgroundColor: colors.backgroundSecondary, minHeight: "100vh" as any }}>
+      <View className="flex-1 items-center" style={{ backgroundColor: colors.backgroundSecondary, minHeight: "100dvh" as any }}>
         <View className="w-full flex-1" style={{ maxWidth: 480, backgroundColor: colors.background }}>
           {children}
         </View>
@@ -59,7 +59,7 @@ const WebAppShell: React.FC<WebAppShellProps> = ({ children, showChrome = true }
   }
 
   return (
-    <View className="flex-1 flex-row" style={{ backgroundColor: colors.background, minHeight: "100vh" as any }}>
+    <View className="flex-1 flex-row" style={{ backgroundColor: colors.background, minHeight: "100dvh" as any }}>
       <WebSidebar />
       <View className="flex-1">
         <WebTopBar />

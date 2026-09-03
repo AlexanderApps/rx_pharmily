@@ -93,7 +93,7 @@ const GlobalSearchModal: React.FC = () => {
   let runningIndex = -1;
 
   return (
-    <Pressable className="absolute inset-0 items-center bg-[rgba(0,0,0,0.4)] pt-[10vh] px-4 z-[1000]" onPress={close}>
+    <Pressable className="absolute inset-0 items-center bg-[rgba(0,0,0,0.4)] pt-[10dvh] px-4 z-[1000]" onPress={close}>
       <Pressable
         className="w-full max-w-[560px] rounded-[14px] border overflow-hidden"
         style={{
