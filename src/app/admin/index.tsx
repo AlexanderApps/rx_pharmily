@@ -13,10 +13,23 @@ import { useHelpStore } from "@/features/help/hooks/use-help-data";
 import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { isAdminRole, isSuperadminRole } from "@/features/auth/types/auth.types";
+import { useBreakpoint } from "@/shared/hooks/use-breakpoint";
 import { usePaymentsStore } from "@/features/payments/hooks/use-payments-data";
 
 export default function AdminHubScreen() {
   const { colors } = useTheme();
+  const breakpoint = useBreakpoint();
+  // Single column on compact (phone-width web or native, where a grid
+  // wouldn't have room to breathe), 2 columns at regular, 3 at wide —
+  // "at least for large screens" per the request, but regular gets a
+  // modest improvement too rather than an all-or-nothing switch.
+  // Explicitly web-only too: useBreakpoint resolves from raw window
+  // width on native as well (a large tablet could hit "regular"/"wide"
+  // there), but the grid math below uses CSS calc(), which native's
+  // style engine doesn't support at all — this request was specifically
+  // about the "webview" large-screen case, matching this session's
+  // consistently web-scoped responsive work elsewhere.
+  const columns = Platform.OS !== "web" ? 1 : breakpoint === "wide" ? 3 : breakpoint === "regular" ? 2 : 1;
   const isAdmin = useAuthStore((state) => isAdminRole(state.profile?.accountRole));
   const isSuperadmin = useAuthStore((state) => isSuperadminRole(state.profile?.accountRole));
 
@@ -266,9 +279,10 @@ export default function AdminHubScreen() {
         </View>
 
         <ScrollView
-          contentContainerClassName="p-4 gap-2.5"
+          contentContainerClassName="p-4"
           showsVerticalScrollIndicator={false}
         >
+          <View className={columns > 1 ? "flex-row flex-wrap gap-2.5" : "gap-2.5"}>
           {cards.map((card) => (
             <Pressable
               key={card.key}
@@ -278,6 +292,9 @@ export default function AdminHubScreen() {
                 backgroundColor: colors.backgroundSecondary,
                 borderColor: colors.border,
                 shadowColor: colors.text,
+                ...(columns > 1
+                  ? { width: `calc(${100 / columns}% - ${((columns - 1) * 10) / columns}px)` as any }
+                  : null),
               }}
             >
               <View
@@ -312,6 +329,7 @@ export default function AdminHubScreen() {
               </View>
             </Pressable>
           ))}
+          </View>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

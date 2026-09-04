@@ -47,13 +47,16 @@ export const SEARCH_COMMANDS: SearchCommand[] = [
 
   // ─── Admin ────────────────────────────────────────────────────────
   { id: "admin-hub", label: "Admin Hub", category: "Admin", icon: "shield-crown-outline", route: "/admin", adminOnly: true },
-  { id: "admin-ads", label: "Ad Moderation", keywords: ["review ads"], category: "Admin", icon: "bullhorn-outline", route: "/ads/moderation", adminOnly: true },
+  { id: "admin-ads", label: "Ad Moderation", keywords: ["review ads"], category: "Admin", icon: "bullhorn-outline", route: "/admin/ads-moderation", adminOnly: true },
+  { id: "admin-rxlink", label: "RxLink Requests", keywords: ["prescriptions", "medication search"], category: "Admin", icon: "pill", route: "/admin/rxlink-requests", adminOnly: true },
   { id: "admin-kyc", label: "KYC Verification", keywords: ["kyc review", "verify"], category: "Admin", icon: "shield-search", route: "/profile/kyc-review", adminOnly: true },
   { id: "admin-facility-org", label: "Facility & Org Requests", keywords: ["membership requests"], category: "Admin", icon: "domain", route: "/admin/facility-org-requests", adminOnly: true },
   { id: "admin-products", label: "Product Catalog", keywords: ["products"], category: "Admin", icon: "pill", route: "/admin/products", adminOnly: true },
   { id: "admin-formulary", label: "Formulary Requests", category: "Admin", icon: "clipboard-plus-outline", route: "/admin/formulary-requests", adminOnly: true },
+  { id: "admin-reference-data", label: "Reference Data", keywords: ["units", "categories", "regions", "incoterms", "currencies"], category: "Admin", icon: "database-outline", route: "/admin/reference-data", adminOnly: true },
   { id: "admin-reports", label: "Reports", keywords: ["bug reports", "flags"], category: "Admin", icon: "flag-outline", route: "/admin/reports", adminOnly: true },
   { id: "admin-posts-moderation", label: "Post Moderation", keywords: ["suspend post", "remove comment"], category: "Admin", icon: "forum-outline", route: "/admin/posts-moderation", adminOnly: true },
   { id: "admin-faq", label: "FAQ Management", category: "Admin", icon: "help-circle-outline", route: "/admin/faq-management", adminOnly: true },
+  { id: "admin-payments", label: "Payments", keywords: ["pending payments", "confirm payment"], category: "Admin", icon: "cash-multiple", route: "/admin/payments", adminOnly: true },
   { id: "admin-roles", label: "Role Management", keywords: ["promote", "superadmin"], category: "Admin", icon: "shield-account", route: "/admin/role-management", adminOnly: true },
 ];

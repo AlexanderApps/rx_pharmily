@@ -6,6 +6,7 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import LogoMark from "@/shared/components/logo-mark";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
+import { isAdminRole } from "@/features/auth/types/auth.types";
 import { noSelectStyle } from "@/shared/constants/text-selection";
 import { useBreakpoint } from "@/shared/hooks/use-breakpoint";
 import { useMobileSidebarStore } from "@/shared/hooks/use-mobile-sidebar";
@@ -81,7 +82,7 @@ const WebSidebar: React.FC = () => {
   const { colors } = useTheme();
   const pathname = usePathname();
   const user = useProfileStore((state) => state.user);
-  const isAdmin = useAuthStore((state) => state.profile?.accountRole === "admin");
+  const isAdmin = useAuthStore((state) => isAdminRole(state.profile?.accountRole));
   const [desktopCollapsed, setDesktopCollapsedState] = useState(readPersistedCollapsed);
   const breakpoint = useBreakpoint();
   const isCompact = breakpoint === "compact";

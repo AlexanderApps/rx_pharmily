@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Platform, StyleProp, ViewStyle } from "react-native";
+import { useBreakpoint } from "@/shared/hooks/use-breakpoint";
 
 // Distinct from useBreakpoint's compact/regular/wide (shared/hooks/
 // use-breakpoint.ts) — that scale describes how wide the *viewport* is;
@@ -43,13 +44,21 @@ const MaxWidthLayout: React.FC<MaxWidthLayoutProps> = ({
   children,
   style,
 }) => {
+  const breakpoint = useBreakpoint();
+
   if (Platform.OS !== "web") {
     return <>{children}</>;
   }
 
+  // px-6 (24px/side) reads fine once there's real width to spare, but
+  // on a narrow mobile-web viewport that's a much bigger bite out of
+  // the available space — the same squeeze this component exists to
+  // avoid on desktop, just showing up at the other end of the scale.
+  // px-4 matches this app's own native screens' established mobile
+  // content padding (see e.g. the home screen's own px-4 sections).
   return (
     <View
-      className="w-full self-center px-6"
+      className={breakpoint === "compact" ? "w-full self-center px-4" : "w-full self-center px-6"}
       style={[{ maxWidth: CONTENT_WIDTHS[size] }, style]}
     >
       {children}

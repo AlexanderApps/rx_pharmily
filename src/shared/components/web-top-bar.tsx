@@ -54,7 +54,7 @@ const WebTopBar: React.FC = () => {
         </Pressable>
       </View>
 
-      <View className="flex-row items-center gap-3">
+      <View className="flex-row items-center gap-3 ml-4">
         <Pressable
           onPress={() => router.push("/notifications")}
           className="h-9 w-9 items-center justify-center rounded-full"
