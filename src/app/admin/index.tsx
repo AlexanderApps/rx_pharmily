@@ -231,6 +231,16 @@ export default function AdminHubScreen() {
       countLabel: "manage",
       route: "/admin/faq-management",
     },
+    {
+      key: "permission-overrides",
+      title: "Permission Overrides",
+      description: "Grant or deny a specific permission for one specific person.",
+      icon: "account-key-outline" as const,
+      color: "#7c3aed",
+      count: 0,
+      countLabel: "manage",
+      route: "/admin/permission-overrides",
+    },
   ];
 
   if (isSuperadmin) {

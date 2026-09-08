@@ -19,7 +19,7 @@ import { useUserFieldAccess } from "@/features/profile/hooks/use-user-field-acce
 import AvatarUpload from "@/shared/components/avatar-upload";
 import LoadingImage from "@/shared/components/loading-image";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
-import { UserRole } from "@/features/profile/types/profile.types";
+import { UserRole, UserTitle } from "@/features/profile/types/profile.types";
 import KycSection from "@/features/profile/components/kyc-section";
 import ReferencePicker from "@/shared/components/forms/reference-picker";
 import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
@@ -29,6 +29,17 @@ const ROLES: UserRole[] = [
   "Pharmacy Technician",
   "Facility Admin",
   "Procurement Officer",
+  "Other",
+];
+
+const TITLES: UserTitle[] = [
+  "Mr.",
+  "Mrs.",
+  "Ms.",
+  "Dr. (PharmD)",
+  "Dr. (PhD)",
+  "Dr. (MD)",
+  "Prof.",
   "Other",
 ];
 
@@ -67,6 +78,10 @@ export default function UserProfileScreen() {
   const [latitude, setLatitude] = useState<number | undefined>(user.latitude);
   const [longitude, setLongitude] = useState<number | undefined>(user.longitude);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
+  const [title, setTitle] = useState<UserTitle | undefined>(user.title);
+  const [isAvailableAsSuperintendent, setIsAvailableAsSuperintendent] = useState(
+    user.isAvailableAsSuperintendent,
+  );
   const referenceRegions = useReferenceDataStore((state) => state.regions);
   const regionOptions = useMemo(
     () => referenceRegions.map((r) => ({ id: r.name, label: r.name })),
@@ -95,6 +110,8 @@ export default function UserProfileScreen() {
       latitude,
       longitude,
       avatarUrl,
+      title,
+      isAvailableAsSuperintendent,
     });
     setEditing(false);
   };
@@ -211,6 +228,70 @@ export default function UserProfileScreen() {
             </View>
           ) : (
             <Text className="text-sm mt-1" style={{ color: colors.text }}>{user.role}</Text>
+          )}
+
+          {/* Always read-only, even in edit mode — profession is
+              admin-only, set during KYC review, never through this
+              self-service form. The DB itself enforces this with a
+              trigger regardless; this is just not offering a control
+              that would only ever fail to save. */}
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>Profession</Text>
+          <Text className="text-sm mt-1" style={{ color: colors.text }}>
+            {user.profession ?? "Not yet set (assigned during KYC review)"}
+          </Text>
+
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>Title</Text>
+          {editing ? (
+            <View className="flex-row flex-wrap gap-2 mt-1.5">
+              {TITLES.map((option) => {
+                const active = title === option;
+                return (
+                  <Pressable
+                    key={option}
+                    onPress={() => setTitle(option)}
+                    className="px-3 py-2 rounded-full"
+                    style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
+                  >
+                    <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
+                      {option}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : (
+            <Text className="text-sm mt-1" style={{ color: colors.text }}>{user.title ?? "-"}</Text>
+          )}
+
+          {/* Only a verified pharmacist can be marked available as
+              superintendent — the DB itself enforces this via a
+              trigger, this UI gate just avoids showing a control that
+              would only ever fail to save for anyone else. */}
+          {user.isPharmacist && (
+            <>
+              <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>
+                Available as Superintendent
+              </Text>
+              {editing ? (
+                <Pressable
+                  onPress={() => setIsAvailableAsSuperintendent((prev) => !prev)}
+                  className="flex-row items-center gap-2 mt-1.5"
+                >
+                  <MaterialCommunityIcons
+                    name={isAvailableAsSuperintendent ? "checkbox-marked" : "checkbox-blank-outline"}
+                    size={20}
+                    color={isAvailableAsSuperintendent ? colors.primary : colors.textSecondary}
+                  />
+                  <Text className="text-sm" style={{ color: colors.text }}>
+                    I'm available to serve as a superintendent pharmacist
+                  </Text>
+                </Pressable>
+              ) : (
+                <Text className="text-sm mt-1" style={{ color: colors.text }}>
+                  {user.isAvailableAsSuperintendent ? "Available" : "Not available"}
+                </Text>
+              )}
+            </>
           )}
 
           {canSee("licenseNumber") && (

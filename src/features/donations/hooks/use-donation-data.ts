@@ -230,7 +230,7 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
 
     const donation = get().donations.find((d) => d.id === row.id);
     if (donation) {
-      useNotificationStore.getState().addNotification(
+      useNotificationStore.getState().addBroadcastNotification(
         "donation_new_entry",
         "New donation posted",
         `${donation.facilityName} posted a new donation (${donation.code}).`,
@@ -352,9 +352,10 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
     await get().fetchResponses(data.donationId);
 
     const donation = get().donations.find((d) => d.id === data.donationId);
-    if (donation && donation.createdBy === userId) {
+    if (donation) {
       const responderName = (row as any).facilities?.name ?? "A facility";
       useNotificationStore.getState().addNotification(
+        donation.createdBy,
         "donation_claim_received",
         "New claim on your donation",
         `${responderName} claimed items from ${donation.code}.`,
@@ -392,15 +393,13 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
     await get().fetchDonation(donationId);
     await get().fetchResponses(donationId);
 
-    const currentUserId = useProfileStore.getState().user.id;
-    if (response.createdBy === currentUserId) {
-      useNotificationStore.getState().addNotification(
-        "donation_claim_decision",
-        "Your claim was approved",
-        `Your claim on ${donation.code} was approved.`,
-        { pathname: "/donations/donation-market-details", params: { id: donation.id } },
-      );
-    }
+    useNotificationStore.getState().addNotification(
+      response.createdBy,
+      "donation_claim_decision",
+      "Your claim was approved",
+      `Your claim on ${donation.code} was approved.`,
+      { pathname: "/donations/donation-market-details", params: { id: donation.id } },
+    );
     return true;
   },
 
@@ -417,9 +416,9 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
 
     await get().fetchResponses(donationId);
 
-    const currentUserId = useProfileStore.getState().user.id;
-    if (response && donation && response.createdBy === currentUserId) {
+    if (response && donation) {
       useNotificationStore.getState().addNotification(
+        response.createdBy,
         "donation_claim_decision",
         "Your claim was declined",
         `Your claim on ${donation.code} was declined.`,

@@ -201,12 +201,14 @@ export const useMediscopeStore = create<MediscopeStore>((set, get) => ({
 
     const request = get().requests.find((r) => r.id === row.id);
     if (request && request.status === "published") {
-      useNotificationStore.getState().addNotification(
+      useNotificationStore.getState().addBroadcastNotification(
         "mediscope_new_entry",
         "New MediScope request",
         `${request.facilityName} is searching for ${request.product}.`,
         { pathname: "/mediscope/mediscope-market-details", params: { id: request.id } },
       );
+    } else if (request) {
+      console.log(`[mediscope] addRequest: created as "${request.status}", not "published" — no broadcast sent`);
     }
 
     return row.id;
@@ -252,7 +254,8 @@ export const useMediscopeStore = create<MediscopeStore>((set, get) => ({
   updateRequestStatus: async (id, status) => {
     const existing = get().requests.find((r) => r.id === id);
     const patch: Record<string, any> = { status };
-    if (status === "published" && existing && !existing.publishedAt) {
+    const isFirstPublish = status === "published" && existing && !existing.publishedAt;
+    if (isFirstPublish) {
       patch.published_at = new Date().toISOString();
     }
     const { error } = await supabase.from("mediscope_requests").update(patch).eq("id", id);
@@ -261,6 +264,18 @@ export const useMediscopeStore = create<MediscopeStore>((set, get) => ({
       return false;
     }
     await get().fetchRequest(id);
+
+    // Same gap as RxRFQ's equivalent function — publishing an existing
+    // draft via this path is separate from create-time, and this was
+    // previously silent for it.
+    if (isFirstPublish && existing) {
+      useNotificationStore.getState().addBroadcastNotification(
+        "mediscope_new_entry",
+        "New MediScope request",
+        `${existing.facilityName} is searching for ${existing.product}.`,
+        { pathname: "/mediscope/mediscope-market-details", params: { id } },
+      );
+    }
     return true;
   },
 
@@ -320,9 +335,10 @@ export const useMediscopeStore = create<MediscopeStore>((set, get) => ({
     await get().fetchResponses(data.requestId);
 
     const request = get().requests.find((r) => r.id === data.requestId);
-    if (request && request.createdBy === userId) {
+    if (request) {
       const responderName = (row as any).facilities?.name ?? "A vendor";
       useNotificationStore.getState().addNotification(
+        request.createdBy,
         "mediscope_response_received",
         "New response on your MediScope request",
         `${responderName} responded to your search for ${request.product}.`,

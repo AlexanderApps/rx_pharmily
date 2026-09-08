@@ -7,6 +7,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useMemo } from "react";
 import { toast } from "@/shared/hooks/use-toast";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
+import PermissionGate from "@/shared/components/permission-gate";
 
 export default function AddRxRfqResponse() {
   const rxRfqData = useRxRfqsStore((state) => state.rxrfqMarketPlace);
@@ -57,11 +58,13 @@ export default function AddRxRfqResponse() {
 
   return (
     <ThemedView className="flex-1">
-      <RxRfqsResponseForm
-        rxRfqRequest={item}
-        initialData={initialData}
-        onSubmit={handleSubmit}
-      />
+      <PermissionGate permission="rxrfq.respond" featureName="Responding to an RxRFQ">
+        <RxRfqsResponseForm
+          rxRfqRequest={item}
+          initialData={initialData}
+          onSubmit={handleSubmit}
+        />
+      </PermissionGate>
     </ThemedView>
   );
 }

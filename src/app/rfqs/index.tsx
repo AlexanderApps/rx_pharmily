@@ -19,9 +19,12 @@ import { RxRfqCardData } from "@/features/rxrfqs/types/rxrfqs.types";
 import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { RequestCardRow } from "@/features/rxrfqs/components/request-card-row";
+import PermissionGate from "@/shared/components/permission-gate";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 
 export default function RxRfqScreen() {
   const { colors } = useTheme();
+  const hasPermission = usePermissionsStore((state) => state.hasPermission);
   const nearByRequests = useRxRfqsStore((state) => state.rxrfqs);
   const rxrfqMarketPlace = useRxRfqsStore((state) => state.rxrfqMarketPlace);
 
@@ -161,7 +164,7 @@ export default function RxRfqScreen() {
               {/* Create — web only; native keeps the floating action
                   button below instead, which is the mobile-appropriate
                   affordance for this action. */}
-              {Platform.OS === "web" && (
+              {Platform.OS === "web" && hasPermission("rxrfq.create") && (
                 <Pressable
                   onPress={() => router.push("/rfqs/add-rfqs")}
                   className="w-10 h-10 rounded-xl justify-center items-center cursor-pointer hover:opacity-90"
@@ -175,6 +178,7 @@ export default function RxRfqScreen() {
         </View>
 
         {/* Scrollable Main Area mapped to Animated Tracking */}
+        <PermissionGate permission="rxrfq.view" featureName="RxRFQ">
         <Animated.ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 120 }}
@@ -334,10 +338,11 @@ export default function RxRfqScreen() {
             </View>
           </View>
         </Animated.ScrollView>
+        </PermissionGate>
 
         {/* Floating Action Button — native only; web uses the header
             Create button instead. */}
-        {Platform.OS !== "web" && (
+        {Platform.OS !== "web" && hasPermission("rxrfq.create") && (
         <Pressable
           onPress={() => router.push("/rfqs/add-rfqs")}
           className="absolute right-6 bottom-8 w-16 h-16 rounded-full justify-center items-center shadow-lg active:opacity-90 cursor-pointer hover:opacity-90"

@@ -16,9 +16,12 @@ import {
   useMediscopeStore,
 } from "@/features/mediscope/hooks/use-mediscope-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import PermissionGate from "@/shared/components/permission-gate";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 
 export default function MediscopeScreen() {
   const { colors } = useTheme();
+  const hasPermission = usePermissionsStore((state) => state.hasPermission);
   const requests = useMediscopeStore((state) => state.requests);
 
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -122,7 +125,7 @@ export default function MediscopeScreen() {
 
               {/* Create — web only; native keeps the floating action
                   button below instead. */}
-              {Platform.OS === "web" && (
+              {Platform.OS === "web" && hasPermission("mediscope.create") && (
                 <Pressable
                   onPress={() => router.push("/mediscope/add-mediscope-request")}
                   className="h-10 w-10 items-center justify-center rounded-xl cursor-pointer hover:opacity-90"
@@ -135,6 +138,7 @@ export default function MediscopeScreen() {
           </View>
         </View>
 
+        <PermissionGate permission="mediscope.view" featureName="MediScope">
         <Animated.ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 120 }}
@@ -289,10 +293,11 @@ export default function MediscopeScreen() {
             </View>
           </View>
         </Animated.ScrollView>
+        </PermissionGate>
 
         {/* Floating Action Button — native only; web uses the header
             Create button instead. */}
-        {Platform.OS !== "web" && (
+        {Platform.OS !== "web" && hasPermission("mediscope.create") && (
         <Pressable
           onPress={() => router.push("/mediscope/add-mediscope-request")}
           className="absolute bottom-8 right-6 h-16 w-16 items-center justify-center rounded-full shadow-lg active:opacity-90 cursor-pointer hover:opacity-90"

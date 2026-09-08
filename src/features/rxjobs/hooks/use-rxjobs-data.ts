@@ -215,7 +215,7 @@ export const useRxJobsStore = create<RxJobsStore>((set, get) => ({
     const job = mapJobRow(row);
     set((state) => ({ jobs: [job, ...state.jobs] }));
 
-    useNotificationStore.getState().addNotification(
+    useNotificationStore.getState().addBroadcastNotification(
       "jobs_new_entry",
       "New job posted",
       `${job.companyName} posted "${job.title}".`,
@@ -319,8 +319,9 @@ export const useRxJobsStore = create<RxJobsStore>((set, get) => ({
     }));
 
     const job = get().jobs.find((j) => j.id === jobId);
-    if (job && job.postedBy === userId) {
+    if (job) {
       useNotificationStore.getState().addNotification(
+        job.postedBy,
         "jobs_application_received",
         "New applicant",
         `${application.applicantName} applied to "${job.title}".`,
@@ -341,10 +342,10 @@ export const useRxJobsStore = create<RxJobsStore>((set, get) => ({
     }));
 
     const application = get().applications.find((a) => a.id === applicationId);
-    const userId = await requireUserId();
-    if (application && application.applicantId === userId) {
+    if (application) {
       const job = get().jobs.find((j) => j.id === application.jobId);
       useNotificationStore.getState().addNotification(
+        application.applicantId,
         "jobs_application_status",
         "Your application status changed",
         `Your application${job ? ` for "${job.title}"` : ""} is now "${status}".`,

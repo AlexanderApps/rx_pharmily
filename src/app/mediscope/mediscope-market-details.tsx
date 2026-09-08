@@ -12,6 +12,7 @@ import LoadingImage from "@/shared/components/loading-image";
 import MediscopeNamePlaceholder from "@/features/mediscope/components/mediscope-name-placeholder";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useMediscopeStore } from "@/features/mediscope/hooks/use-mediscope-data";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 import { MediscopeResponseFormData } from "@/features/mediscope/types/mediscope.types";
 import MediscopeResponseSheet from "@/features/mediscope/components/mediscope-response-sheet";
 import PrintButton from "@/shared/components/print-button";
@@ -35,6 +36,7 @@ export default function MediscopeMarketDetailsScreen() {
     () => (id ? (responsesByRequest[id] ?? []) : []),
     [responsesByRequest, id],
   );
+  const hasPermission = usePermissionsStore((state) => state.hasPermission);
 
   if (!request) {
     if (isLoadingRequests) {
@@ -53,7 +55,7 @@ export default function MediscopeMarketDetailsScreen() {
     );
   }
 
-  const canRespond = request.status === "published";
+  const canRespond = request.status === "published" && hasPermission("mediscope.respond");
 
   const handleSubmitResponse = async (data: MediscopeResponseFormData) => {
     const ok = await addResponse(data);

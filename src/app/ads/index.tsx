@@ -11,9 +11,12 @@ import { useAdsStore } from "@/features/ads/hooks/use-ads-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { isAdminRole } from "@/features/auth/types/auth.types";
 import AdCard from "@/features/ads/components/ad-card";
+import PermissionGate from "@/shared/components/permission-gate";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 
 export default function RxAdsScreen() {
   const { colors } = useTheme();
+  const hasPermission = usePermissionsStore((state) => state.hasPermission);
   const insets = useSafeAreaInsets();
   const currentUserId = useAuthStore((state) => state.user?.id);
   const isAdmin = useAuthStore((state) => isAdminRole(state.profile?.accountRole));
@@ -82,7 +85,7 @@ export default function RxAdsScreen() {
 
           {/* Create — web only; native keeps the floating action
               button below instead. */}
-          {Platform.OS === "web" && (
+          {Platform.OS === "web" && hasPermission("ads.create") && (
             <Pressable
               onPress={() => router.push("/ads/create-ad")}
               className="w-10 h-10 rounded-xl items-center justify-center cursor-pointer hover:opacity-90"
@@ -93,6 +96,7 @@ export default function RxAdsScreen() {
           )}
         </View>
 
+        <PermissionGate permission="ads.view" featureName="Ads">
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
           <View className="px-5 mt-6">
             <Text className="text-lg font-semibold mb-3" style={{ color: colors.text }}>
@@ -170,10 +174,11 @@ export default function RxAdsScreen() {
             </View>
           </View>
         </ScrollView>
+        </PermissionGate>
 
         {/* Floating Action Button — native only; web uses the header
             Create button instead. */}
-        {Platform.OS !== "web" && (
+        {Platform.OS !== "web" && hasPermission("ads.create") && (
         <Pressable
           onPress={() => router.push("/ads/create-ad")}
           className="absolute right-6 bottom-8 w-16 h-16 rounded-full items-center justify-center shadow-lg active:opacity-90 cursor-pointer hover:opacity-90"

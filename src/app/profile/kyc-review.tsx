@@ -17,7 +17,7 @@ import { toast } from "@/shared/hooks/use-toast";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { isAdminRole } from "@/features/auth/types/auth.types";
-import { KycEntityType } from "@/features/profile/types/profile.types";
+import { KycEntityType, UserProfession } from "@/features/profile/types/profile.types";
 import KycStatusBadge from "@/features/profile/components/kyc-status-badge";
 import DocumentViewerModal from "@/features/profile/components/document-viewer-modal";
 import StatusFilterTabs from "@/shared/components/status-filter-tabs";
@@ -35,6 +35,7 @@ export default function KycReviewScreen() {
   );
   const approveKyc = useProfileStore((state) => state.approveKyc);
   const rejectKyc = useProfileStore((state) => state.rejectKyc);
+  const setUserProfession = useProfileStore((state) => state.setUserProfession);
   const fetchKycDocuments = useProfileStore((state) => state.fetchKycDocuments);
 
   useEffect(() => {
@@ -66,6 +67,7 @@ export default function KycReviewScreen() {
         label: user.fullName,
         sub: "User",
         kyc: user.kyc,
+        profession: user.profession,
       },
       ...usersForKycReview.map((u) => ({
         type: "user" as KycEntityType,
@@ -73,6 +75,7 @@ export default function KycReviewScreen() {
         label: u.fullName,
         sub: "User",
         kyc: u.kyc,
+        profession: u.profession,
       })),
       ...facilities.map((f) => ({
         type: "facility" as KycEntityType,
@@ -80,6 +83,7 @@ export default function KycReviewScreen() {
         label: f.name,
         sub: "Facility",
         kyc: f.kyc,
+        profession: undefined as UserProfession | undefined,
       })),
       ...organizations.map((o) => ({
         type: "organization" as KycEntityType,
@@ -87,6 +91,7 @@ export default function KycReviewScreen() {
         label: o.name,
         sub: "Organization",
         kyc: o.kyc,
+        profession: undefined as UserProfession | undefined,
       })),
     ],
     [user, usersForKycReview, facilities, organizations],
@@ -135,6 +140,15 @@ export default function KycReviewScreen() {
     setRejectTarget(null);
     setReasonText("");
     toast.success("Submission rejected.");
+  };
+
+  const handleSetProfession = async (userId: string, profession: UserProfession) => {
+    const result = await setUserProfession(userId, profession);
+    if (result.ok) {
+      toast.success(`Profession set to ${profession}.`);
+    } else {
+      toast.error(result.error ?? "Couldn't set profession.");
+    }
   };
 
   return (
@@ -190,6 +204,32 @@ export default function KycReviewScreen() {
                 </View>
                 <KycStatusBadge status={entry.kyc.status} compact />
               </View>
+
+              {entry.type === "user" && (
+                <View className="flex-row flex-wrap gap-1.5">
+                  {(["Pharmacist", "Technician", "MCA", "Other"] as UserProfession[]).map((option) => {
+                    const active = entry.profession === option;
+                    return (
+                      <Pressable
+                        key={option}
+                        onPress={() => handleSetProfession(entry.id, option)}
+                        className="px-2.5 py-1 rounded-full border"
+                        style={{
+                          backgroundColor: active ? colors.primary : "transparent",
+                          borderColor: active ? colors.primary : colors.border,
+                        }}
+                      >
+                        <Text
+                          className="text-[11px] font-semibold"
+                          style={{ color: active ? colors.background : colors.textSecondary }}
+                        >
+                          {option}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
 
               {entry.kyc.documents.length === 0 ? (
                 <Text className="text-xs" style={{ color: colors.textSecondary }}>

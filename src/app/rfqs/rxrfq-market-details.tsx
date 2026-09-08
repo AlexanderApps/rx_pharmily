@@ -23,6 +23,8 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { ContextText } from "@/shared/components/context-text";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useChatStore } from "@/features/chat/hooks/use-chat-data";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
+import { toast } from "@/shared/hooks/use-toast";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
 
 const RxMarketplaceDetailScreen: React.FC = () => {
@@ -48,6 +50,7 @@ const RxMarketplaceDetailScreen: React.FC = () => {
   const incotermDes = useMemo(() => {
     return incotermList.find((option) => option.code === item?.incoterms);
   }, [incotermList, item?.incoterms]);
+  const hasPermission = usePermissionsStore((state) => state.hasPermission);
 
   if (!item) {
     if (isLoadingRfqs) {
@@ -269,12 +272,16 @@ const RxMarketplaceDetailScreen: React.FC = () => {
       {/* FAB group */}
       <FabGroup
         isBookmarked={isBookmarked}
-        onSubmit={() =>
+        onSubmit={() => {
+          if (!hasPermission("rxrfq.respond")) {
+            toast.error("Responding to an RxRFQ requires a verified professional account.");
+            return;
+          }
           router.push({
             pathname: "/rfqs/response-rfqs",
             params: { id: item.id },
-          })
-        }
+          });
+        }}
         onContact={handleContact}
         onShare={handleShare}
         onBookmark={() => setIsBookmarked((v) => !v)}

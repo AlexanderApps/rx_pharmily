@@ -344,12 +344,15 @@ export const useHelpStore = create<HelpStore>((set, get) => ({
     }));
 
     const request = get().consultRequests.find((c) => c.id === requestId);
-    useNotificationStore.getState().addNotification(
-      "consult_response_received",
-      "Consultant replied",
-      `${trimmedName} replied to your request${request ? `: "${request.subject}"` : ""}.`,
-      { pathname: "/help/consult-details", params: { id: requestId } },
-    );
+    if (request) {
+      useNotificationStore.getState().addNotification(
+        request.createdBy,
+        "consult_response_received",
+        "Consultant replied",
+        `${trimmedName} replied to your request: "${request.subject}".`,
+        { pathname: "/help/consult-details", params: { id: requestId } },
+      );
+    }
     return true;
   },
 
@@ -414,12 +417,15 @@ export const useHelpStore = create<HelpStore>((set, get) => ({
     }));
 
     const question = get().questions.find((q) => q.id === questionId);
-    useNotificationStore.getState().addNotification(
-      "pharmacist_response_received",
-      "Your question was answered",
-      `${trimmedName} answered your question${question?.medicationName ? ` about ${question.medicationName}` : ""}.`,
-      { pathname: "/help/question-details", params: { id: questionId } },
-    );
+    if (question) {
+      useNotificationStore.getState().addNotification(
+        question.createdBy,
+        "pharmacist_response_received",
+        "Your question was answered",
+        `${trimmedName} answered your question${question.medicationName ? ` about ${question.medicationName}` : ""}.`,
+        { pathname: "/help/question-details", params: { id: questionId } },
+      );
+    }
     return true;
   },
 }));

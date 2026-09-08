@@ -25,10 +25,20 @@ export async function withSupabase<T>(
 // rather than silently writing a null created_by/user_id if someone calls
 // a mutation while signed out (shouldn't happen behind the auth gate, but
 // cheap to guard).
+//
+// Uses getSession() rather than getUser() deliberately: getUser() makes a
+// fresh network round-trip that revalidates the JWT against the server on
+// every single call, while getSession() just reads the locally cached
+// session — the same source features/auth/hooks/use-auth-data.ts's own
+// session state comes from. Using getUser() here meant this helper could
+// momentarily disagree with the session every screen already treats as
+// valid (most visibly during rapid sign-in/sign-out switching, e.g.
+// testing with multiple accounts back to back), throwing "Not signed in"
+// even though the app's own auth state said otherwise.
 export async function requireUserId(): Promise<string> {
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not signed in.");
-  return user.id;
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user) throw new Error("Not signed in.");
+  return session.user.id;
 }

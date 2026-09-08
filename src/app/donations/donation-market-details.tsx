@@ -9,6 +9,7 @@ import { toast } from "@/shared/hooks/use-toast";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useDonationStore } from "@/features/donations/hooks/use-donation-data";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 import { DonationResponseFormData } from "@/features/donations/types/donation.types";
 import DonationClaimSheet, {
   DonationClaimSheetHandle,
@@ -36,6 +37,7 @@ export default function DonationMarketDetailsScreen() {
     () => donations.find((d) => d.id === id),
     [donations, id]
   );
+  const hasPermission = usePermissionsStore((state) => state.hasPermission);
 
   if (!donation) {
     if (isLoadingDonations) {
@@ -61,7 +63,7 @@ export default function DonationMarketDetailsScreen() {
   }
 
   const activeItems = donation.donatedItems.filter((i) => i.isActive);
-  const canClaim = donation.status === "opened" && activeItems.length > 0;
+  const canClaim = donation.status === "opened" && activeItems.length > 0 && hasPermission("donations.claim");
 
   const handleSubmitClaim = async (data: DonationResponseFormData) => {
     const ok = await addResponse(data);

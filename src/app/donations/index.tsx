@@ -16,6 +16,8 @@ import {
   useDonationStore,
 } from "@/features/donations/hooks/use-donation-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import PermissionGate from "@/shared/components/permission-gate";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -25,6 +27,7 @@ function daysUntil(date: Date) {
 
 export default function DonationsScreen() {
   const { colors } = useTheme();
+  const hasPermission = usePermissionsStore((state) => state.hasPermission);
   const donations = useDonationStore((state) => state.donations);
 
   // Animated value to track vertical scroll depth
@@ -143,7 +146,7 @@ export default function DonationsScreen() {
 
               {/* Create — web only; native keeps the floating action
                   button below instead. */}
-              {Platform.OS === "web" && (
+              {Platform.OS === "web" && hasPermission("donations.create") && (
                 <Pressable
                   onPress={() => router.push("/donations/add-donation")}
                   className="w-10 h-10 rounded-xl justify-center items-center cursor-pointer hover:opacity-90"
@@ -157,6 +160,7 @@ export default function DonationsScreen() {
         </View>
 
         {/* Scrollable Main Area mapped to Animated Tracking */}
+        <PermissionGate permission="donations.view" featureName="Donations">
         <Animated.ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerClassName="pb-[120px]"
@@ -311,10 +315,11 @@ export default function DonationsScreen() {
             </View>
           </View>
         </Animated.ScrollView>
+        </PermissionGate>
 
         {/* Floating Action Button — native only; web uses the header
             Create button instead. */}
-        {Platform.OS !== "web" && (
+        {Platform.OS !== "web" && hasPermission("donations.create") && (
         <Pressable
           onPress={() => router.push("/donations/add-donation")}
           className="absolute right-6 bottom-8 w-16 h-16 rounded-full justify-center items-center shadow-lg active:opacity-90 cursor-pointer hover:opacity-90"

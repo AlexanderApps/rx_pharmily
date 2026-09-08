@@ -187,11 +187,12 @@ export const useRxLinkStore = create<RxLinkStore>((set, get) => ({
     const request = mapRequestRow(row);
     set((state) => ({ requests: [request, ...state.requests] }));
 
-    useNotificationStore.getState().addNotification(
+    useNotificationStore.getState().addBroadcastNotification(
       "rxlink_new_entry",
       "New RxLink request",
       `A new medication search request (${request.code}) needs a response.`,
       { pathname: "/admin/rxlink-requests", params: { id: request.id } },
+      true,
     );
 
     return request.id;
@@ -245,6 +246,7 @@ export const useRxLinkStore = create<RxLinkStore>((set, get) => ({
     const request = get().requests.find((r) => r.id === requestId);
     if (request) {
       useNotificationStore.getState().addNotification(
+        request.createdBy,
         "rxlink_response_received",
         "New response on your RxLink request",
         `An admin responded to your request ${request.code}.`,

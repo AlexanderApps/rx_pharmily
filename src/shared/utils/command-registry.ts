@@ -59,4 +59,5 @@ export const SEARCH_COMMANDS: SearchCommand[] = [
   { id: "admin-faq", label: "FAQ Management", category: "Admin", icon: "help-circle-outline", route: "/admin/faq-management", adminOnly: true },
   { id: "admin-payments", label: "Payments", keywords: ["pending payments", "confirm payment"], category: "Admin", icon: "cash-multiple", route: "/admin/payments", adminOnly: true },
   { id: "admin-roles", label: "Role Management", keywords: ["promote", "superadmin"], category: "Admin", icon: "shield-account", route: "/admin/role-management", adminOnly: true },
+  { id: "admin-permission-overrides", label: "Permission Overrides", keywords: ["rbac", "abac", "grant", "deny", "custom permission"], category: "Admin", icon: "account-key-outline", route: "/admin/permission-overrides", adminOnly: true },
 ];

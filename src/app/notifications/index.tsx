@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { View, Text, FlatList, Pressable } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,9 +13,20 @@ import NotificationListItem from "@/features/notifications/components/notificati
 export default function NotificationsScreen() {
   const { colors } = useTheme();
   const notifications = useNotificationStore((state) => state.notifications);
+  const fetchNotifications = useNotificationStore((state) => state.fetchNotifications);
   const markAsRead = useNotificationStore((state) => state.markAsRead);
   const markAllRead = useNotificationStore((state) => state.markAllRead);
   const deleteNotification = useNotificationStore((state) => state.deleteNotification);
+
+  // This screen previously relied entirely on the one-time fetch at app
+  // start (app/_layout.tsx) — anyone who opened it after being signed
+  // in for a while would only ever see whatever existed at load time,
+  // never anything created since. Re-fetching on mount is enough here
+  // (unlike a persistent tab, this is reached via router.push and
+  // remounts fresh on every visit).
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   const sorted = useMemo(
     () => [...notifications].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),

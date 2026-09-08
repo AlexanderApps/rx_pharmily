@@ -459,8 +459,8 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
     }
     await get().fetchAd(id);
 
-    if (ad.advertiser.id === reviewerId) return true; // shouldn't happen, but avoid self-notifying either way
     useNotificationStore.getState().addNotification(
+      ad.advertiser.id,
       "ads_status_decision",
       "Your ad was approved",
       `"${ad.title}" is now live.`,
@@ -497,6 +497,7 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
     await get().fetchAd(id);
 
     useNotificationStore.getState().addNotification(
+      ad.advertiser.id,
       "ads_status_decision",
       "Your ad was rejected",
       `"${ad.title}" was rejected: ${reason}`,
@@ -701,8 +702,9 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
     }));
 
     const ad = get().ads.find((a) => a.id === adId);
-    if (ad && ad.advertiser.id !== userId) {
+    if (ad) {
       useNotificationStore.getState().addNotification(
+        ad.advertiser.id,
         "ads_new_comment",
         "New comment on your ad",
         `${comment.author.name} commented on "${ad.title}".`,

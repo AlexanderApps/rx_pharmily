@@ -325,13 +325,19 @@ export const useRxRfqsStore = create<RxRfqsStore>((set, get) => ({
     await get().fetchRxRfq(row.id);
 
     if (row.status === "published") {
-      const newRfq = get().rxrfqMarketPlace.find((r) => r.id === row.id);
-      useNotificationStore.getState().addNotification(
+      useNotificationStore.getState().addBroadcastNotification(
         "rxrfq_new_entry",
         "New RxRFQ posted",
         `${row.code} — ${row.description || "a new request for quote"} was posted.`,
         { pathname: "/rfqs/rxrfq-market-details", params: { id: row.id } },
       );
+    } else {
+      // Not a bug — a draft RFQ isn't visible to anyone else yet, so
+      // there's genuinely nothing to notify. Logged because "did my RFQ
+      // actually get created as published?" is otherwise invisible —
+      // the status dropdown in the form defaults to "Draft", and it's
+      // easy to submit without explicitly changing it.
+      console.log(`[rxrfq] addRxRfq: created as "${row.status}", not "published" — no broadcast sent`);
     }
 
     return row.id;
@@ -397,16 +403,37 @@ export const useRxRfqsStore = create<RxRfqsStore>((set, get) => ({
 
   updateRxRfqStatus: async (id, status) => {
     const existing = get().rxrfqMarketPlace.find((r) => r.id === id);
+    console.log(
+      `[rxrfq] updateRxRfqStatus(${id}, "${status}"): existing=${existing ? "found" : "NOT FOUND in local store"}` +
+        (existing ? `, existing.publishedAt=${existing.publishedAt ?? "null"}` : ""),
+    );
     const patch: Record<string, any> = { status };
-    if (status === "published" && existing && !existing.publishedAt) {
+    const isFirstPublish = status === "published" && existing && !existing.publishedAt;
+    if (isFirstPublish) {
       patch.published_at = new Date().toISOString();
     }
     const { error } = await supabase.from("rxrfqs").update(patch).eq("id", id);
     if (error) {
-      console.warn("[rxrfq] updateRxRfqStatus failed:", error.message);
+      console.warn("[rxrfq] updateRxRfqStatus: database update failed:", error.message);
       return;
     }
+    console.log(`[rxrfq] updateRxRfqStatus: database update to "${status}" succeeded`);
     await get().fetchRxRfq(id);
+
+    // The create form's own status dropdown is dead code (commented out
+    // in rxrfq-req-form.tsx), so this — publishing an existing draft via
+    // the details screen's actions sheet — is the actual, reachable way
+    // an RFQ ever transitions to published. The broadcast belongs here,
+    // not (only) in addRxRfq, or it would never fire for that normal
+    // "create as draft, publish later" workflow.
+    if (isFirstPublish && existing) {
+      useNotificationStore.getState().addBroadcastNotification(
+        "rxrfq_new_entry",
+        "New RxRFQ posted",
+        `${existing.code} — ${existing.description || "a new request for quote"} was posted.`,
+        { pathname: "/rfqs/rxrfq-market-details", params: { id } },
+      );
+    }
   },
 
   extendRxRfqDeadline: async (id, newDeadline) => {
@@ -490,9 +517,10 @@ export const useRxRfqsStore = create<RxRfqsStore>((set, get) => ({
     await get().fetchResponsesForRfq(data.rfqId);
 
     const targetRfq = get().rxrfqMarketPlace.find((rfq) => rfq.id === data.rfqId);
-    if (targetRfq && targetRfq.createdBy === userId) {
+    if (targetRfq) {
       const vendorFacility = useProfileStore.getState().facilities.find((f) => f.id === data.vendorFacility);
       useNotificationStore.getState().addNotification(
+        targetRfq.createdBy,
         "rxrfq_response_received",
         "New response on your RxRFQ",
         `${vendorFacility?.name ?? "A vendor"} responded to ${targetRfq.code}.`,
@@ -515,11 +543,11 @@ export const useRxRfqsStore = create<RxRfqsStore>((set, get) => ({
 
     await get().fetchRxRfq(rfqId);
 
-    const currentUserId = useProfileStore.getState().user.id;
     const awardedResponse = get().rxrfqResponses.find((r) => r.id === responseId);
     const awardedRfq = get().rxrfqMarketPlace.find((rfq) => rfq.id === rfqId);
-    if (awardedResponse && awardedResponse.createdBy === currentUserId && awardedRfq) {
+    if (awardedResponse && awardedRfq) {
       useNotificationStore.getState().addNotification(
+        awardedResponse.createdBy,
         "rxrfq_award_decision",
         "Your quote was awarded",
         `Your response to ${awardedRfq.code} was awarded.`,

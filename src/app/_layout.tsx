@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { StatusBar } from "expo-status-bar";
-import { useColorScheme, View, ActivityIndicator } from "react-native";
+import { useColorScheme, View, ActivityIndicator, Platform } from "react-native";
 import {
   SafeAreaProvider,
   initialWindowMetrics,
@@ -19,6 +19,10 @@ import { useDonationStore } from "@/features/donations/hooks/use-donation-data";
 import { useMediscopeStore } from "@/features/mediscope/hooks/use-mediscope-data";
 import { useRxJobsStore } from "@/features/rxjobs/hooks/use-rxjobs-data";
 import { useAdsStore } from "@/features/ads/hooks/use-ads-data";
+import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
+import { usePushRegistrationStore } from "@/features/notifications/hooks/use-push-registration";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
+import { registerForWebPush } from "@/features/notifications/hooks/use-web-push-registration";
 import { usePostsStore } from "@/features/posts/hooks/use-posts-data";
 import LogoMark from "@/shared/components/logo-mark";
 import WebAppShell from "@/shared/components/web-app-shell";
@@ -35,6 +39,12 @@ export default function RootLayout() {
   const initialize = useAuthStore((state) => state.initialize);
   const fetchProducts = useCatalogStore((state) => state.fetchProducts);
   const fetchReferenceData = useReferenceDataStore((state) => state.fetchAll);
+  const fetchNotificationSettings = useNotificationStore((state) => state.fetchSettings);
+  const fetchNotifications = useNotificationStore((state) => state.fetchNotifications);
+  const subscribeToNotifications = useNotificationStore((state) => state.subscribeToNotifications);
+  const unsubscribeFromNotifications = useNotificationStore((state) => state.unsubscribeFromNotifications);
+  const registerForPush = usePushRegistrationStore((state) => state.registerForPush);
+  const fetchPermissions = usePermissionsStore((state) => state.fetchPermissions);
   const fetchMyProfile = useProfileStore((state) => state.fetchMyProfile);
   const fetchFacilities = useProfileStore((state) => state.fetchFacilities);
   const fetchOrganizations = useProfileStore((state) => state.fetchOrganizations);
@@ -82,6 +92,29 @@ export default function RootLayout() {
       fetchPosts();
       fetchMyLikes();
       fetchMyVotes();
+      // Chained, not fired in parallel like the calls above — filtering
+      // in fetchNotifications reads whatever's currently in the store's
+      // settings state, so it needs the real, persisted settings loaded
+      // first rather than racing against the buildDefaultSettings()
+      // placeholder still sitting there.
+      fetchNotificationSettings().then(() => fetchNotifications());
+      fetchPermissions();
+      subscribeToNotifications(session.user.id);
+      // Native and web use genuinely different push mechanisms — see
+      // each function's own file for why they can't share one code path.
+      if (Platform.OS === "web") {
+        registerForWebPush();
+      } else {
+        registerForPush();
+      }
+    } else {
+      // Explicit teardown on sign-out — otherwise a channel scoped to
+      // the previous account's user_id filter would keep running,
+      // silently doing nothing useful until the next sign-in calls
+      // subscribeToNotifications again (which does clean up any prior
+      // channel itself, but there's no reason to leave a dangling
+      // connection open in the meantime).
+      unsubscribeFromNotifications();
     }
   }, [session]);
 

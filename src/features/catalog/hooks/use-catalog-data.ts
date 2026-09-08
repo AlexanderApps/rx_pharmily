@@ -278,6 +278,7 @@ export const useCatalogStore = create<CatalogStore>((set, get) => ({
     }));
 
     useNotificationStore.getState().addNotification(
+      request.createdBy,
       "formulary_request_decision",
       "Formulary request approved",
       `"${request.productName}" was approved and is awaiting catalog cleanup.${comment ? ` ${comment}` : ""}`,
@@ -313,6 +314,7 @@ export const useCatalogStore = create<CatalogStore>((set, get) => ({
     }));
 
     useNotificationStore.getState().addNotification(
+      request.createdBy,
       "formulary_request_decision",
       "Formulary request declined",
       `"${request.productName}" was not added: ${comment.trim()}`,
@@ -367,13 +369,12 @@ export const useCatalogStore = create<CatalogStore>((set, get) => ({
       ),
     }));
 
-    if (request.createdBy !== userId) {
-      useNotificationStore.getState().addNotification(
-        "formulary_request_decision",
-        "Formulary request added to the catalog",
-        `"${data.name.trim()}" is now available in the product catalog.`,
-        { pathname: "/formulary" },
-      );
-    }
+    useNotificationStore.getState().addNotification(
+      request.createdBy,
+      "formulary_request_decision",
+      "Formulary request added to the catalog",
+      `"${data.name.trim()}" is now available in the product catalog.`,
+      { pathname: "/formulary" },
+    );
   },
 }));

@@ -26,6 +26,7 @@ import {
   PublicProfileVisibility,
   UserProfile,
   UserProfileFormData,
+  UserProfession,
 } from "@/features/profile/types/profile.types";
 import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
 import { AccountRole, isSuperadminRole } from "@/features/auth/types/auth.types";
@@ -97,6 +98,11 @@ function mapUserRow(row: any): UserProfile {
     latitude: row.latitude ?? undefined,
     longitude: row.longitude ?? undefined,
     avatarUrl: row.avatar_url ?? undefined,
+    profession: row.profession ?? undefined,
+    isPharmacist: row.is_pharmacist ?? false,
+    isPss: row.is_pss ?? false,
+    isAvailableAsSuperintendent: row.is_available_as_superintendent ?? false,
+    title: row.title ?? undefined,
   };
 }
 
@@ -288,12 +294,18 @@ export interface KycReviewUser {
   id: string;
   fullName: string;
   kyc: KycRecord;
+  profession?: UserProfession;
+  isPharmacist: boolean;
+  isPss: boolean;
 }
 
 function mapKycReviewUserRow(row: any): KycReviewUser {
   return {
     id: row.id,
     fullName: row.full_name,
+    profession: row.profession ?? undefined,
+    isPharmacist: row.is_pharmacist ?? false,
+    isPss: row.is_pss ?? false,
     kyc: {
       status: row.kyc_status,
       documents: [],
@@ -411,6 +423,13 @@ type ProfileStore = {
   removeKycDocument: (entityType: KycEntityType, entityId: string, documentId: string) => Promise<void>;
   submitKyc: (entityType: KycEntityType, entityId: string) => Promise<boolean>;
   approveKyc: (entityType: KycEntityType, entityId: string) => Promise<void>;
+  // Admin-only — the DB itself also enforces this via a trigger, this
+  // is just the client-side entry point. Deliberately separate from
+  // approveKyc rather than folded into it: an admin might set/correct
+  // profession at a different moment than the approve/reject decision
+  // itself (e.g. reviewing an already-verified user's KYC documents
+  // again later).
+  setUserProfession: (userId: string, profession: UserProfession) => Promise<{ ok: boolean; error?: string }>;
   rejectKyc: (entityType: KycEntityType, entityId: string, reason: string) => Promise<void>;
 
   // Creation is request/approve now, not self-service — a verified user
@@ -467,7 +486,18 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   isLoading: false,
 
   fetchMyProfile: async () => {
-    const userId = await requireUserId();
+    let userId: string;
+    try {
+      userId = await requireUserId();
+    } catch {
+      // Can genuinely happen for a moment during rapid account
+      // switching — signing out of one account and into another in
+      // quick succession, exactly the scenario requireUserId's own
+      // comment already describes. Not an error worth surfacing: this
+      // effect re-runs the moment the session settles.
+      console.warn("[profile] fetchMyProfile skipped: not signed in (yet)");
+      return;
+    }
     const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
     if (error || !data) {
       console.warn("[profile] fetchMyProfile failed:", error?.message);
@@ -500,7 +530,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     const myId = await requireUserId();
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, kyc_status, kyc_submitted_at, kyc_reviewed_at, kyc_reviewed_by, kyc_rejection_reason")
+      .select("id, full_name, kyc_status, kyc_submitted_at, kyc_reviewed_at, kyc_reviewed_by, kyc_rejection_reason, profession, is_pharmacist, is_pss")
       .neq("kyc_status", "unverified")
       .neq("id", myId)
       .order("kyc_submitted_at", { ascending: false });
@@ -808,6 +838,8 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         latitude: data.latitude ?? null,
         longitude: data.longitude ?? null,
         avatar_url: data.avatarUrl ?? null,
+        title: data.title ?? null,
+        is_available_as_superintendent: data.isAvailableAsSuperintendent ?? false,
       })
       .eq("id", userId);
     if (error) {
@@ -1045,12 +1077,21 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
       return { organizations: state.organizations.map((o) => (o.id === entityId ? { ...o, kyc: { ...o.kyc, ...patch } } : o)) };
     });
 
-    useNotificationStore.getState().addNotification(
-      "kyc_decision",
-      `${isSelf ? "You are" : `${entityName ?? "Your submission"} is`} verified`,
-      `${isSelf ? "Your submission" : entityName ?? "Your submission"} has been verified.`,
-      { pathname: entityType === "user" ? "/profile/user-profile" : entityType === "facility" ? "/profile/facility-profile" : "/profile/organization-profile" },
-    );
+    const kycRecipientId =
+      entityType === "user"
+        ? entityId
+        : entityType === "facility"
+          ? get().facilities.find((f) => f.id === entityId)?.adminUserId
+          : get().organizations.find((o) => o.id === entityId)?.adminUserId;
+    if (kycRecipientId) {
+      useNotificationStore.getState().addNotification(
+        kycRecipientId,
+        "kyc_decision",
+        `${isSelf ? "You are" : `${entityName ?? "Your submission"} is`} verified`,
+        `${isSelf ? "Your submission" : entityName ?? "Your submission"} has been verified.`,
+        { pathname: entityType === "user" ? "/profile/user-profile" : entityType === "facility" ? "/profile/facility-profile" : "/profile/organization-profile" },
+      );
+    }
   },
 
   rejectKyc: async (entityType, entityId, reason) => {
@@ -1095,12 +1136,42 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
       return { organizations: state.organizations.map((o) => (o.id === entityId ? { ...o, kyc: { ...o.kyc, ...patch } } : o)) };
     });
 
-    useNotificationStore.getState().addNotification(
-      "kyc_decision",
-      `Verification needs attention`,
-      `${isSelf ? "Your submission" : entityName ?? "Your submission"} was not approved: ${reason}`,
-      { pathname: entityType === "user" ? "/profile/user-profile" : entityType === "facility" ? "/profile/facility-profile" : "/profile/organization-profile" },
-    );
+    const kycRejectRecipientId =
+      entityType === "user"
+        ? entityId
+        : entityType === "facility"
+          ? get().facilities.find((f) => f.id === entityId)?.adminUserId
+          : get().organizations.find((o) => o.id === entityId)?.adminUserId;
+    if (kycRejectRecipientId) {
+      useNotificationStore.getState().addNotification(
+        kycRejectRecipientId,
+        "kyc_decision",
+        `Verification needs attention`,
+        `${isSelf ? "Your submission" : entityName ?? "Your submission"} was not approved: ${reason}`,
+        { pathname: entityType === "user" ? "/profile/user-profile" : entityType === "facility" ? "/profile/facility-profile" : "/profile/organization-profile" },
+      );
+    }
+  },
+
+  setUserProfession: async (userId, profession) => {
+    const { error } = await supabase.from("profiles").update({ profession }).eq("id", userId);
+    if (error) {
+      // The DB's own trigger (trg_enforce_profession_admin_only) is the
+      // real enforcement — this client-side call can still fail if
+      // called by a non-admin somehow, and that failure should surface
+      // clearly rather than fail silently.
+      console.warn("[profile] setUserProfession failed:", error.message);
+      return { ok: false, error: error.message };
+    }
+    set((state) => ({
+      usersForKycReview: state.usersForKycReview.map((u) =>
+        u.id === userId ? { ...u, profession, isPharmacist: profession === "Pharmacist", isPss: profession === "Technician" || profession === "MCA" } : u,
+      ),
+      user: state.user.id === userId
+        ? { ...state.user, profession, isPharmacist: profession === "Pharmacist", isPss: profession === "Technician" || profession === "MCA" }
+        : state.user,
+    }));
+    return { ok: true };
   },
 
   submitFacilityCreationRequest: async (data) => {
@@ -1195,6 +1266,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     }));
 
     useNotificationStore.getState().addNotification(
+      request.requestedBy,
       "facility_creation_decision",
       "Facility approved",
       `"${request.name}" has been created. Submit KYC documents to get it verified.`,
@@ -1230,6 +1302,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     }));
 
     useNotificationStore.getState().addNotification(
+      request.requestedBy,
       "facility_creation_decision",
       "Facility request declined",
       `"${request.name}" was not approved: ${comment.trim()}`,
@@ -1316,6 +1389,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     }));
 
     useNotificationStore.getState().addNotification(
+      request.requestedBy,
       "organization_creation_decision",
       "Organization approved",
       `"${request.name}" has been created. Submit KYC documents to get it verified.`,
@@ -1351,6 +1425,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     }));
 
     useNotificationStore.getState().addNotification(
+      request.requestedBy,
       "organization_creation_decision",
       "Organization request declined",
       `"${request.name}" was not approved: ${comment.trim()}`,
@@ -1391,6 +1466,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
 
     if (facility.adminUserId) {
       useNotificationStore.getState().addNotification(
+        facility.adminUserId,
         "facility_membership_request_received",
         "New membership request",
         `${get().user.fullName} wants to join ${facility.name}.`,
@@ -1435,6 +1511,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     }));
 
     useNotificationStore.getState().addNotification(
+      request.requestedBy,
       "facility_membership_decision",
       "Membership request approved",
       `You're now a member of ${facility?.name ?? "the facility"}.`,
@@ -1471,6 +1548,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     }));
 
     useNotificationStore.getState().addNotification(
+      request.requestedBy,
       "facility_membership_decision",
       "Membership request declined",
       `Your request to join ${facility?.name ?? "the facility"} was not approved: ${comment.trim()}`,
@@ -1516,6 +1594,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     }));
 
     useNotificationStore.getState().addNotification(
+      org.adminUserId,
       "facility_organization_request_received",
       "New facility-to-organization request",
       `${facility.name} wants to join ${org.name}.`,
@@ -1561,6 +1640,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     }));
 
     useNotificationStore.getState().addNotification(
+      request.requestedBy,
       "facility_organization_decision",
       "Facility joined organization",
       `${request.facilityName} now belongs to ${request.organizationName}.`,
@@ -1596,6 +1676,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     }));
 
     useNotificationStore.getState().addNotification(
+      request.requestedBy,
       "facility_organization_decision",
       "Facility-to-organization request declined",
       `${request.facilityName}'s request to join ${request.organizationName} was not approved: ${comment.trim()}`,

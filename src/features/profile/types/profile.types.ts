@@ -67,6 +67,26 @@ export const DEFAULT_ENTITY_VISIBILITY: PublicProfileVisibility = {
   showPhone: true,
 };
 
+// Admin-only settable — see the migration's own comment for the full
+// reasoning (this drives isPharmacist/isPss, which will gate real
+// permissions later; self-reporting this would be a privilege
+// escalation). 'Other' is a catch-all, deliberately excluded from
+// isPss — an "Other" profession isn't necessarily pharmacy support
+// staff at all, so it shouldn't be lumped in by default.
+export type UserProfession = "Pharmacist" | "Technician" | "MCA" | "Other";
+
+// Self-set by the user, purely an honorific — doesn't affect access
+// control the way profession does.
+export type UserTitle =
+  | "Mr."
+  | "Mrs."
+  | "Ms."
+  | "Dr. (PharmD)"
+  | "Dr. (PhD)"
+  | "Dr. (MD)"
+  | "Prof."
+  | "Other";
+
 export interface UserProfile {
   id: string;
   fullName: string;
@@ -84,6 +104,17 @@ export interface UserProfile {
   latitude?: number;
   longitude?: number;
   avatarUrl?: string;
+  // Unset (undefined) until an admin reviews KYC and sets it.
+  profession?: UserProfession;
+  // Derived from profession, generated columns in the DB — always in
+  // sync, never independently settable.
+  isPharmacist: boolean;
+  isPss: boolean;
+  // Self-toggled by the pharmacist themselves — the DB enforces this
+  // can only be true when profession is 'Pharmacist', regardless of
+  // who's setting it.
+  isAvailableAsSuperintendent: boolean;
+  title?: UserTitle;
 }
 
 export interface UserProfileFormData {
@@ -98,6 +129,10 @@ export interface UserProfileFormData {
   latitude?: number;
   longitude?: number;
   avatarUrl?: string;
+  // profession is deliberately NOT here — admin-only, set during KYC
+  // review, never through this self-service form.
+  title?: UserTitle;
+  isAvailableAsSuperintendent?: boolean;
 }
 
 // ─── Facility ────────────────────────────────────────────────────────────

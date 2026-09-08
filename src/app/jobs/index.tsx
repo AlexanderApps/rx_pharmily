@@ -18,9 +18,12 @@ import { JobHsCard } from "@/features/rxjobs/components/job-hs-card";
 import { JobRow } from "@/features/rxjobs/components/job-row";
 import { useRxJobsStore } from "@/features/rxjobs/hooks/use-rxjobs-data";
 import { Job } from "@/features/rxjobs/types/rxjobs.types";
+import PermissionGate from "@/shared/components/permission-gate";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 
 export default function RxJobsScreen() {
   const { colors } = useTheme();
+  const hasPermission = usePermissionsStore((state) => state.hasPermission);
   const currentUserId = useAuthStore((state) => state.user?.id);
   const jobs = useRxJobsStore((state) => state.jobs);
 
@@ -133,7 +136,7 @@ export default function RxJobsScreen() {
 
               {/* Create — web only; native keeps the floating action
                   button below instead. */}
-              {Platform.OS === "web" && (
+              {Platform.OS === "web" && hasPermission("jobs.post") && (
                 <Pressable
                   onPress={() => router.push("/jobs/post-job")}
                   className="h-10 w-10 items-center justify-center rounded-xl cursor-pointer hover:opacity-90"
@@ -146,6 +149,7 @@ export default function RxJobsScreen() {
           </View>
         </View>
 
+        <PermissionGate permission="jobs.view" featureName="Jobs">
         <Animated.ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 120 }}
@@ -317,10 +321,11 @@ export default function RxJobsScreen() {
             </View>
           </View>
         </Animated.ScrollView>
+        </PermissionGate>
 
         {/* Floating Action Button — native only; web uses the header
             Create button instead. */}
-        {Platform.OS !== "web" && (
+        {Platform.OS !== "web" && hasPermission("jobs.post") && (
         <Pressable
           onPress={() => router.push("/jobs/post-job")}
           className="absolute bottom-8 right-6 h-16 w-16 items-center justify-center rounded-full shadow-lg active:opacity-90 cursor-pointer hover:opacity-90"
