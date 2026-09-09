@@ -29,7 +29,6 @@ export default function SearchDonationsContent() {
     filters,
     activeFilter,
     clearActiveFilter,
-    closeFilterModal,
   } = useDonationFilters({
     filterModalRef,
   });
@@ -141,6 +140,7 @@ export default function SearchDonationsContent() {
           {/* Bottom Sheet Modal Sheet Component */}
           <BottomSheet
             ref={filterModalRef}
+            title={modalTitle}
             snapPoints={snapPoints}
             showHandle
             cornerRadius={16}
@@ -151,22 +151,6 @@ export default function SearchDonationsContent() {
             backgroundColor={colors.backgroundSecondary}
           >
             <ThemedView type="backgroundSecondary">
-              <ThemedView
-                type="backgroundSecondary"
-                className="flex-row justify-between items-center mb-3"
-              >
-                <ThemedText className="text-base font-semibold mb-4">
-                  {modalTitle}
-                </ThemedText>
-                <ThemedView
-                  type="backgroundSelected"
-                  className="flex-row items-center p-2 rounded-full"
-                >
-                  <Pressable onPress={closeFilterModal}>
-                    <Ionicons name="close" size={18} color={colors.textSecondary} />
-                  </Pressable>
-                </ThemedView>
-              </ThemedView>
               <ThemedView>
                 {activeFilterConfig && (
                   <CheckboxFilterGroup

@@ -23,10 +23,11 @@ import LoadingImage from "@/shared/components/loading-image";
 import { toast } from "@/shared/hooks/use-toast";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
-import { FacilityType } from "@/features/profile/types/profile.types";
+import { FacilityType, FacilityDeliveryOption } from "@/features/profile/types/profile.types";
 import KycSection from "@/features/profile/components/kyc-section";
 import { useFacilityFieldAccess } from "@/features/profile/hooks/use-facility-field-access";
 import ReferencePicker from "@/shared/components/forms/reference-picker";
+import MultiSelectPicker from "@/shared/components/forms/multi-select-picker";
 import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 
 const FACILITY_TYPES: FacilityType[] = [
@@ -128,6 +129,23 @@ export default function FacilityProfileScreen() {
   const [registrationNumber, setRegistrationNumber] = useState(
     facility?.registrationNumber ?? "",
   );
+  const [deliveryOptions, setDeliveryOptions] = useState<FacilityDeliveryOption[]>(
+    facility?.deliveryOptions ?? [],
+  );
+  const [insuranceAccepted, setInsuranceAccepted] = useState<string[]>(
+    facility?.insuranceAccepted ?? [],
+  );
+  const referenceInsuranceProviders = useReferenceDataStore((state) => state.insuranceProviders);
+  const insuranceOptions = useMemo(
+    () => referenceInsuranceProviders.map((p) => ({ id: p.name, label: p.name })),
+    [referenceInsuranceProviders],
+  );
+  const deliveryOptionChoices: FacilityDeliveryOption[] = [
+    "Pickup",
+    "Home Delivery",
+    "Courier Delivery",
+    "Same-Day Delivery",
+  ];
 
   // useState's initial value is only read on the very first render — on a
   // cold refresh, `facility` starts undefined and these fields would
@@ -146,6 +164,8 @@ export default function FacilityProfileScreen() {
     setEmail(facility.email ?? "");
     setRegistrationNumber(facility.registrationNumber ?? "");
     setLogoUrl(facility.logoUrl);
+    setDeliveryOptions(facility.deliveryOptions);
+    setInsuranceAccepted(facility.insuranceAccepted);
   }, [facility, editing]);
 
   const { role: viewerRole, canSee } = useFacilityFieldAccess(facility);
@@ -208,6 +228,8 @@ export default function FacilityProfileScreen() {
       latitude,
       longitude,
       logoUrl,
+      deliveryOptions,
+      insuranceAccepted,
     });
     setEditing(false);
   };
@@ -421,6 +443,51 @@ export default function FacilityProfileScreen() {
               onChange={setRegistrationNumber}
               colors={colors}
             />
+          )}
+
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>Delivery Options</Text>
+          {editing ? (
+            <View className="flex-row flex-wrap gap-2 mt-1.5">
+              {deliveryOptionChoices.map((option) => {
+                const active = deliveryOptions.includes(option);
+                return (
+                  <Pressable
+                    key={option}
+                    onPress={() =>
+                      setDeliveryOptions((prev) =>
+                        active ? prev.filter((o) => o !== option) : [...prev, option],
+                      )
+                    }
+                    className="px-3 py-2 rounded-full"
+                    style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
+                  >
+                    <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
+                      {option}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : (
+            <Text className="text-sm mt-1" style={{ color: colors.text }}>
+              {facility.deliveryOptions.length > 0 ? facility.deliveryOptions.join(", ") : "-"}
+            </Text>
+          )}
+
+          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>Insurance Accepted</Text>
+          {editing ? (
+            <MultiSelectPicker
+              title="Select Insurance Accepted"
+              options={insuranceOptions}
+              value={insuranceAccepted}
+              onChange={setInsuranceAccepted}
+              placeholder="Select insurance providers"
+              emptyMessage="No insurance providers set up yet."
+            />
+          ) : (
+            <Text className="text-sm mt-1" style={{ color: colors.text }}>
+              {facility.insuranceAccepted.length > 0 ? facility.insuranceAccepted.join(", ") : "-"}
+            </Text>
           )}
 
           <View className="h-px my-[18px]" style={{ backgroundColor: colors.border }} />

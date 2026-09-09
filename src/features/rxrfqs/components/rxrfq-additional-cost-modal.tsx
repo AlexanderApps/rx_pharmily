@@ -101,6 +101,7 @@ const RxRfqAdditionalCostModal = forwardRef<
   return (
     <BottomSheet
       ref={ref}
+      title={isEditing ? "Edit Cost" : "Add Cost"}
       snapPoints={snapPoints}
       showHandle
       cornerRadius={20}
@@ -109,21 +110,6 @@ const RxRfqAdditionalCostModal = forwardRef<
       onChange={handleBottomSheetChange}
       backgroundColor={colors.backgroundSecondary}
     >
-      {/* Header */}
-      <View className="flex-row justify-between items-center px-5 py-4 border-b" style={{ borderBottomColor: colors.border }}>
-        <Text className="text-lg font-bold" style={{ color: colors.text }}>
-          {isEditing ? "Edit Cost" : "Add Cost"}
-        </Text>
-        <TouchableOpacity
-          onPress={() =>
-            (ref as React.RefObject<BottomSheetModal>).current?.dismiss()
-          }
-          className="p-1"
-        >
-          <MaterialCommunityIcons name="close" size={24} color={colors.text} />
-        </TouchableOpacity>
-      </View>
-
       <View className="flex-1">
         <View className="px-5 pt-5 pb-10 gap-5">
           {/* Cost type selector */}

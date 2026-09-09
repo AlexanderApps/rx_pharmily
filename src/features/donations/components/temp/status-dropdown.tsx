@@ -114,6 +114,7 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
 
       <BottomSheet
         ref={filterModalRef}
+        title="Select Status"
         snapPoints={snapPoints}
         showHandle={true}
         cornerRadius={16}
@@ -122,12 +123,6 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
         onChange={handleBottomSheetChange}
         backgroundColor={colors.backgroundSecondary}
       >
-        <View className="pb-4 items-center">
-          <Text className="text-base font-semibold" style={{ color: colors.text }}>
-            Select Status
-          </Text>
-        </View>
-
         <FlatList
           data={STATUS_OPTIONS}
           keyExtractor={(item) => item.id}

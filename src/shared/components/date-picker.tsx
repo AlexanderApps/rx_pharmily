@@ -11,6 +11,7 @@ interface DatePickerProps {
   onChange: (date: Date) => void;
   placeholder?: string;
   format?: "short" | "long";
+  error?: string;
 }
 
 const DatePicker: React.FC<DatePickerProps> = ({
@@ -18,6 +19,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   onChange,
   placeholder = "Select date...",
   format = "short",
+  error,
 }) => {
   const { colors } = useTheme();
   const [show, setShow] = useState(false);
@@ -74,7 +76,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
         className="rounded-md border overflow-hidden h-12 flex-row items-center relative"
         style={{
           backgroundColor: show ? colors.backgroundSecondary : colors.backgroundElement,
-          borderColor: colors.border,
+          borderColor: error ? colors.error : colors.border,
         }}
       >
         <Text
@@ -92,6 +94,12 @@ const DatePicker: React.FC<DatePickerProps> = ({
           />
         </View>
       </TouchableOpacity>
+
+      {error && (
+        <Text className="text-xs font-medium" style={{ color: colors.error }}>
+          {error}
+        </Text>
+      )}
 
       {show && (
         <DateTimePicker

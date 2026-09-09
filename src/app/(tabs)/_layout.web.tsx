@@ -6,10 +6,10 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import AppTabs from "@/shared/components/app-tabs";
 
 export default function TabLayout() {
-  const { themeMode } = useTheme();
+  const { resolvedTheme } = useTheme();
 
   return (
-    <ThemeProvider value={themeMode === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={resolvedTheme === "dark" ? DarkTheme : DefaultTheme}>
       {/*<AnimatedSplashOverlay />*/}
       <AppTabs />
     </ThemeProvider>

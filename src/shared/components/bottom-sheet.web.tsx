@@ -9,6 +9,7 @@ import {
   View,
   Pressable,
   ScrollView,
+  Text,
   StyleSheet,
   ViewStyle,
   StyleProp,
@@ -60,6 +61,8 @@ const BottomSheet = forwardRef<BottomSheetModalHandle, BottomSheetProps>(
   (
     {
       children,
+      title,
+      subtitle,
       showBackdrop = true,
       backdropOpacity = 0.5,
       backgroundColor,
@@ -126,9 +129,24 @@ const BottomSheet = forwardRef<BottomSheetModalHandle, BottomSheetProps>(
               style,
             ]}
           >
-            <Pressable onPress={close} style={styles.closeButton} hitSlop={8}>
-              <MaterialCommunityIcons name="close" size={18} color={colors.textSecondary} />
-            </Pressable>
+            {/* A real row, in normal layout flow — not absolutely
+                positioned over the scrollable content below. This was
+                the actual bug: the old close button sat at a fixed
+                coordinate (top:14, right:14) regardless of what a given
+                sheet rendered at that spot, so it could land on top of
+                a title or form field. Renders even with no title passed
+                at all, so every consumer gets the same predictable
+                layout — title left, dismiss right, content pushed
+                below — with nothing left for the button to overlap. */}
+            <View style={styles.header}>
+              <View style={styles.titleContainer}>
+                {title && <Text style={[styles.title, { color: colors.text }]}>{title}</Text>}
+                {subtitle && <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text>}
+              </View>
+              <Pressable onPress={close} style={styles.closeButton} hitSlop={8}>
+                <MaterialCommunityIcons name="close" size={18} color={colors.textSecondary} />
+              </Pressable>
+            </View>
 
             <ScrollView
               style={styles.scroll}
@@ -169,17 +187,34 @@ const styles = StyleSheet.create({
     elevation: 12,
     overflow: "hidden",
   },
+  header: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  titleContainer: {
+    flex: 1,
+    paddingRight: 12,
+    gap: 2,
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  subtitle: {
+    fontSize: 13,
+  },
   closeButton: {
-    position: "absolute",
-    top: 14,
-    right: 14,
-    zIndex: 10,
     width: 30,
     height: 30,
     borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(128,128,128,0.15)",
+    marginTop: 1,
   },
   scroll: { flexGrow: 0 },
   scrollContent: { paddingTop: 20, paddingBottom: 20 },

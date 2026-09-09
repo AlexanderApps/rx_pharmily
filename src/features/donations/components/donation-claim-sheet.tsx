@@ -121,6 +121,8 @@ const DonationClaimSheet = forwardRef<DonationClaimSheetHandle, DonationClaimShe
     return (
       <BottomSheet
         ref={modalRef}
+        title="Claim Items"
+        subtitle="Select what you need and how much"
         snapPoints={snapPoints}
         showHandle
         cornerRadius={20}
@@ -130,11 +132,6 @@ const DonationClaimSheet = forwardRef<DonationClaimSheetHandle, DonationClaimShe
       >
         <View className="flex-1 flex-col px-5">
           <View className="shrink-0 gap-2.5">
-            <Text className="text-base font-bold" style={{ color: colors.text }}>Claim Items</Text>
-            <Text className="text-xs -mt-1.5" style={{ color: colors.textSecondary }}>
-              Select what you need and how much
-            </Text>
-
             <MyFacilityPicker
               value={responderFacility}
               onChange={setResponderFacility}

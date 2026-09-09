@@ -1,16 +1,22 @@
 import React, { useRef, useCallback, useMemo } from "react";
-import { StyleSheet, ViewStyle, StyleProp, Animated } from "react-native";
+import { StyleSheet, ViewStyle, StyleProp, Animated, Pressable, View, Text } from "react-native";
 import {
   BottomSheetModal,
-  BottomSheetView,
   BottomSheetBackdrop,
   useBottomSheetTimingConfigs,
 } from "@gorhom/bottom-sheet";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 import { useTheme } from "@/shared/hooks/use-theme";
-import { ThemedText } from "@/shared/components/themed-text";
 
 export interface BottomSheetModalHandle {
+  // Use present() to OPEN this sheet — on native, expand() only
+  // changes the snap point of an already-presented sheet, it does NOT
+  // present a currently-dismissed one, unlike bottom-sheet.web.tsx's
+  // version, where expand is explicitly aliased to the same open()
+  // function as present() (both just set visible=true there). Calling
+  // expand() to open a native sheet silently does nothing — it will
+  // work correctly on web and appear completely broken on native.
   present: () => void;
   dismiss: () => void;
   expand: () => void;
@@ -136,15 +142,37 @@ const BottomSheet = React.forwardRef<BottomSheetModal, BottomSheetProps>(
         borderTopRightRadius: cornerRadius,
         overflow: "hidden",
       },
+      // A real row, in normal layout flow — not absolutely positioned
+      // over children. This is the actual fix: the old close button sat
+      // at a fixed screen coordinate (top:14, right:14) regardless of
+      // what content a given sheet happened to render at that spot, so
+      // it could land on top of a title, a form field, anything. This
+      // header always renders (even with no title passed at all) so
+      // every consumer gets the exact same predictable layout: title
+      // left, dismiss button right, and children pushed below — no
+      // overlap possible, because there's nothing left for the button
+      // to overlap with.
       header: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        justifyContent: "space-between",
         paddingHorizontal: padding,
         paddingTop: padding,
-        paddingBottom: subtitle ? 8 : padding,
-        borderBottomWidth: title ? 1 : 0,
-        borderBottomColor: colors.divider,
+        paddingBottom: title || subtitle ? 12 : padding,
+      },
+      titleContainer: {
+        flex: 1,
+        paddingRight: 12,
+        gap: 2,
       },
       title: {
-        marginBottom: 4,
+        fontSize: 17,
+        fontWeight: "700",
+        color: colors.text,
+      },
+      subtitle: {
+        fontSize: 13,
+        color: colors.textSecondary,
       },
       content: {
         paddingHorizontal: padding,
@@ -157,6 +185,21 @@ const BottomSheet = React.forwardRef<BottomSheetModal, BottomSheetProps>(
         borderRadius: 2,
         alignSelf: "center",
         marginVertical: 10,
+      },
+      closeButton: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(128,128,128,0.15)",
+        // Nudges the button up slightly to optically center it against
+        // a multi-line title/subtitle stack, since both sit at
+        // alignItems: "flex-start" rather than "center" — flex-start is
+        // itself deliberate: "center" would drag a short single-line
+        // title down to align with the button's vertical midpoint
+        // instead of sitting flush at the top like normal text.
+        marginTop: 1,
       },
     });
 
@@ -183,25 +226,24 @@ const BottomSheet = React.forwardRef<BottomSheetModal, BottomSheetProps>(
         style={[styles.modal, style]}
         backgroundStyle={{ backgroundColor: backgroundColor }}
       >
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            {title && <Text style={styles.title}>{title}</Text>}
+            {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+          </View>
+          <Pressable
+            onPress={() => bottomSheetRef.current?.dismiss()}
+            style={styles.closeButton}
+            hitSlop={8}
+          >
+            <MaterialCommunityIcons name="close" size={18} color={colors.textSecondary} />
+          </Pressable>
+        </View>
         {children}
       </BottomSheetModal>
     );
   },
 );
-
-// <BottomSheetView style={[{ flex: 1 }, styles.content, contentStyle]}>
-//    {/* Header */}
-//    {/*{title && (
-//      <BottomSheetView style={styles.header}>
-//        <ThemedText style={styles.title}>{title}</ThemedText>
-
-//        {subtitle && <ThemedText>{subtitle}</ThemedText>}
-//      </BottomSheetView>
-//    )}*/}
-
-//    {/* Children */}
-//    {children}
-//  </BottomSheetView>
 
 BottomSheet.displayName = "BottomSheet";
 

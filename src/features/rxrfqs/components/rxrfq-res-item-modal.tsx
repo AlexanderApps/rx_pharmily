@@ -153,29 +153,26 @@ function useResponseItemForm(
 function ResponseItemHeader({
   rfqItem,
   isEditing,
-  onDismiss,
 }: {
   rfqItem: RxRfqItem;
   isEditing: boolean;
-  onDismiss: () => void;
 }) {
   const { colors } = useTheme();
   const productName =
     useCatalogStore((state) => state.getProduct(rfqItem.productId)?.name) ?? "Unknown product";
   return (
-    <View className="flex-row items-start justify-between px-5 pt-2.5 pb-3.5 border-b gap-3" style={{ borderBottomColor: colors.border }}>
-      <View className="flex-1 gap-1">
-        <Text className="text-[11px] font-semibold uppercase tracking-[0.6px]" style={{ color: colors.textSecondary }}>
-          {isEditing ? "Edit response" : "Respond to item"}
-        </Text>
-        <Text
-          className="text-[17px] font-bold"
-          style={{ color: colors.text }}
-          numberOfLines={1}
-        >
-          {productName}
-        </Text>
-        <View className="flex-row flex-wrap gap-1.5 mt-1">
+    <View className="px-5 pt-2.5 pb-3.5 border-b gap-1" style={{ borderBottomColor: colors.border }}>
+      <Text className="text-[11px] font-semibold uppercase tracking-[0.6px]" style={{ color: colors.textSecondary }}>
+        {isEditing ? "Edit response" : "Respond to item"}
+      </Text>
+      <Text
+        className="text-[17px] font-bold"
+        style={{ color: colors.text }}
+        numberOfLines={1}
+      >
+        {productName}
+      </Text>
+      <View className="flex-row flex-wrap gap-1.5 mt-1">
           <View
             className="flex-row items-center gap-1 px-2 py-1 rounded-md border"
             style={{
@@ -212,18 +209,6 @@ function ResponseItemHeader({
             </View>
           )}
         </View>
-      </View>
-      <TouchableOpacity
-        onPress={onDismiss}
-        className="w-[34px] h-[34px] rounded-full items-center justify-center"
-        style={{ backgroundColor: colors.backgroundElement }}
-      >
-        <MaterialCommunityIcons
-          name="close"
-          size={18}
-          color={colors.textSecondary}
-        />
-      </TouchableOpacity>
     </View>
   );
 }
@@ -308,9 +293,6 @@ const RxRfqResponseItemModal = forwardRef<
     handleSheetChange,
   } = useResponseItemForm(rfqItem, initialData, onClose, onSave);
 
-  const dismiss = () =>
-    (ref as React.RefObject<BottomSheetModal>).current?.dismiss();
-
   return (
     <BottomSheet
       ref={ref}
@@ -323,7 +305,6 @@ const RxRfqResponseItemModal = forwardRef<
       <ResponseItemHeader
         rfqItem={rfqItem}
         isEditing={isEditing}
-        onDismiss={dismiss}
       />
 
       <BottomSheetScrollView>

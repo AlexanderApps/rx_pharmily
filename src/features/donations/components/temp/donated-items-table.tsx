@@ -154,6 +154,7 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
           className="w-full"
         >
           <View
@@ -196,6 +197,7 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
               data={items}
               keyExtractor={(item) => item.id}
               scrollEnabled={false}
+              keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
                 <View
                   className="flex-row items-center"

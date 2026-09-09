@@ -7,7 +7,6 @@ import {
   Platform,
   TouchableOpacity,
 } from "react-native";
-import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import TermsOfServiceInput from "@/shared/components/tos-input";
@@ -47,6 +46,7 @@ const RxRfqsRequestForm: React.FC<{
     addVisibilityRule,
     removeVisibilityRule,
     isSubmitting,
+    guardedBack,
   } = useAddRxRfqRequest(onSubmit, initialData, isLoading);
   const referenceCurrencies = useReferenceDataStore((state) => state.currencies);
   const currencyOptions = useMemo(
@@ -79,7 +79,7 @@ const RxRfqsRequestForm: React.FC<{
           {/* 1. Left Action Button */}
           {Platform.OS !== "web" && (
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={guardedBack}
             className="absolute left-4 z-10 p-2 rounded-xl w-10 h-10 items-center justify-center"
             style={{
               backgroundColor:
@@ -120,12 +120,31 @@ const RxRfqsRequestForm: React.FC<{
             />
           </FormSectionContainer>
 
+          {/* Description Section — between Facility and Submission
+              Deadline is deliberate placement, not incidental order:
+              this is the first thing a vendor reads after knowing which
+              facility is asking, before any of the logistics fields. */}
+          <FormSectionContainer title="Description" required>
+            <CommentInput
+              value={formData.description}
+              onChange={(value) => updateField("description", value)}
+              placeholder="Description..."
+              maxLength={150}
+            />
+            {errors.description && (
+              <ThemedText className="text-xs font-medium" style={{ color: colors.error }}>
+                {errors.description}
+              </ThemedText>
+            )}
+          </FormSectionContainer>
+
           {/* Submission Deadline Section */}
           <FormSectionContainer title="Submission Deadline" required>
             <DatePicker
               value={formData.submissionDeadline}
               onChange={(date) => updateField("submissionDeadline", date)}
               format="long"
+              error={errors.submissionDeadline}
             />
           </FormSectionContainer>
 
@@ -135,6 +154,7 @@ const RxRfqsRequestForm: React.FC<{
               value={formData.deliveryDate}
               onChange={(date) => updateField("deliveryDate", date)}
               format="long"
+              error={errors.deliveryDate}
             />
           </FormSectionContainer>
 
@@ -202,15 +222,6 @@ const RxRfqsRequestForm: React.FC<{
               value={formData.comment}
               onChange={(value) => updateField("comment", value)}
               placeholder="Add any additional comments..."
-            />
-          </FormSectionContainer>
-
-          {/* Description Section */}
-          <FormSectionContainer title="Description">
-            <CommentInput
-              value={formData.description}
-              onChange={(value) => updateField("description", value)}
-              placeholder="Description..."
             />
           </FormSectionContainer>
 

@@ -104,6 +104,15 @@ const MultiSelectPicker: React.FC<MultiSelectPickerProps> = ({
             className="w-full max-w-[480px] rounded-2xl p-3.5 gap-2"
             style={{ backgroundColor: colors.backgroundSecondary }}
           >
+            <Pressable
+              onPress={handleClose}
+              className="absolute z-10 items-center justify-center rounded-full"
+              style={{ top: 14, right: 14, width: 30, height: 30, backgroundColor: "rgba(128,128,128,0.15)" }}
+              hitSlop={8}
+            >
+              <MaterialCommunityIcons name="close" size={18} color={colors.textSecondary} />
+            </Pressable>
+
             <Text className="text-base font-semibold text-center pb-1" style={{ color: colors.text }}>
               {title}
             </Text>

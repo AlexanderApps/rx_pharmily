@@ -103,12 +103,27 @@ const RxRfQItemModal = forwardRef<BottomSheetModal, RxRfQItemModalProps>(
     const handleBottomSheetChange = (index: number) => {
       if (index === -1) {
         onClose(); // Clean up parent trackers when closed natively
+        // initialData stays null across two consecutive "Add" attempts
+        // (no reference change), so the effect above that resets
+        // formData only fires on a genuine initialData change — never
+        // between "typed something, dismissed without saving" and the
+        // next fresh "Add Item" open. Resetting here, on every close
+        // regardless of cause, closes that gap without disturbing the
+        // effect's own handling of genuine edit-to-edit transitions.
+        setFormData({
+          productId: "",
+          quantity: 1,
+          uom: "",
+          allowAlternatives: false,
+        });
+        setErrors({});
       }
     };
 
     return (
       <BottomSheet
         ref={ref}
+        title={isEditing ? "Edit Item" : "Add New Item"}
         snapPoints={snapPoints}
         showHandle={true}
         cornerRadius={20}
@@ -117,27 +132,8 @@ const RxRfQItemModal = forwardRef<BottomSheetModal, RxRfQItemModalProps>(
         onChange={handleBottomSheetChange}
         backgroundColor={colors.backgroundSecondary}
       >
-        {/* Header */}
-        <View className="flex-row justify-between items-center px-5 py-4 border-b" style={{ borderBottomColor: colors.border }}>
-          <Text className="text-lg font-bold" style={{ color: colors.text }}>
-            {isEditing ? "Edit Item" : "Add New Item"}
-          </Text>
-          <TouchableOpacity
-            onPress={() =>
-              (ref as React.RefObject<BottomSheetModal>).current?.dismiss()
-            }
-            className="p-1"
-          >
-            <MaterialCommunityIcons
-              name="close"
-              size={24}
-              color={colors.text}
-            />
-          </TouchableOpacity>
-        </View>
-
         {/* Form Fields Content - Let BottomSheet handle scrolling naturally */}
-        <BottomSheetScrollView>
+        <BottomSheetScrollView keyboardShouldPersistTaps="handled">
           <View className="flex-1">
             <View className="px-5 pt-5 pb-10 gap-5">
               <View className="w-full gap-2">
@@ -223,6 +219,7 @@ const RxRfQItemModal = forwardRef<BottomSheetModal, RxRfQItemModalProps>(
                 <ActiveCheckbox
                   label="Allow Alternatives"
                   value={formData.allowAlternatives}
+                  offColor={colors.error}
                   onChange={(value) =>
                     setFormData((prev) => ({
                       ...prev,

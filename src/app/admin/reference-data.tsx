@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, FlatList, Pressable, Modal, TextInput } from "react-native";
+import { View, Text, FlatList, Pressable, Modal, TextInput, ScrollView } from "react-native";
 import { router, Redirect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -19,10 +19,11 @@ import {
   Currency,
   JobCategory,
   RxRfqCategory,
+  InsuranceProvider,
 } from "@/features/reference-data/types/reference-data.types";
 
-type TabKey = "units" | "categories" | "regions" | "incoterms" | "currencies" | "jobCategories" | "rxrfqCategories";
-type EditingItem = UnitOfMeasurement | MedicationCategory | Region | Incoterm | Currency | JobCategory | RxRfqCategory;
+type TabKey = "units" | "categories" | "regions" | "incoterms" | "currencies" | "jobCategories" | "rxrfqCategories" | "insuranceProviders";
+type EditingItem = UnitOfMeasurement | MedicationCategory | Region | Incoterm | Currency | JobCategory | RxRfqCategory | InsuranceProvider;
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "units", label: "Units" },
@@ -32,6 +33,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "currencies", label: "Currencies" },
   { key: "jobCategories", label: "Job Categories" },
   { key: "rxrfqCategories", label: "RFQ Categories" },
+  { key: "insuranceProviders", label: "Insurance" },
 ];
 
 export default function AdminReferenceDataScreen() {
@@ -70,6 +72,10 @@ export default function AdminReferenceDataScreen() {
   const addRxRfqCategory = useReferenceDataStore((state) => state.addRxRfqCategory);
   const updateRxRfqCategory = useReferenceDataStore((state) => state.updateRxRfqCategory);
   const deleteRxRfqCategory = useReferenceDataStore((state) => state.deleteRxRfqCategory);
+  const insuranceProviders = useReferenceDataStore((state) => state.insuranceProviders);
+  const addInsuranceProvider = useReferenceDataStore((state) => state.addInsuranceProvider);
+  const updateInsuranceProvider = useReferenceDataStore((state) => state.updateInsuranceProvider);
+  const deleteInsuranceProvider = useReferenceDataStore((state) => state.deleteInsuranceProvider);
 
   useEffect(() => {
     fetchAll();
@@ -97,7 +103,7 @@ export default function AdminReferenceDataScreen() {
       const currency = item as Currency;
       return `${currency.code} — ${currency.name}`;
     }
-    return (item as UnitOfMeasurement | MedicationCategory | Region | JobCategory | RxRfqCategory).name;
+    return (item as UnitOfMeasurement | MedicationCategory | Region | JobCategory | RxRfqCategory | InsuranceProvider).name;
   };
 
   const activeList =
@@ -113,11 +119,13 @@ export default function AdminReferenceDataScreen() {
               ? currencies
               : activeTab === "jobCategories"
                 ? jobCategories
-                : rxrfqCategories;
+                : activeTab === "rxrfqCategories"
+                  ? rxrfqCategories
+                  : insuranceProviders;
   const secondaryLabel =
     activeTab === "units"
       ? "Abbreviation (optional)"
-      : activeTab === "categories" || activeTab === "jobCategories" || activeTab === "rxrfqCategories"
+      : activeTab === "categories" || activeTab === "jobCategories" || activeTab === "rxrfqCategories" || activeTab === "insuranceProviders"
         ? "Description (optional)"
         : activeTab === "incoterms" || activeTab === "currencies"
           ? activeTab === "incoterms"
@@ -146,12 +154,12 @@ export default function AdminReferenceDataScreen() {
       setSecondaryInput(currency.name);
       setTertiaryInput(currency.symbol ?? "");
     } else {
-      setNameInput((item as UnitOfMeasurement | MedicationCategory | Region | JobCategory | RxRfqCategory).name);
+      setNameInput((item as UnitOfMeasurement | MedicationCategory | Region | JobCategory | RxRfqCategory | InsuranceProvider).name);
       setSecondaryInput(
         activeTab === "units"
           ? (item as UnitOfMeasurement).abbreviation ?? ""
-          : activeTab === "categories" || activeTab === "jobCategories" || activeTab === "rxrfqCategories"
-            ? (item as MedicationCategory | JobCategory | RxRfqCategory).description ?? ""
+          : activeTab === "categories" || activeTab === "jobCategories" || activeTab === "rxrfqCategories" || activeTab === "insuranceProviders"
+            ? (item as MedicationCategory | JobCategory | RxRfqCategory | InsuranceProvider).description ?? ""
             : "",
       );
       setTertiaryInput("");
@@ -195,6 +203,10 @@ export default function AdminReferenceDataScreen() {
       success = editing
         ? await updateRxRfqCategory(editing.id, nameInput, secondaryInput)
         : await addRxRfqCategory(nameInput, secondaryInput);
+    } else if (activeTab === "insuranceProviders") {
+      success = editing
+        ? await updateInsuranceProvider(editing.id, nameInput, secondaryInput)
+        : await addInsuranceProvider(nameInput, secondaryInput);
     } else {
       success = editing ? await updateRegion(editing.id, nameInput) : await addRegion(nameInput);
     }
@@ -228,7 +240,9 @@ export default function AdminReferenceDataScreen() {
                 ? deleteJobCategory
                 : activeTab === "rxrfqCategories"
                   ? deleteRxRfqCategory
-                  : deleteRegion;
+                  : activeTab === "insuranceProviders"
+                    ? deleteInsuranceProvider
+                    : deleteRegion;
     const success = await deleteFn(item.id);
     toast[success ? "success" : "error"](success ? "Deleted." : "Couldn't delete this entry.");
   };
@@ -250,15 +264,23 @@ export default function AdminReferenceDataScreen() {
         }
       />
 
-      {/* Tabs */}
-      <View className="flex-row gap-2 px-4 pt-3 pb-1">
+      {/* Tabs — fixed height on the ScrollView itself, not just padding
+          on its content, so it can't collapse or expand unpredictably
+          (a real risk for a horizontal ScrollView with no explicit
+          size, especially on web). */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="h-12 flex-none"
+        contentContainerClassName="flex-row items-center gap-2 px-4"
+      >
         {TABS.map((tab) => {
           const active = activeTab === tab.key;
           return (
             <Pressable
               key={tab.key}
               onPress={() => setActiveTab(tab.key)}
-              className="px-3.5 py-1.5 rounded-full border"
+              className="px-3.5 h-8 rounded-full border items-center justify-center"
               style={{
                 backgroundColor: active ? colors.primary : "transparent",
                 borderColor: active ? colors.primary : colors.border,
@@ -270,7 +292,7 @@ export default function AdminReferenceDataScreen() {
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       <FlatList
         data={activeList}
@@ -336,7 +358,9 @@ export default function AdminReferenceDataScreen() {
                         ? "Job Category"
                         : activeTab === "rxrfqCategories"
                           ? "RFQ Category"
-                          : "Region"}
+                          : activeTab === "insuranceProviders"
+                            ? "Insurance Provider"
+                            : "Region"}
             </Text>
 
             <Text className="text-xs font-semibold mt-1.5" style={{ color: colors.text }}>
@@ -370,12 +394,14 @@ export default function AdminReferenceDataScreen() {
                             ? "e.g. Requires an active facility license"
                             : activeTab === "rxrfqCategories"
                               ? "e.g. Consumable medical supplies"
-                              : "e.g. Used for treating infections"
+                              : activeTab === "insuranceProviders"
+                                ? "e.g. National Health Insurance Scheme"
+                                : "e.g. Used for treating infections"
                   }
                   placeholderTextColor={colors.textSecondary}
                   className="border rounded-[10px] px-3 py-2.5 text-sm"
                   style={{ backgroundColor: colors.backgroundElement, color: colors.text, borderColor: colors.border }}
-                  multiline={activeTab === "categories" || activeTab === "jobCategories" || activeTab === "rxrfqCategories"}
+                  multiline={activeTab === "categories" || activeTab === "jobCategories" || activeTab === "rxrfqCategories" || activeTab === "insuranceProviders"}
                 />
               </>
             )}

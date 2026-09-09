@@ -154,6 +154,7 @@ const RxRfQItemsTable: React.FC<RxRfQItemsTableProps> = ({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
           className="w-full"
         >
           <View
@@ -219,6 +220,7 @@ const RxRfQItemsTable: React.FC<RxRfQItemsTableProps> = ({
               data={items}
               keyExtractor={(item) => item.id}
               scrollEnabled={false}
+              keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
                 <View
                   className={`flex-row items-center ${ROW_HEIGHT}`}

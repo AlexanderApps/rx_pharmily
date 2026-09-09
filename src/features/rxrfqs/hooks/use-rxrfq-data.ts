@@ -559,3 +559,28 @@ export const useRxRfqsStore = create<RxRfqsStore>((set, get) => ({
 
   getResponsesForRfq: (rfqId) => get().rxrfqResponses.filter((r) => r.rfqId === rfqId),
 }));
+
+// fetchRxRfqs/fetchRxRfq bake facilityName into rxrfqs' card data at the
+// moment they run, via toCardData's lookup into useProfileStore's
+// facilities — but facilities and the RFQ marketplace data are fetched
+// in parallel at sign-in (see app/_layout.tsx), so whichever happens to
+// resolve first determines whether real facility data existed yet at
+// bake time. When facilities loses that race, every card looks up a
+// still-empty array and permanently shows "Unknown facility" — nothing
+// ever triggers a recompute afterward, even once facilities does load,
+// since rxrfqs is a plain stored field, not a reactive derivation.
+//
+// This closes that gap: whenever facilities actually changes (finishes
+// its initial load, or a facility is added/edited later), every
+// existing rxrfqs card is re-derived from the already-fetched
+// rxrfqMarketPlace data — no server re-fetch needed, since the RFQ data
+// itself was never the problem, only which facility name it was
+// labeled with at that one moment in time.
+useProfileStore.subscribe((state, prevState) => {
+  if (state.facilities === prevState.facilities) return;
+  const { rxrfqMarketPlace } = useRxRfqsStore.getState();
+  if (rxrfqMarketPlace.length === 0) return;
+  useRxRfqsStore.setState({
+    rxrfqs: rxrfqMarketPlace.map((r) => toCardData(r)),
+  });
+});

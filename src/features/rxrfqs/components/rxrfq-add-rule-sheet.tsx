@@ -103,6 +103,7 @@ export const RxRfqAddRuleSheet = forwardRef<
   return (
     <BottomSheet
       ref={modalRef}
+      title="Add Target Restriction Filters"
       snapPoints={snapPoints}
       showHandle
       cornerRadius={16}
@@ -112,12 +113,8 @@ export const RxRfqAddRuleSheet = forwardRef<
     >
       {/* Outer flex column — fills the full sheet height */}
       <View className="flex-1 flex-col p-5">
-        {/* Fixed header: title + step labels + type selector */}
+        {/* Fixed header: step labels + type selector */}
         <View className="shrink-0">
-          <Text className="text-base font-bold text-center" style={{ color: colors.text }}>
-            Add Target Restriction Filters
-          </Text>
-
           <Text
             className="text-[11px] font-bold tracking-[1px] mb-1.5 mt-3"
             style={{ color: colors.textSecondary }}

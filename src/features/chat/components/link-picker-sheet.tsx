@@ -127,6 +127,8 @@ export const LinkPickerSheet = forwardRef<
   return (
     <BottomSheet
       ref={modalRef}
+      title="Attach a link"
+      subtitle="Share an RFQ, Mediscope request, or donation in this chat"
       snapPoints={snapPoints}
       showHandle
       cornerRadius={20}
@@ -136,18 +138,8 @@ export const LinkPickerSheet = forwardRef<
     >
       {/* Outer flex column — fills the full sheet height */}
       <View className="flex-1 flex-col px-5">
-        {/* Fixed header: title/subtitle + type tabs + search */}
+        {/* Fixed header: type tabs + search */}
         <View className="shrink-0">
-          <Text className="text-base font-bold" style={{ color: colors.text }}>
-            Attach a link
-          </Text>
-          <Text
-            className="text-xs mt-0.5"
-            style={{ color: colors.textSecondary }}
-          >
-            Share an RFQ, Mediscope request, or donation in this chat
-          </Text>
-
           <View className="flex-row gap-2 mt-3.5">
             {TABS.map((t) => {
               const active = tab === t.key;

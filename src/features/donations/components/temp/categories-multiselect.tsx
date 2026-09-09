@@ -117,6 +117,7 @@ const CategoriesMultiSelect: React.FC<CategoriesMultiSelectProps> = ({
 
       <BottomSheet
         ref={filterModalRef}
+        title="Select Categories"
         snapPoints={snapPoints}
         showHandle={true}
         cornerRadius={16}
@@ -125,12 +126,6 @@ const CategoriesMultiSelect: React.FC<CategoriesMultiSelectProps> = ({
         onChange={handleBottomSheetChange}
         backgroundColor={colors.backgroundSecondary}
       >
-        <View className="pb-4 items-center">
-          <Text className="text-base font-semibold" style={{ color: colors.text }}>
-            Select Categories
-          </Text>
-        </View>
-
         <FlatList
           data={CATEGORIES}
           keyExtractor={(item) => item.id}

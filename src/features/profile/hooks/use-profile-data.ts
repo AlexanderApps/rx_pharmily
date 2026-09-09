@@ -125,6 +125,8 @@ function mapFacilityRow(row: any): FacilityProfile {
     latitude: row.latitude ?? undefined,
     longitude: row.longitude ?? undefined,
     logoUrl: row.logo_url ?? undefined,
+    deliveryOptions: row.delivery_options ?? [],
+    insuranceAccepted: row.insurance_accepted ?? [],
   };
 }
 
@@ -864,6 +866,8 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         latitude: data.latitude ?? null,
         longitude: data.longitude ?? null,
         logo_url: data.logoUrl ?? null,
+        delivery_options: data.deliveryOptions,
+        insurance_accepted: data.insuranceAccepted,
       })
       .eq("id", id);
     if (error) {

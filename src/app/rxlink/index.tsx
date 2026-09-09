@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo } from "react";
-import { View, FlatList, Pressable } from "react-native";
+import { View, FlatList, Pressable, Platform } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import ScreenHeader from "@/shared/components/screen-header";
 import EmptyState from "@/shared/components/empty-state";
@@ -36,13 +37,15 @@ export default function RxLinkListScreen() {
         title="RxLink"
         subtitle="Find where your medication is available"
         actions={
-          <Pressable
-            onPress={() => router.push("/rxlink/new-request")}
-            className="w-[34px] h-[34px] rounded-xl items-center justify-center"
-            style={{ backgroundColor: colors.primary }}
-          >
-            <MaterialCommunityIcons name="plus" size={20} color="#fff" />
-          </Pressable>
+          Platform.OS === "web" ? (
+            <Pressable
+              onPress={() => router.push("/rxlink/new-request")}
+              className="w-[34px] h-[34px] rounded-xl items-center justify-center"
+              style={{ backgroundColor: colors.primary }}
+            >
+              <MaterialCommunityIcons name="plus" size={20} color="#fff" />
+            </Pressable>
+          ) : undefined
         }
       />
 
@@ -67,6 +70,25 @@ export default function RxLinkListScreen() {
             />
           )}
         />
+      )}
+
+      {/* Floating Action Button — native only; web uses the header
+          add button instead. */}
+      {Platform.OS !== "web" && (
+        <Pressable
+          onPress={() => router.push("/rxlink/new-request")}
+          className="absolute right-6 bottom-8 w-16 h-16 rounded-full items-center justify-center shadow-lg active:opacity-90"
+          style={{
+            backgroundColor: colors.primary,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 8,
+          }}
+        >
+          <Ionicons name="add" size={30} color={colors.background} />
+        </Pressable>
       )}
     </SafeAreaView>
   );

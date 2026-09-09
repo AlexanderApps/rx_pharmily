@@ -28,7 +28,6 @@ export default function SearchDonationsContent() {
     filters,
     activeFilter,
     clearActiveFilter,
-    closeFilterModal,
   } = useRxRfqsFilters({
     filterModalRef,
   });
@@ -147,6 +146,7 @@ export default function SearchDonationsContent() {
           {/* Bottom Sheet Modal */}
           <BottomSheet
             ref={filterModalRef}
+            title={modalTitle}
             snapPoints={snapPoints}
             showHandle
             cornerRadius={16}
@@ -157,34 +157,6 @@ export default function SearchDonationsContent() {
             backgroundColor={colors.backgroundSecondary}
           >
             <ThemedView type="backgroundSecondary">
-              <ThemedView
-                type="backgroundSecondary"
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 12,
-                }}
-              >
-                <ThemedText
-                  style={{ fontSize: 18, fontWeight: "600", marginBottom: 16 }}
-                >
-                  {modalTitle}
-                </ThemedText>
-                <ThemedView
-                  type="backgroundSelected"
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    padding: 8,
-                    borderRadius: 999,
-                  }}
-                >
-                  <Pressable onPress={closeFilterModal}>
-                    <Ionicons name="close" size={18} color={colors.textSecondary} />
-                  </Pressable>
-                </ThemedView>
-              </ThemedView>
               <ThemedView>
                 {activeFilterConfig && (
                   <CheckboxFilterGroup

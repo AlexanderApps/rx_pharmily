@@ -171,6 +171,7 @@ export default function ChatListScreen() {
 
       <BottomSheet
         ref={newChatSheetRef}
+        title="Start a new chat"
         snapPoints={["55%"]}
         showHandle
         cornerRadius={20}
@@ -178,14 +179,6 @@ export default function ChatListScreen() {
         enablePanDownToClose
         backgroundColor={colors.backgroundSecondary}
       >
-        <View
-          className="px-5 pb-3"
-          style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
-        >
-          <Text className="text-base font-bold" style={{ color: colors.text }}>
-            Start a new chat
-          </Text>
-        </View>
         <View className="px-4 pt-3 pb-1">
           <View
             className="flex-row items-center gap-2 rounded-[10px] px-3 py-[9px]"

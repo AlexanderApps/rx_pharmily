@@ -159,6 +159,7 @@ const RxRfqStatusActionsSheet = forwardRef<
   return (
     <BottomSheet
       ref={ref}
+      title="RFQ Actions"
       snapPoints={snapPoints}
       showHandle
       cornerRadius={20}
@@ -167,18 +168,6 @@ const RxRfqStatusActionsSheet = forwardRef<
       onChange={handleBottomSheetChange}
       backgroundColor={colors.backgroundSecondary}
     >
-      <View className="flex-row justify-between items-center px-5 py-4 border-b" style={{ borderBottomColor: colors.border }}>
-        <Text className="text-[17px] font-bold" style={{ color: colors.text }}>RFQ Actions</Text>
-        <TouchableOpacity
-          onPress={() =>
-            (ref as React.RefObject<BottomSheetModal>).current?.dismiss()
-          }
-          className="p-1"
-        >
-          <MaterialCommunityIcons name="close" size={24} color={colors.text} />
-        </TouchableOpacity>
-      </View>
-
       <View className="px-5 pt-4 pb-[30px] gap-2.5">
         {confirming ? (
           <View className="items-center gap-2 pt-2.5">

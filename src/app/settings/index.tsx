@@ -33,6 +33,7 @@ export default function SettingsScreen() {
   const themeLabels = {
     light: "Light Mode",
     dark: "Dark Mode",
+    system: "System",
   };
 
   const settingsGroups: { title: string; rows: SettingRow[] }[] = [
@@ -61,7 +62,7 @@ export default function SettingsScreen() {
           label: "Appearance",
           icon: "palette-outline",
           valueText: themeLabels[themeMode],
-          onPress: () => filterModalRef.current?.expand(),
+          onPress: () => filterModalRef.current?.present(),
         },
         {
           id: "security",
@@ -175,6 +176,7 @@ export default function SettingsScreen() {
         {/* Bottom Sheet Context Window */}
         <BottomSheet
           ref={filterModalRef}
+          title="Choose Theme"
           snapPoints={snapPoints}
           showHandle={false}
           cornerRadius={16}
@@ -184,19 +186,13 @@ export default function SettingsScreen() {
           backgroundColor={colors.backgroundSecondary}
         >
           <ThemedView type="backgroundSecondary">
-            <Text
-              className="text-[18px] font-bold mb-4 pl-1"
-              style={{ color: colors.text }}
-            >
-              Choose Theme
-            </Text>
-
             <View className="gap-1">
-              {(["light", "dark"] as const).map((mode) => {
+              {(["light", "dark", "system"] as const).map((mode) => {
                 const isSelected = themeMode === mode;
                 const icons = {
                   light: "white-balance-sunny",
                   dark: "weather-night",
+                  system: "theme-light-dark",
                 };
                 return (
                   <Pressable

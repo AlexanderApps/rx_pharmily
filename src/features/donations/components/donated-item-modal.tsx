@@ -15,6 +15,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import BottomSheet from "@/shared/components/bottom-sheet";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { BsScrollView as BottomSheetScrollView } from "@/shared/components/bs/bs-primitives";
 
 import ProductComboBox from "@/shared/components/product-combobox";
 import ItemStatusCheckbox from "@/features/donations/components/temp/item-status-checkbox";
@@ -97,12 +98,30 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
     const handleBottomSheetChange = (index: number) => {
       if (index === -1) {
         onClose(); // Clean up parent trackers when closed natively
+        // initialData stays null across two consecutive "Add" attempts
+        // (no reference change), so the effect above that resets
+        // formData only fires on a genuine initialData change — never
+        // between "typed something, dismissed without saving" and the
+        // next fresh "Add Item" open. Resetting here, on every close
+        // regardless of cause, closes that gap without disturbing the
+        // effect's own handling of genuine edit-to-edit transitions.
+        setFormData({
+          product: "",
+          quantity: 1,
+          batch: "",
+          expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          status: true,
+          isActive: true,
+          isCustomProduct: true,
+        });
+        setErrors({});
       }
     };
 
     return (
       <BottomSheet
         ref={ref}
+        title={isEditing ? "Edit Item" : "Add New Item"}
         snapPoints={snapPoints}
         showHandle={true}
         cornerRadius={20}
@@ -111,28 +130,10 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
         onChange={handleBottomSheetChange}
         backgroundColor={colors.backgroundSecondary}
       >
-        {/* Header */}
-        <View className="flex-row justify-between items-center px-5 py-4 border-b" style={{ borderBottomColor: colors.border }}>
-          <Text className="text-lg font-bold" style={{ color: colors.text }}>
-            {isEditing ? "Edit Item" : "Add New Item"}
-          </Text>
-          <TouchableOpacity
-            onPress={() =>
-              (ref as React.RefObject<BottomSheetModal>).current?.dismiss()
-            }
-            className="p-1"
-          >
-            <MaterialCommunityIcons
-              name="close"
-              size={24}
-              color={colors.text}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Form Fields Content - Let BottomSheet handle scrolling naturally */}
-        <View className="flex-1">
-          <View className="px-5 pt-5 pb-10 gap-5">
+        {/* Form Fields Content */}
+        <BottomSheetScrollView keyboardShouldPersistTaps="handled">
+          <View className="flex-1">
+            <View className="px-5 pt-5 pb-10 gap-5">
             <View className="w-full gap-2">
               <Text className="text-sm font-semibold" style={{ color: colors.text }}>
                 Product <Text style={{ color: colors.error }}>*</Text>
@@ -284,6 +285,7 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
             </TouchableOpacity>
           </View>
         </View>
+        </BottomSheetScrollView>
       </BottomSheet>
     );
   },

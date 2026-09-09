@@ -160,6 +160,11 @@ export const FACILITY_TYPES: FacilityType[] = [
   "Other",
 ];
 
+// The fixed set delivery_options is DB-constrained to — kept here as a
+// single source of truth for the picker UI, rather than hardcoding the
+// list a second time in the screen itself.
+export type FacilityDeliveryOption = "Pickup" | "Home Delivery" | "Courier Delivery" | "Same-Day Delivery";
+
 export interface FacilityProfile {
   id: string;
   name: string;
@@ -178,6 +183,11 @@ export interface FacilityProfile {
   latitude?: number;
   longitude?: number;
   logoUrl?: string;
+  deliveryOptions: FacilityDeliveryOption[];
+  // Names of accepted insurance providers, matching the admin-managed
+  // reference-data catalog — stored as text[] of names directly, same
+  // convention as rxrfqs.categories, not uuid foreign keys.
+  insuranceAccepted: string[];
 }
 
 export interface FacilityProfileFormData {
@@ -192,6 +202,8 @@ export interface FacilityProfileFormData {
   latitude?: number;
   longitude?: number;
   logoUrl?: string;
+  deliveryOptions: FacilityDeliveryOption[];
+  insuranceAccepted: string[];
 }
 
 // A user can work for several facilities; a facility has several members.

@@ -30,7 +30,18 @@ export const IncotermsDropdown: React.FC<IncotermsDropdownProps> = ({
   const incotermRows = useReferenceDataStore((state) => state.incoterms);
 
   const incotermList = useMemo(
-    () => incotermRows.map((row) => ({ code: row.code, label: row.label, description: row.description })),
+    () => [
+      // Not a real Incoterm, so deliberately not a reference-data row —
+      // this would otherwise show up as an editable/deletable entry in
+      // the admin's reference-data catalog, which doesn't make sense
+      // for a "no incoterm selected" placeholder. Prepended locally so
+      // the form can genuinely default to (and display) "None" as a
+      // real, selectable option, instead of the previous behavior
+      // where an empty value fell through to showing the first real
+      // incoterm (EXW) as if it were selected.
+      { code: "", label: "None", description: "No incoterm specified for this request." },
+      ...incotermRows.map((row) => ({ code: row.code, label: row.label, description: row.description })),
+    ],
     [incotermRows],
   );
 
@@ -94,6 +105,15 @@ export const IncotermsDropdown: React.FC<IncotermsDropdownProps> = ({
               className="rounded-2xl self-center w-full overflow-hidden"
               style={{ backgroundColor: colors.backgroundSecondary, maxWidth: 460, maxHeight: "75%" }}
             >
+              <Pressable
+                onPress={() => setIsOpen(false)}
+                className="absolute z-10 items-center justify-center rounded-full"
+                style={{ top: 14, right: 14, width: 30, height: 30, backgroundColor: "rgba(128,128,128,0.15)" }}
+                hitSlop={8}
+              >
+                <MaterialCommunityIcons name="close" size={18} color={colors.textSecondary} />
+              </Pressable>
+
               <View
                 className="px-4 py-4"
                 style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}

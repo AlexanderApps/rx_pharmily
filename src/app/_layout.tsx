@@ -31,7 +31,7 @@ import ConfirmDialog from "@/shared/components/confirm-dialog";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const { colors, setThemeMode, themeMode } = useTheme();
+  const { colors, setThemeMode, resolvedTheme } = useTheme();
   const router = useRouter();
   const segments = useSegments();
   const isLoading = useAuthStore((state) => state.isLoading);
@@ -147,7 +147,7 @@ export default function RootLayout() {
       <WebAppShell showChrome={!onAuthScreen}>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <BottomSheetModalProvider>
-          <StatusBar style={themeMode === "dark" ? "light" : "dark"} />
+          <StatusBar style={resolvedTheme === "dark" ? "light" : "dark"} />
           <Stack
             screenOptions={{
               headerShown: false,

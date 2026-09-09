@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -21,6 +20,7 @@ import ProductComboBox from "@/shared/components/product-combobox";
 import MediscopeImageInput from "@/features/mediscope/components/mediscope-image-input";
 import { VisibilityManager } from "@/shared/components/visibility/visibility-manager";
 import { VisibilityRule } from "@/shared/types/shared.types";
+import { useUnsavedChangesGuard } from "@/shared/hooks/use-unsaved-changes-guard";
 import {
   MediscopeFormData,
   MediscopeStatus,
@@ -54,12 +54,27 @@ const MediscopeRequestForm: React.FC<MediscopeRequestFormProps> = ({
 }) => {
   const { colors } = useTheme();
 
-  const [formData, setFormData] = useState<MediscopeFormData>({
+  // Store the true initial baseline to accurately compare changes
+  // later — same pattern as add-donation-form.tsx.
+  const baselineData = useRef<MediscopeFormData>({
     ...INITIAL_FORM_STATE,
     ...initialData,
   });
+
+  const [formData, setFormData] = useState<MediscopeFormData>(baselineData.current);
   const [errors, setErrors] = useState<Partial<Record<keyof MediscopeFormData, string>>>({});
   const [hasDeadline, setHasDeadline] = useState(!!initialData?.submissionDeadline);
+
+  const hasUnsavedChanges =
+    JSON.stringify(formData) !== JSON.stringify(baselineData.current);
+
+  // isLoading (already passed in by the parent screen, reflecting the
+  // store's own submit-in-progress state) serves the same purpose
+  // add-donation-form.tsx's separate isSubmitting flag does — this form
+  // has no local submitting state of its own to duplicate that with.
+  const { guardedBack } = useUnsavedChangesGuard({
+    hasUnsavedChanges: hasUnsavedChanges && !isLoading,
+  });
 
   const updateField = <K extends keyof MediscopeFormData>(
     field: K,
@@ -87,6 +102,21 @@ const MediscopeRequestForm: React.FC<MediscopeRequestFormProps> = ({
     const newErrors: typeof errors = {};
     if (!formData.facility.trim()) newErrors.facility = "Facility is required";
     if (!formData.product.trim()) newErrors.product = "Tell us what product you're looking for";
+
+    // Only checked when a deadline is actually set — it's optional
+    // here, unlike RxRFQ's submissionDeadline, which is always
+    // required. Compared at the date level, not exact timestamp — see
+    // use-add-rxrfq-req.ts's identical reasoning for why.
+    if (formData.submissionDeadline) {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const startOfDeadline = new Date(formData.submissionDeadline);
+      startOfDeadline.setHours(0, 0, 0, 0);
+      if (startOfDeadline < startOfToday) {
+        newErrors.submissionDeadline = "Deadline cannot be in the past";
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -111,7 +141,7 @@ const MediscopeRequestForm: React.FC<MediscopeRequestFormProps> = ({
         >
           {Platform.OS !== "web" && (
           <Pressable
-            onPress={() => router.back()}
+            onPress={guardedBack}
             className="p-2 rounded-lg w-10 h-10 items-center justify-center"
             style={{ backgroundColor: colors.backgroundElement }}
           >
@@ -201,6 +231,7 @@ const MediscopeRequestForm: React.FC<MediscopeRequestFormProps> = ({
                   value={formData.submissionDeadline || new Date()}
                   onChange={(date) => updateField("submissionDeadline", date)}
                   format="long"
+                  error={errors.submissionDeadline}
                 />
               </View>
             )}

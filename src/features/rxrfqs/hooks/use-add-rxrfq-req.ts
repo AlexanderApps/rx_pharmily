@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Alert } from "react-native";
 import {
   RxRfqItem,
   RxRfqVisibilityRule,
   RxRfqsFormData,
 } from "@/features/rxrfqs/types/rxrfqs.types";
-import { useNavigation } from "expo-router";
+import { useUnsavedChangesGuard } from "@/shared/hooks/use-unsaved-changes-guard";
 
 const INITIAL_FORM_STATE: RxRfqsFormData = {
   id: "",
@@ -35,8 +35,6 @@ export default function useAddRxRfqRequest(
   initialData?: Partial<RxRfqsFormData>,
   isLoading?: boolean,
 ) {
-  const navigation = useNavigation();
-
   // 1. Store the true initial baseline to accurately compare changes later
   const baselineData = useRef<RxRfqsFormData>({
     ...INITIAL_FORM_STATE,
@@ -57,32 +55,15 @@ export default function useAddRxRfqRequest(
   const hasUnsavedChanges =
     JSON.stringify(formData) !== JSON.stringify(baselineData.current);
 
-  // Intercept native navigation actions
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("beforeRemove", (e) => {
-      // Allow exit if no changes exist or if the form is currently submitting
-      if (!hasUnsavedChanges || isSubmitting) {
-        return;
-      }
-
-      e.preventDefault();
-
-      Alert.alert(
-        "Discard changes?",
-        "You have unsaved changes. Are you sure you want to leave?",
-        [
-          { text: "Stay Here", style: "cancel", onPress: () => {} },
-          {
-            text: "Discard",
-            style: "destructive",
-            onPress: () => navigation.dispatch(e.data.action),
-          },
-        ],
-      );
-    });
-
-    return unsubscribe;
-  }, [navigation, hasUnsavedChanges, isSubmitting]);
+  // Replaces this hook's previous, narrower protection (a direct
+  // navigation.addListener("beforeRemove", ...) + a native Alert.alert)
+  // — that only ever covered in-app navigation, with no handling at all
+  // for the web browser's own back button or tab close/refresh, and a
+  // visually inconsistent native Alert instead of this app's themed
+  // confirm() modal used everywhere else.
+  const { guardedBack } = useUnsavedChangesGuard({
+    hasUnsavedChanges: hasUnsavedChanges && !isSubmitting,
+  });
 
   // Update individual form fields
   const updateField = useCallback(
@@ -91,11 +72,18 @@ export default function useAddRxRfqRequest(
         ...prev,
         [field]: value,
       }));
-      // Clear error for this field
-      if (errors[field]) {
+      // submissionDeadline and deliveryDate are validated against each
+      // other (delivery must be >= deadline), not just independently —
+      // clearing only the field that was actually touched would leave
+      // a stale "must be on or after the submission deadline" message
+      // on deliveryDate even after fixing submissionDeadline resolves
+      // it, until the next full submit attempt re-validates everything.
+      const isCrossValidatedDateField = field === "submissionDeadline" || field === "deliveryDate";
+      if (errors[field] || (isCrossValidatedDateField && (errors.submissionDeadline || errors.deliveryDate))) {
         setErrors((prev) => ({
           ...prev,
           [field]: undefined,
+          ...(isCrossValidatedDateField ? { submissionDeadline: undefined, deliveryDate: undefined } : {}),
         }));
       }
     },
@@ -112,6 +100,28 @@ export default function useAddRxRfqRequest(
 
     if (!formData.description.trim()) {
       newErrors.description = "Description is required";
+    }
+
+    // Compared at the date level (year/month/day), not the exact
+    // timestamp — a deadline of "today" should be valid regardless of
+    // what time it currently is, not rejected just because the stored
+    // Date's time-of-day component has already passed the current
+    // moment (DatePicker only lets someone choose a date, not a time).
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfSubmissionDeadline = new Date(formData.submissionDeadline);
+    startOfSubmissionDeadline.setHours(0, 0, 0, 0);
+    const startOfDeliveryDate = new Date(formData.deliveryDate);
+    startOfDeliveryDate.setHours(0, 0, 0, 0);
+
+    if (startOfSubmissionDeadline < startOfToday) {
+      newErrors.submissionDeadline = "Submission deadline cannot be in the past";
+    }
+
+    if (startOfDeliveryDate < startOfToday) {
+      newErrors.deliveryDate = "Delivery date cannot be in the past";
+    } else if (startOfDeliveryDate < startOfSubmissionDeadline) {
+      newErrors.deliveryDate = "Delivery date must be on or after the submission deadline";
     }
 
     if (formData.categories.length === 0) {
@@ -200,6 +210,7 @@ export default function useAddRxRfqRequest(
     errors,
     isSubmitting,
     hasUnsavedChanges,
+    guardedBack,
     updateField,
     addItem,
     removeItem,
