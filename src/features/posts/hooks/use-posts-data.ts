@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { supabase } from "@/lib/supabase";
 import { requireUserId } from "@/lib/supabase-store-helpers";
+import { toast } from "@/shared/hooks/use-toast";
 import { Comment, Poll, Post, PostAuthor, PostFormData } from "@/features/posts/types/posts.types";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 
@@ -417,33 +418,55 @@ export const usePostsStore = create<PostsStore & { pollIdByPost: Record<string, 
   },
 
   toggleLike: async (postId) => {
-    const userId = await requireUserId();
     const alreadyLiked = get().myLikedPostIds.has(postId);
+    const currentPost = get().posts.find((p) => p.id === postId);
+    if (!currentPost) return;
 
-    if (alreadyLiked) {
-      await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", userId);
-    } else {
-      await supabase.from("post_likes").upsert({ post_id: postId, user_id: userId });
-    }
+    // Snapshot for rollback if the server call actually fails.
+    const previousPosts = get().posts;
+    const previousMyLikedPostIds = get().myLikedPostIds;
 
-    // Recount from the actual rows rather than a client-side delta — safe
-    // against concurrent likes from other users, same reasoning as ads'
-    // reaction counts.
-    const { count } = await supabase
-      .from("post_likes")
-      .select("*", { count: "exact", head: true })
-      .eq("post_id", postId);
-    await supabase.from("posts").update({ like_count: count ?? 0 }).eq("id", postId);
-
+    // Apply optimistically — immediate, felt feedback instead of
+    // waiting on a network round trip. The previous version of this
+    // function made 3 separate, sequentially-awaited requests (insert/
+    // delete the like, count all likes, update posts.like_count) before
+    // the UI updated at all. toggle_post_like (see its own migration)
+    // now does the whole thing server-side in one atomic call; this is
+    // what the person sees the instant they tap, rolled back if it
+    // actually fails.
     set((state) => {
       const myLikedPostIds = new Set(state.myLikedPostIds);
       if (alreadyLiked) myLikedPostIds.delete(postId);
       else myLikedPostIds.add(postId);
       return {
         myLikedPostIds,
-        posts: state.posts.map((p) => (p.id === postId ? { ...p, hasLiked: !alreadyLiked, likeCount: count ?? 0 } : p)),
+        posts: state.posts.map((p) =>
+          p.id === postId
+            ? { ...p, hasLiked: !alreadyLiked, likeCount: Math.max(0, p.likeCount + (alreadyLiked ? -1 : 1)) }
+            : p,
+        ),
       };
     });
+
+    const { error } = await supabase.rpc("toggle_post_like", { p_post_id: postId });
+    if (error) {
+      console.warn("[posts] toggleLike failed:", error.message);
+      toast.error("Couldn't update your like. Please try again.");
+      set({ posts: previousPosts, myLikedPostIds: previousMyLikedPostIds });
+      return;
+    }
+
+    // Reconcile with the actual server-side count in the background —
+    // the optimistic +1/-1 above is a good approximation, but likes are
+    // inherently multi-user, so someone else's concurrent like could
+    // make it drift slightly. This corrects that without blocking or
+    // re-flashing the like that already visibly landed.
+    const { data: postRow } = await supabase.from("posts").select("like_count").eq("id", postId).single();
+    if (!postRow) return;
+
+    set((state) => ({
+      posts: state.posts.map((p) => (p.id === postId ? { ...p, likeCount: postRow.like_count } : p)),
+    }));
   },
 
   addComment: async (postId, text) => {
@@ -480,32 +503,29 @@ export const usePostsStore = create<PostsStore & { pollIdByPost: Record<string, 
 
     const pollId = findPollId(get(), postId);
     if (!pollId) return;
-    const userId = await requireUserId();
+
     const previousVote = get().myVotesByPoll[pollId] ?? null;
+    const isTogglingOff = previousVote === optionId;
 
-    if (previousVote === optionId) {
-      await supabase.from("poll_votes").delete().eq("poll_id", pollId).eq("user_id", userId);
-    } else {
-      await supabase.from("poll_votes").upsert({ poll_id: pollId, user_id: userId, option_id: optionId });
-    }
+    // Snapshot for rollback if the server call actually fails.
+    const previousPosts = get().posts;
+    const previousMyVotesByPoll = get().myVotesByPoll;
 
-    // Recount each option from the actual vote rows — same race-safety
-    // reasoning as likes/reactions elsewhere.
-    const { data: optionRows } = await supabase.from("poll_options").select("id").eq("poll_id", pollId);
-    const counts: Record<string, number> = {};
-    for (const opt of optionRows ?? []) {
-      const { count } = await supabase
-        .from("poll_votes")
-        .select("*", { count: "exact", head: true })
-        .eq("poll_id", pollId)
-        .eq("option_id", opt.id);
-      counts[opt.id] = count ?? 0;
-      await supabase.from("poll_options").update({ vote_count: count ?? 0 }).eq("id", opt.id);
-    }
-
+    // Apply the vote optimistically — immediate, felt feedback the
+    // instant someone taps, instead of waiting on a network round trip.
+    // The previous version of this function made roughly 2N+2
+    // SEPARATE, sequentially-awaited requests for an N-option poll (one
+    // to record the vote, one to list options, then a count query PLUS
+    // an update query for every single option) before the UI updated at
+    // all — for a typical 4-option poll, 10 round trips back to back,
+    // easily 1-3+ seconds of visible lag with zero feedback in the
+    // meantime. cast_poll_vote (see its own migration) now does the
+    // whole thing server-side in one atomic call; this optimistic
+    // update is what the person sees the instant they tap, reconciled
+    // against the real counts afterward and rolled back if it fails.
     set((state) => {
       const myVotesByPoll = { ...state.myVotesByPoll };
-      if (previousVote === optionId) delete myVotesByPoll[pollId];
+      if (isTogglingOff) delete myVotesByPoll[pollId];
       else myVotesByPoll[pollId] = optionId;
 
       return {
@@ -516,12 +536,55 @@ export const usePostsStore = create<PostsStore & { pollIdByPost: Record<string, 
             ...p,
             poll: {
               ...p.poll,
-              votedOptionId: previousVote === optionId ? null : optionId,
-              options: p.poll.options.map((o) => ({ ...o, voteCount: counts[o.id] ?? o.voteCount })),
+              votedOptionId: isTogglingOff ? null : optionId,
+              options: p.poll.options.map((o) => {
+                let voteCount = o.voteCount;
+                if (previousVote && o.id === previousVote) voteCount -= 1;
+                if (!isTogglingOff && o.id === optionId) voteCount += 1;
+                return { ...o, voteCount: Math.max(0, voteCount) };
+              }),
             },
           };
         }),
       };
     });
+
+    const { error } = await supabase.rpc("cast_poll_vote", {
+      p_poll_id: pollId,
+      p_option_id: optionId,
+    });
+    if (error) {
+      console.warn("[posts] votePoll failed:", error.message);
+      toast.error("Couldn't record your vote. Please try again.");
+      set({ posts: previousPosts, myVotesByPoll: previousMyVotesByPoll });
+      return;
+    }
+
+    // Reconcile with the actual server-side counts in the background.
+    // The optimistic +1/-1 above is a good approximation, but polls are
+    // inherently multi-user — someone else's concurrent vote could make
+    // it drift slightly. This corrects that without blocking or
+    // re-flashing the vote that already visibly landed.
+    const { data: optionRows } = await supabase
+      .from("poll_options")
+      .select("id, vote_count")
+      .eq("poll_id", pollId);
+    if (!optionRows) return;
+
+    const counts: Record<string, number> = {};
+    for (const row of optionRows) counts[row.id] = row.vote_count;
+
+    set((state) => ({
+      posts: state.posts.map((p) => {
+        if (p.id !== postId || !p.poll) return p;
+        return {
+          ...p,
+          poll: {
+            ...p.poll,
+            options: p.poll.options.map((o) => ({ ...o, voteCount: counts[o.id] ?? o.voteCount })),
+          },
+        };
+      }),
+    }));
   },
 }));

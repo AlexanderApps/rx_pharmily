@@ -10,18 +10,12 @@ import DetailSkeleton from "@/shared/components/detail-skeleton";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useDonationStore } from "@/features/donations/hooks/use-donation-data";
 import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
-import { DonationResponseFormData } from "@/features/donations/types/donation.types";
+import { DonationResponseFormData, isDonationItemAvailable, getExpiryTier } from "@/features/donations/types/donation.types";
 import DonationClaimSheet, {
   DonationClaimSheetHandle,
 } from "@/features/donations/components/donation-claim-sheet";
 import PrintButton from "@/shared/components/print-button";
 import { buildDonationItemListHtml } from "@/features/donations/utils/donation-pdf";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function daysUntil(date: Date) {
-  return Math.ceil((new Date(date).getTime() - Date.now()) / DAY_MS);
-}
 
 // Public view — anyone browsing the market lands here. Owners are routed to
 // /donations/donation-details for management instead.
@@ -62,7 +56,7 @@ export default function DonationMarketDetailsScreen() {
     );
   }
 
-  const activeItems = donation.donatedItems.filter((i) => i.isActive);
+  const activeItems = donation.donatedItems.filter(isDonationItemAvailable);
   const canClaim = donation.status === "opened" && activeItems.length > 0 && hasPermission("donations.claim");
 
   const handleSubmitClaim = async (data: DonationResponseFormData) => {
@@ -243,9 +237,8 @@ export default function DonationMarketDetailsScreen() {
           }}
         >
           {activeItems.map((item, index) => {
-            const days = daysUntil(item.expiryDate);
-            const expiryColor =
-              days <= 30 ? colors.warning : colors.textSecondary;
+            const expiryTier = getExpiryTier(item.expiryDate);
+            const expiryColor = colors[expiryTier.colorKey];
 
             return (
               <View
@@ -258,18 +251,28 @@ export default function DonationMarketDetailsScreen() {
                 }
               >
                 <View className="flex-1">
-                  <Text
-                    className="text-sm font-semibold"
-                    style={{ color: colors.text }}
-                    numberOfLines={1}
-                  >
-                    {item.product}
-                  </Text>
+                  <View className="flex-row items-center justify-between gap-2">
+                    <Text
+                      className="text-sm font-semibold flex-1"
+                      style={{ color: colors.text }}
+                      numberOfLines={1}
+                    >
+                      {item.product}
+                    </Text>
+                    <View
+                      className="px-1.5 py-0.5 rounded"
+                      style={{ backgroundColor: expiryColor + "18" }}
+                    >
+                      <Text className="text-[10px] font-bold" style={{ color: expiryColor }}>
+                        {expiryTier.label}
+                      </Text>
+                    </View>
+                  </View>
                   <Text
                     className="text-xs mt-[3px]"
-                    style={{ color: expiryColor }}
+                    style={{ color: colors.textSecondary }}
                   >
-                    {item.quantity} available · expires{" "}
+                    {item.quantity}{item.uom ? ` ${item.uom}` : ""} available · expires{" "}
                     {new Date(item.expiryDate).toLocaleDateString(undefined, {
                       day: "2-digit",
                       month: "short",

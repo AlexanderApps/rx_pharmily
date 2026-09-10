@@ -128,5 +128,5 @@ const DonationListCard: React.FC<DonationListCardProps> = ({
   );
 };
 
-export default DonationListCard;
+export default React.memo(DonationListCard);
 

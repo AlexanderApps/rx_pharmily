@@ -22,6 +22,7 @@ export interface DonationItem {
   id: string;
   product: string;
   quantity: number;
+  uom?: string;
   batch?: string;
   expiryDate: Date;
   status: boolean;
@@ -29,6 +30,48 @@ export interface DonationItem {
   // Whether `product` was typed as a one-off entry or matched an
   // existing catalog product via the ProductComboBox.
   isCustomProduct: boolean;
+}
+
+// The actual "is this line item available for donation" answer —
+// isActive alone is just the creator's manual toggle (also auto-set to
+// false when a claim brings quantity to zero — see approveResponse in
+// use-donation-data.ts), it says nothing about whether the item has
+// since expired. A line item that's still marked active but is past
+// its expiry date is not actually available, regardless of that flag.
+export function isDonationItemAvailable(item: DonationItem): boolean {
+  return item.isActive && new Date(item.expiryDate).getTime() >= Date.now();
+}
+
+// A color KEY, not a resolved color — theme colors only exist inside
+// useTheme(), which this file has no access to (it's not a component).
+// Every consumer resolves this against its own `colors` object
+// (colors[tier.colorKey]), keeping this function pure and reusable
+// across every screen that shows an expiry date, rather than each one
+// re-deriving its own thresholds (which is exactly what had happened
+// before this — several screens each had their own local, inconsistent
+// version of "is this expiring soon").
+export interface ExpiryTier {
+  label: string;
+  colorKey: "error" | "warning" | "info" | "textSecondary" | "success";
+}
+
+// The lower-level primitive both getExpiryTier and any summary count
+// (e.g. donation-details.tsx's "N expiring soon" stat) need — kept
+// separate from getExpiryTier itself since not every consumer wants the
+// full label+color computation, just the raw day count to bucket by.
+export function daysUntilExpiry(expiryDate: Date): number {
+  return Math.ceil((new Date(expiryDate).getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+}
+
+export function getExpiryTier(expiryDate: Date): ExpiryTier {
+  const daysLeft = daysUntilExpiry(expiryDate);
+
+  if (daysLeft < 0) return { label: "Expired", colorKey: "error" };
+  if (daysLeft <= 30) return { label: `${daysLeft}d left`, colorKey: "error" };
+  if (daysLeft <= 90) return { label: `${Math.ceil(daysLeft / 7)}w left`, colorKey: "warning" };
+  if (daysLeft <= 180) return { label: `${Math.ceil(daysLeft / 30)}mo left`, colorKey: "info" };
+  if (daysLeft <= 365) return { label: `${Math.ceil(daysLeft / 30)}mo left`, colorKey: "textSecondary" };
+  return { label: "1yr+ left", colorKey: "success" };
 }
 
 // The full donation posting as stored/edited.

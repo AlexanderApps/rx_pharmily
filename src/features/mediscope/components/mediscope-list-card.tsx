@@ -84,5 +84,5 @@ const MediscopeListCard: React.FC<MediscopeListCardProps> = ({ item, onPress }) 
   );
 };
 
-export default MediscopeListCard;
+export default React.memo(MediscopeListCard);
 

@@ -80,5 +80,5 @@ const ClickableAvatar: React.FC<ClickableAvatarProps> = ({
   );
 };
 
-export default ClickableAvatar;
+export default React.memo(ClickableAvatar);
 

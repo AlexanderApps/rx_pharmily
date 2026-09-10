@@ -147,5 +147,5 @@ const RxRfqCard: React.FC<RxRfqCardProps> = ({
   );
 };
 
-export default RxRfqCard;
+export default React.memo(RxRfqCard);
 

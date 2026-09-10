@@ -14,6 +14,8 @@ import { useDonationStore } from "@/features/donations/hooks/use-donation-data";
 import {
   DonationItem,
   DonationStatus,
+  getExpiryTier,
+  daysUntilExpiry,
 } from "@/features/donations/types/donation.types";
 import DonationResponseCard from "@/features/donations/components/donation-response-card";
 import PrintButton from "@/shared/components/print-button";
@@ -28,12 +30,6 @@ const fmtDate = (d?: Date) =>
       })
     : "-";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function daysUntil(date: Date) {
-  return Math.ceil((new Date(date).getTime() - Date.now()) / DAY_MS);
-}
-
 const STATUS_META: Record<DonationStatus, { label: string; icon: string }> = {
   opened: { label: "Opened", icon: "eye-outline" },
   hidden: { label: "Hidden", icon: "eye-off-outline" },
@@ -42,11 +38,8 @@ const STATUS_META: Record<DonationStatus, { label: string; icon: string }> = {
 
 function ItemRow({ item }: { item: DonationItem }) {
   const { colors } = useTheme();
-  const days = daysUntil(item.expiryDate);
-  const expiryColor =
-    days < 0 ? colors.error : days <= 30 ? colors.warning : colors.text;
-  const expiryLabel =
-    days < 0 ? "Expired" : days <= 30 ? "Expiring soon" : null;
+  const expiryTier = getExpiryTier(item.expiryDate);
+  const expiryColor = colors[expiryTier.colorKey];
 
   return (
     <View
@@ -96,7 +89,7 @@ function ItemRow({ item }: { item: DonationItem }) {
 
         <View className="flex-row items-center gap-1.5">
           <Text className="text-xs" style={{ color: colors.textSecondary }}>
-            Qty {item.quantity}
+            Qty {item.quantity}{item.uom ? ` ${item.uom}` : ""}
           </Text>
           {item.batch ? (
             <Text className="text-xs" style={{ color: colors.textSecondary }}>
@@ -117,14 +110,12 @@ function ItemRow({ item }: { item: DonationItem }) {
           >
             Expires {fmtDate(item.expiryDate)}
           </Text>
-          {expiryLabel && (
-            <Text
-              className="text-[10px] font-bold ml-0.5"
-              style={{ color: expiryColor }}
-            >
-              {expiryLabel}
-            </Text>
-          )}
+          <Text
+            className="text-[10px] font-bold ml-0.5"
+            style={{ color: expiryColor }}
+          >
+            {expiryTier.label}
+          </Text>
         </View>
       </View>
     </View>
@@ -168,7 +159,7 @@ export default function DonationDetailsScreen() {
     () =>
       donation
         ? donation.donatedItems.filter((i) => {
-            const days = daysUntil(i.expiryDate);
+            const days = daysUntilExpiry(i.expiryDate);
             return days >= 0 && days <= 30;
           }).length
         : 0,
@@ -178,7 +169,7 @@ export default function DonationDetailsScreen() {
   const expiredCount = useMemo(
     () =>
       donation
-        ? donation.donatedItems.filter((i) => daysUntil(i.expiryDate) < 0)
+        ? donation.donatedItems.filter((i) => daysUntilExpiry(i.expiryDate) < 0)
             .length
         : 0,
     [donation]

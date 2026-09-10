@@ -89,3 +89,20 @@ export interface JobApplication {
   appliedAt: Date;
   status: ApplicationStatus;
 }
+
+// Which registered entity (if any) actually posted this job, for
+// ClickableAvatar/PublicProfileCard. postedBy is the *user account* that
+// created the listing — never a facility or organization id — so it's
+// never the right id to look a profile up by. Per Job's own isCustom
+// contract: isCustom true means no registered entity exists at all
+// (companyName was hand-typed); isCustom false means exactly one of
+// facilityId/organizationId is set. In the isCustom case, postedBy is
+// still passed through deliberately — it won't match anything in the
+// facilities/organizations lists, so PublicProfileCard's lookup
+// correctly falls through to ClickableAvatar's fallbackName (the typed
+// companyName) instead of showing a wrong or empty profile.
+export function getJobPosterEntity(job: Job): { entityType: "facility" | "organization"; entityId: string } {
+  if (job.organizationId) return { entityType: "organization", entityId: job.organizationId };
+  if (job.facilityId) return { entityType: "facility", entityId: job.facilityId };
+  return { entityType: "facility", entityId: job.postedBy };
+}

@@ -1,5 +1,5 @@
 import { wrapPdfDocument } from "@/shared/utils/pdf";
-import { Donation } from "@/features/donations/types/donation.types";
+import { Donation, isDonationItemAvailable, getExpiryTier } from "@/features/donations/types/donation.types";
 
 const fmtDate = (d?: Date) =>
   d
@@ -16,20 +16,16 @@ function escapeHtml(value: string) {
 // Item list for a donation posting — printed from either the owner's
 // management view or the public market view.
 export function buildDonationItemListHtml(donation: Donation): string {
-  const DAY_MS = 24 * 60 * 60 * 1000;
-  const daysUntil = (date: Date) => Math.ceil((new Date(date).getTime() - Date.now()) / DAY_MS);
-
   const itemRows = donation.donatedItems
     .map((item) => {
-      const days = daysUntil(item.expiryDate);
-      const expiryNote = days < 0 ? " — Expired" : days <= 30 ? " — Expiring soon" : "";
+      const expiryTier = getExpiryTier(item.expiryDate);
       return `
         <tr>
           <td>${escapeHtml(item.product)}</td>
-          <td class="num">${item.quantity}</td>
+          <td class="num">${item.quantity}${item.uom ? ` ${escapeHtml(item.uom)}` : ""}</td>
           <td>${item.batch ? escapeHtml(item.batch) : "-"}</td>
-          <td>${fmtDate(item.expiryDate)}${expiryNote}</td>
-          <td>${item.isActive ? "Available" : "Claimed / Inactive"}</td>
+          <td>${fmtDate(item.expiryDate)} — ${escapeHtml(expiryTier.label)}</td>
+          <td>${isDonationItemAvailable(item) ? "Available" : "Claimed / Inactive"}</td>
         </tr>`;
     })
     .join("");

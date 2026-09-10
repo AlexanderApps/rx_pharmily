@@ -14,6 +14,7 @@ import { useRxJobsStore } from "@/features/rxjobs/hooks/use-rxjobs-data";
 import {
   ApplicationStatus,
   JobStatus,
+  getJobPosterEntity,
 } from "@/features/rxjobs/types/rxjobs.types";
 
 const fmtDate = (d?: Date) =>
@@ -192,6 +193,7 @@ export default function JobDetailsScreen() {
   };
 
   const statusMeta = JOB_STATUS_META[job.status];
+  const posterEntity = getJobPosterEntity(job);
   const statusColor = colors[statusMeta.tone];
 
   return (
@@ -252,10 +254,10 @@ export default function JobDetailsScreen() {
         {/* Posted by */}
         <View className="flex-row items-center gap-2.5 mb-3.5">
           <ClickableAvatar
-            entityType="facility"
-            entityId={job.postedBy}
+            entityType={posterEntity.entityType}
+            entityId={posterEntity.entityId}
             name={job.companyName}
-            avatarColor={colors.primary}
+            avatarColor={posterEntity.entityType === "organization" ? "#9333ea" : colors.primary}
             subtitle="Posted this job"
             size={38}
           />

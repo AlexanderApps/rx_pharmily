@@ -15,15 +15,10 @@ import {
   convertToCardData,
   useDonationStore,
 } from "@/features/donations/hooks/use-donation-data";
+import { daysUntilExpiry } from "@/features/donations/types/donation.types";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import PermissionGate from "@/shared/components/permission-gate";
 import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function daysUntil(date: Date) {
-  return Math.ceil((new Date(date).getTime() - Date.now()) / DAY_MS);
-}
 
 export default function DonationsScreen() {
   const { colors } = useTheme();
@@ -68,7 +63,7 @@ export default function DonationsScreen() {
     () =>
       myDonations.reduce((count, d) => {
         const soon = d.donatedItems.filter((item) => {
-          const days = daysUntil(item.expiryDate);
+          const days = daysUntilExpiry(item.expiryDate);
           return days >= 0 && days <= 30;
         }).length;
         return count + soon;

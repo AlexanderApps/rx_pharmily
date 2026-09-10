@@ -8,15 +8,10 @@ import {
   ScrollView,
 } from "react-native";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { Colors } from "@/shared/constants/theme";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import DonatedItemModal from "@/features/donations/components/donated-item-modal";
-import { DonationItem } from "@/features/donations/types/donation.types";
+import { DonationItem, isDonationItemAvailable, getExpiryTier } from "@/features/donations/types/donation.types";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
-
-type ThemeColors = (typeof Colors)["light"];
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 function formatExpiry(date: Date) {
   return new Date(date).toLocaleDateString(undefined, {
@@ -24,24 +19,6 @@ function formatExpiry(date: Date) {
     month: "short",
     year: "numeric",
   });
-}
-
-function daysUntil(date: Date) {
-  return Math.ceil((new Date(date).getTime() - Date.now()) / DAY_MS);
-}
-
-function getExpiryColor(date: Date, colors: ThemeColors) {
-  const days = daysUntil(date);
-  if (days < 0) return colors.error;
-  if (days <= 30) return colors.warning;
-  return colors.text;
-}
-
-function getExpiryLabel(date: Date) {
-  const days = daysUntil(date);
-  if (days < 0) return "Expired";
-  if (days <= 30) return "Expiring soon";
-  return null;
 }
 
 interface DonatedItemsTableProps {
@@ -177,7 +154,7 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
                 "Batch",
                 "Expiry",
                 "Status",
-                "Active",
+                "Available",
                 "Action",
               ].map((h, i) => (
                 <Text
@@ -198,7 +175,10 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
               keyExtractor={(item) => item.id}
               scrollEnabled={false}
               keyboardShouldPersistTaps="handled"
-              renderItem={({ item }) => (
+              renderItem={({ item }) => {
+                const expiryTier = getExpiryTier(item.expiryDate);
+                const available = isDonationItemAvailable(item);
+                return (
                 <View
                   className="flex-row items-center"
                   style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, paddingVertical: 12 }}
@@ -222,7 +202,7 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
                       { color: colors.text, textAlign: "center" },
                     ]}
                   >
-                    {item.quantity}
+                    {item.quantity}{item.uom ? ` ${item.uom}` : ""}
                   </Text>
                   <Text
                     style={[
@@ -240,19 +220,17 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
                       style={[
                         styles.cellText,
                         styles.bodyCell,
-                        { color: getExpiryColor(item.expiryDate, colors) },
+                        { color: colors[expiryTier.colorKey] },
                       ]}
                     >
                       {formatExpiry(item.expiryDate)}
                     </Text>
-                    {getExpiryLabel(item.expiryDate) && (
-                      <Text
-                        className="text-[10px] font-bold"
-                        style={{ color: getExpiryColor(item.expiryDate, colors) }}
-                      >
-                        {getExpiryLabel(item.expiryDate)}
-                      </Text>
-                    )}
+                    <Text
+                      className="text-[10px] font-bold"
+                      style={{ color: colors[expiryTier.colorKey] }}
+                    >
+                      {expiryTier.label}
+                    </Text>
                   </View>
                   <View style={[styles.statusColumn, styles.cellCenter]}>
                     <View
@@ -270,19 +248,19 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
                       />
                     </View>
                   </View>
-                  <View style={[styles.activeColumn, styles.cellCenter]}>
+                  <View style={[styles.availableColumn, styles.cellCenter]}>
                     <View
                       className="p-1 rounded-md"
                       style={{
-                        backgroundColor: item.isActive
+                        backgroundColor: available
                           ? colors.success + "20"
                           : colors.error + "20",
                       }}
                     >
                       <MaterialCommunityIcons
-                        name={item.isActive ? "check" : "close"}
+                        name={available ? "check" : "close"}
                         size={12}
-                        color={item.isActive ? colors.success : colors.error}
+                        color={available ? colors.success : colors.error}
                       />
                     </View>
                   </View>
@@ -309,7 +287,8 @@ const DonatedItemsTable: React.FC<DonatedItemsTableProps> = ({
                     </TouchableOpacity>
                   </View>
                 </View>
-              )}
+                );
+              }}
             />
           </View>
         </ScrollView>
@@ -341,7 +320,7 @@ const styles = StyleSheet.create({
   batchColumn: { width: 90 },
   expiryColumn: { width: 100, paddingHorizontal: 10, gap: 2 },
   statusColumn: { width: 70 },
-  activeColumn: { width: 70 },
+  availableColumn: { width: 70 },
   actionColumn: { width: 80 },
   rowActions: {
     flexDirection: "row",

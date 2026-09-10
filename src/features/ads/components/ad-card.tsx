@@ -139,5 +139,5 @@ const AdCard: React.FC<AdCardProps> = ({ ad, onPress }) => {
   );
 };
 
-export default AdCard;
+export default React.memo(AdCard);
 

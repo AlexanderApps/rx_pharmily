@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
-  FlatList,
+  ScrollView,
   NativeSyntheticEvent,
   NativeScrollEvent,
   LayoutChangeEvent,
@@ -54,15 +54,6 @@ const MediaCarousel: React.FC<MediaCarouselProps> = ({ media }) => {
     setContainerWidth((prev) => (Math.abs(prev - width) > 1 ? width : prev));
   }, []);
 
-  const getItemLayout = useCallback(
-    (_: unknown, index: number) => ({
-      length: containerWidth,
-      offset: containerWidth * index,
-      index,
-    }),
-    [containerWidth],
-  );
-
   const handleMomentumScrollEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       if (containerWidth === 0) return;
@@ -87,9 +78,7 @@ const MediaCarousel: React.FC<MediaCarouselProps> = ({ media }) => {
   return (
     <View onLayout={handleLayout}>
       {containerWidth > 0 && (
-        <FlatList
-          data={media}
-          keyExtractor={(item) => item.id}
+        <ScrollView
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
@@ -98,14 +87,14 @@ const MediaCarousel: React.FC<MediaCarouselProps> = ({ media }) => {
           snapToAlignment="start"
           disableIntervalMomentum
           bounces={false}
-          getItemLayout={getItemLayout}
           onMomentumScrollEnd={handleMomentumScrollEnd}
-          renderItem={({ item }) => (
-            <View style={{ width: containerWidth }}>
+        >
+          {media.map((item) => (
+            <View key={item.id} style={{ width: containerWidth }}>
               <LoadingImage source={{ uri: item.uri }} style={imageStyle} borderRadius={12} resizeMode="cover" expandable />
             </View>
-          )}
-        />
+          ))}
+        </ScrollView>
       )}
 
       {media.length > 1 && (
@@ -132,5 +121,5 @@ const MediaCarousel: React.FC<MediaCarouselProps> = ({ media }) => {
   );
 };
 
-export default MediaCarousel;
+export default React.memo(MediaCarousel);
 

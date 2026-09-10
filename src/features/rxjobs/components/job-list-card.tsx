@@ -101,5 +101,5 @@ const JobListCard: React.FC<JobListCardProps> = ({ item, onPress }) => {
   );
 };
 
-export default JobListCard;
+export default React.memo(JobListCard);
 

@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useState } from "react";
-import { View, Text, Pressable, FlatList, ScrollView, ActivityIndicator } from "react-native";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+import { View, Text, Pressable, FlatList, ScrollView, ActivityIndicator, Platform } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import MaxWidthLayout from "@/shared/components/max-width-layout";
@@ -10,63 +10,28 @@ import SearchButton from "@/shared/components/search-button";
 import { usePostsStore } from "@/features/posts/hooks/use-posts-data";
 import PostCard from "@/features/posts/components/post-card";
 import PostComposerTrigger from "@/features/posts/components/post-composer-trigger";
-import { Post } from "@/features/posts/types/posts.types";
 import { useAdsStore } from "@/features/ads/hooks/use-ads-data";
 import AdCard from "@/features/ads/components/ad-card";
-import { Ad } from "@/features/ads/types/ads.types";
 import NotificationBell from "@/features/notifications/components/notification-bell";
 import {
   convertToCardData as convertMediscopeCardData,
   useMediscopeStore,
 } from "@/features/mediscope/hooks/use-mediscope-data";
 import MediscopeListCard from "@/features/mediscope/components/mediscope-list-card";
-import { MediscopeCardData } from "@/features/mediscope/types/mediscope.types";
 import {
   convertToCardData as convertDonationCardData,
   useDonationStore,
 } from "@/features/donations/hooks/use-donation-data";
 import DonationListCard from "@/features/donations/components/donation-list-card";
-import { DonationCardData } from "@/features/donations/types/donation.types";
 import { useRxJobsStore } from "@/features/rxjobs/hooks/use-rxjobs-data";
 import JobListCard from "@/features/rxjobs/components/job-list-card";
-import { Job } from "@/features/rxjobs/types/rxjobs.types";
 import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
 import RxRfqCard from "@/features/rxrfqs/components/rxrfq-card";
-import { RxRfqCardData } from "@/features/rxrfqs/types/rxrfqs.types";
+import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
+import { FeedItem, rankFeed } from "@/shared/utils/home-feed-ranking";
 
 const PAGE_SIZE = 5;
-
-// A single kind per item, all mixed on equal footing — this is the "for
-// you" placeholder the whole feed is built around: each source is
-// filtered down to what's actually publicly available (its own
-// published-equivalent status), then combined and shuffled once. A real
-// ranking algorithm can slot in later without touching how the feed is
-// rendered, only how fullFeed below is assembled. Kept identical to the
-// native (non-.web) version of this screen — this file previously only
-// interleaved posts and ads, which is why the other four kinds never
-// showed up here even after the native version already had them.
-type FeedItem =
-  | { kind: "post"; key: string; post: Post }
-  | { kind: "ad"; key: string; ad: Ad }
-  | { kind: "mediscope"; key: string; request: MediscopeCardData }
-  | { kind: "donation"; key: string; donation: DonationCardData }
-  | { kind: "job"; key: string; job: Job }
-  | { kind: "rfq"; key: string; rfq: RxRfqCardData };
-
-// A stable (non-cryptographic) shuffle seeded from nothing but the array
-// itself — good enough for "random order" as an interim stand-in for a
-// real ranking algorithm. Not reseeded on every render: fullFeed's own
-// useMemo already only recomputes when the underlying source arrays
-// change, so items don't visibly reorder themselves while the user is
-// mid-scroll or paginating.
-function shuffle<T>(items: T[]): T[] {
-  const result = [...items];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
-}
 
 const SHORTCUTS: {
   label: string;
@@ -83,6 +48,81 @@ const SHORTCUTS: {
   { label: "RxAds", icon: "bullhorn-outline", color: "#d97706", route: "/ads" },
 ];
 
+// Defined once at module scope, not recreated on every HomeScreen
+// render — its own identity needs to be stable for React.memo below to
+// mean anything at all. Kept identical to the native (non-.web) version
+// of this screen — this file previously had its own separate copy of
+// this entire component that never received the same fixes, which is
+// why "voting shifts the whole feed" kept happening even after the
+// native version was fixed: the native and .web variants are genuinely
+// separate files, not one file with a platform check inside it.
+const FeedItemRow = React.memo(function FeedItemRow({ item }: { item: FeedItem }) {
+  const postId = item.kind === "post" ? item.post.id : undefined;
+  const adId = item.kind === "ad" ? item.ad.id : undefined;
+  const mediscopeId = item.kind === "mediscope" ? item.request.id : undefined;
+  const donationId = item.kind === "donation" ? item.donation.id : undefined;
+  const jobId = item.kind === "job" ? item.job.id : undefined;
+  const rfqId = item.kind === "rfq" ? item.rfq.id : undefined;
+
+  const handlePostPress = useCallback(() => {
+    router.push({ pathname: "/posts/post-details", params: { id: postId! } });
+  }, [postId]);
+  const handleAdPress = useCallback(() => {
+    router.push({ pathname: "/ads/ad-market-details", params: { id: adId! } });
+  }, [adId]);
+  const handleMediscopePress = useCallback(() => {
+    router.push({ pathname: "/mediscope/mediscope-market-details", params: { id: mediscopeId! } });
+  }, [mediscopeId]);
+  const handleDonationPress = useCallback(() => {
+    router.push({ pathname: "/donations/donation-market-details", params: { id: donationId! } });
+  }, [donationId]);
+  const handleJobPress = useCallback(() => {
+    router.push({ pathname: "/jobs/job-market-details", params: { id: jobId! } });
+  }, [jobId]);
+  const handleRfqPress = useCallback(() => {
+    router.push({ pathname: "/rfqs/rxrfq-market-details", params: { id: rfqId! } });
+  }, [rfqId]);
+
+  switch (item.kind) {
+    case "post":
+      return (
+        <View className="px-4 mt-3">
+          <PostCard post={item.post} onPress={handlePostPress} />
+        </View>
+      );
+    case "ad":
+      return (
+        <View className="px-4 mt-3">
+          <AdCard ad={item.ad} onPress={handleAdPress} />
+        </View>
+      );
+    case "mediscope":
+      return (
+        <View className="px-4 mt-3">
+          <MediscopeListCard item={item.request} onPress={handleMediscopePress} />
+        </View>
+      );
+    case "donation":
+      return (
+        <View className="px-4 mt-3">
+          <DonationListCard donation={item.donation} onPress={handleDonationPress} />
+        </View>
+      );
+    case "job":
+      return (
+        <View className="px-4 mt-3">
+          <JobListCard item={item.job} onPress={handleJobPress} />
+        </View>
+      );
+    case "rfq":
+      return (
+        <View className="px-4 mt-3">
+          <RxRfqCard rfq={item.rfq} onPress={handleRfqPress} />
+        </View>
+      );
+  }
+});
+
 export default function HomeScreen() {
   const { colors } = useTheme();
   const posts = usePostsStore((state) => state.posts);
@@ -91,9 +131,17 @@ export default function HomeScreen() {
   const donations = useDonationStore((state) => state.donations);
   const jobs = useRxJobsStore((state) => state.jobs);
   const rxrfqs = useRxRfqsStore((state) => state.rxrfqs);
+  const userRegion = useProfileStore((state) => state.user.region);
+  const hasPermission = usePermissionsStore((state) => state.hasPermission);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  // The last computed feed ORDER (as item keys), separate from the item
+  // data itself — see the fullFeed useMemo below for why this needs to
+  // exist at all: without it, a single poll vote (or any other in-place
+  // data change to an already-visible item) causes the WHOLE feed to
+  // visibly reshuffle, not just the one item that changed.
+  const feedOrderRef = useRef<string[]>([]);
 
   const fullFeed = useMemo<FeedItem[]>(() => {
     const postItems: FeedItem[] = posts.map((post) => ({
@@ -130,15 +178,39 @@ export default function HomeScreen() {
       .filter((r) => r.status === "published")
       .map((r) => ({ kind: "rfq", key: `rfq-${r.id}`, rfq: r }));
 
-    return shuffle([
+    const allItems: FeedItem[] = [
       ...postItems,
       ...adItems,
       ...mediscopeItems,
       ...donationItems,
       ...jobItems,
       ...rfqItems,
-    ]);
-  }, [posts, ads, mediscopeRequests, donations, jobs, rxrfqs]);
+    ];
+
+    // Only re-rank when the actual SET of visible items changes — not
+    // on every data tick within already-known items (a vote, a like, a
+    // response count ticking up), which would otherwise visibly
+    // reshuffle the whole feed. See shared/utils/home-feed-ranking.ts
+    // and this same logic in the native (non-.web) version of this
+    // screen for the full reasoning.
+    const currentKeys = allItems.map((item) => item.key);
+    const previousKeys = feedOrderRef.current;
+    const sameSet =
+      previousKeys.length === currentKeys.length &&
+      new Set(previousKeys).size === new Set(currentKeys).size &&
+      currentKeys.every((key) => previousKeys.includes(key));
+
+    if (sameSet && previousKeys.length > 0) {
+      const itemsByKey = new Map(allItems.map((item) => [item.key, item]));
+      return previousKeys
+        .map((key) => itemsByKey.get(key))
+        .filter((item): item is FeedItem => item !== undefined);
+    }
+
+    const ranked = rankFeed(allItems, { userRegion, hasPermission });
+    feedOrderRef.current = ranked.map((item) => item.key);
+    return ranked;
+  }, [posts, ads, mediscopeRequests, donations, jobs, rxrfqs, userRegion, hasPermission]);
 
   const visibleFeed = fullFeed.slice(0, visibleCount);
   const hasMore = visibleCount < fullFeed.length;
@@ -160,93 +232,16 @@ export default function HomeScreen() {
     }, 600);
   }, []);
 
-  const renderItem = ({ item }: { item: FeedItem }) => {
-    switch (item.kind) {
-      case "post":
-        return (
-          <View className="px-4 mt-3">
-            <PostCard
-              post={item.post}
-              onPress={() =>
-                router.push({
-                  pathname: "/posts/post-details",
-                  params: { id: item.post.id },
-                })
-              }
-            />
-          </View>
-        );
-      case "ad":
-        return (
-          <View className="px-4 mt-3">
-            <AdCard
-              ad={item.ad}
-              onPress={() =>
-                router.push({ pathname: "/ads/ad-market-details", params: { id: item.ad.id } })
-              }
-            />
-          </View>
-        );
-      case "mediscope":
-        return (
-          <View className="px-4 mt-3">
-            <MediscopeListCard
-              item={item.request}
-              onPress={() =>
-                router.push({
-                  pathname: "/mediscope/mediscope-market-details",
-                  params: { id: item.request.id },
-                })
-              }
-            />
-          </View>
-        );
-      case "donation":
-        return (
-          <View className="px-4 mt-3">
-            <DonationListCard
-              donation={item.donation}
-              onPress={() =>
-                router.push({
-                  pathname: "/donations/donation-market-details",
-                  params: { id: item.donation.id },
-                })
-              }
-            />
-          </View>
-        );
-      case "job":
-        return (
-          <View className="px-4 mt-3">
-            <JobListCard
-              item={item.job}
-              onPress={() =>
-                router.push({
-                  pathname: "/jobs/job-market-details",
-                  params: { id: item.job.id },
-                })
-              }
-            />
-          </View>
-        );
-      case "rfq":
-        return (
-          <View className="px-4 mt-3">
-            <RxRfqCard
-              rfq={item.rfq}
-              onPress={() =>
-                router.push({
-                  pathname: "/rfqs/rxrfq-market-details",
-                  params: { id: item.rfq.id },
-                })
-              }
-            />
-          </View>
-        );
-    }
-  };
+  // A trivial, stable wrapper — the actual per-kind rendering and
+  // onPress logic now lives in FeedItemRow (module scope, memoized)
+  // above.
+  const renderItem = useCallback(
+    ({ item }: { item: FeedItem }) => <FeedItemRow item={item} />,
+    [],
+  );
 
-  const ListHeader = (
+  const ListHeader = useMemo(
+    () => (
     <View>
       {/* Header Layout */}
       <View className="px-5 pt-4">
@@ -282,7 +277,7 @@ export default function HomeScreen() {
         <SearchButton placeholder="Search RxPharmily..." variant="default" />
       </View>
 
-      {/* Horizonatal Navigation Links */}
+      {/* Horizontal Navigation Links */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -320,6 +315,8 @@ export default function HomeScreen() {
       {/* Separator Divider */}
       <View className="h-[6px] mt-[18px]" style={{ backgroundColor: colors.border }} />
     </View>
+    ),
+    [colors],
   );
 
   const ListFooter = () => {
@@ -366,6 +363,17 @@ export default function HomeScreen() {
             refreshing={refreshing}
             onRefresh={handleRefresh}
             showsVerticalScrollIndicator={false}
+            // maxToRenderPerBatch deliberately below PAGE_SIZE — posts
+            // with media (MediaCarousel + multiple LoadingImage
+            // instances) are meaningfully more expensive to mount than
+            // the other 5 card types, so batching all 5 newly-paginated
+            // items at once was still large enough to trip the
+            // VirtualizedList "slow to update" warning.
+            removeClippedSubviews={Platform.OS !== "web"}
+            maxToRenderPerBatch={3}
+            updateCellsBatchingPeriod={100}
+            windowSize={5}
+            initialNumToRender={3}
           />
         </MaxWidthLayout>
       </SafeAreaView>

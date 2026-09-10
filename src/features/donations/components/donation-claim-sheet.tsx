@@ -6,15 +6,7 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import SubmitButton from "@/shared/components/submit-button";
 import BottomSheet from "@/shared/components/bottom-sheet";
 import MyFacilityPicker from "@/shared/components/forms/my-facility-picker";
-import { DonationItem, DonationResponseFormData } from "@/features/donations/types/donation.types";
-
-// Same helper as app/donations/donation-market-details.tsx's own
-// expiry display — kept local here too rather than shared, matching
-// that file's existing (unshared) convention.
-const DAY_MS = 24 * 60 * 60 * 1000;
-function daysUntil(date: Date) {
-  return Math.ceil((new Date(date).getTime() - Date.now()) / DAY_MS);
-}
+import { DonationItem, DonationResponseFormData, isDonationItemAvailable, getExpiryTier } from "@/features/donations/types/donation.types";
 
 export interface DonationClaimSheetHandle {
   open: () => void;
@@ -34,7 +26,7 @@ const DonationClaimSheet = forwardRef<DonationClaimSheetHandle, DonationClaimShe
     const modalRef = useRef<BottomSheetModal>(null);
     const snapPoints = useMemo(() => ["85%"], []);
 
-    const claimableItems = useMemo(() => items.filter((i) => i.isActive), [items]);
+    const claimableItems = useMemo(() => items.filter(isDonationItemAvailable), [items]);
 
     const [selection, setSelection] = useState<SelectionState>({});
     const [responderFacility, setResponderFacility] = useState("");
@@ -144,6 +136,7 @@ const DonationClaimSheet = forwardRef<DonationClaimSheetHandle, DonationClaimShe
             {claimableItems.map((item) => {
               const entry = selection[item.id];
               const isSelected = !!entry?.selected;
+              const expiryTier = getExpiryTier(item.expiryDate);
               return (
                 <View
                   key={item.id}
@@ -164,14 +157,24 @@ const DonationClaimSheet = forwardRef<DonationClaimSheetHandle, DonationClaimShe
                       color={isSelected ? colors.primary : colors.textSecondary}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text className="text-sm font-semibold" style={{ color: colors.text }} numberOfLines={1}>
-                        {item.product}
-                      </Text>
+                      <View className="flex-row items-center gap-1.5">
+                        <Text className="text-sm font-semibold flex-1" style={{ color: colors.text }} numberOfLines={1}>
+                          {item.product}
+                        </Text>
+                        <View
+                          className="px-1.5 py-0.5 rounded"
+                          style={{ backgroundColor: colors[expiryTier.colorKey] + "18" }}
+                        >
+                          <Text className="text-[9px] font-bold" style={{ color: colors[expiryTier.colorKey] }}>
+                            {expiryTier.label}
+                          </Text>
+                        </View>
+                      </View>
                       <Text
                         className="text-[11px] mt-0.5"
-                        style={{ color: daysUntil(item.expiryDate) <= 30 ? colors.warning : colors.textSecondary }}
+                        style={{ color: colors.textSecondary }}
                       >
-                        {item.quantity} available
+                        {item.quantity}{item.uom ? ` ${item.uom}` : ""} available
                         {item.batch ? ` · Batch ${item.batch}` : ""}
                         {" · expires "}
                         {new Date(item.expiryDate).toLocaleDateString(undefined, {

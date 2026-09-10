@@ -352,7 +352,7 @@ export const TermsCard = ({
         </Pressable>
       )}
 
-      {comment && (
+      {Boolean(comment?.trim()) && (
         <>
           <View
             className="mx-3.5 h-px"

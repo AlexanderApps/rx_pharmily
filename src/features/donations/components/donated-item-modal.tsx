@@ -19,7 +19,10 @@ import { BsScrollView as BottomSheetScrollView } from "@/shared/components/bs/bs
 
 import ProductComboBox from "@/shared/components/product-combobox";
 import ItemStatusCheckbox from "@/features/donations/components/temp/item-status-checkbox";
+import ActiveCheckbox from "@/features/donations/components/temp/active-checkbox";
 import DatePicker from "@/shared/components/date-picker";
+import ReferencePicker from "@/shared/components/forms/reference-picker";
+import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 import { DonationItem } from "@/features/donations/types/donation.types";
 
 interface DonatedItemModalProps {
@@ -35,11 +38,21 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
     const { colors } = useTheme();
     const [errors, setErrors] = useState<Record<string, string>>({});
     const snapPoints = useMemo(() => ["85%", "95%"], []);
+    const referenceUnits = useReferenceDataStore((state) => state.units);
+    const unitOptions = useMemo(
+      () =>
+        referenceUnits.map((u) => ({
+          id: u.name,
+          label: u.abbreviation ? `${u.name} (${u.abbreviation})` : u.name,
+        })),
+      [referenceUnits],
+    );
 
     // Local form state manager
     const [formData, setFormData] = useState<Omit<DonationItem, "id">>({
       product: "",
       quantity: 1,
+      uom: "",
       batch: "",
       expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
       status: true,
@@ -53,6 +66,7 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
         setFormData({
           product: initialData.product,
           quantity: initialData.quantity,
+          uom: initialData.uom || "",
           batch: initialData.batch || "",
           expiryDate: initialData.expiryDate,
           status: initialData.status,
@@ -63,6 +77,7 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
         setFormData({
           product: "",
           quantity: 1,
+          uom: "",
           batch: "",
           expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
           status: true,
@@ -108,6 +123,7 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
         setFormData({
           product: "",
           quantity: 1,
+          uom: "",
           batch: "",
           expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
           status: true,
@@ -212,6 +228,20 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
 
             <View className="w-full gap-2">
               <Text className="text-sm font-semibold" style={{ color: colors.text }}>
+                Unit of Measure (UOM)
+              </Text>
+              <ReferencePicker
+                title="Select Unit"
+                options={unitOptions}
+                value={formData.uom ?? ""}
+                onChange={(uom) => setFormData((prev) => ({ ...prev, uom }))}
+                placeholder="Select a unit"
+                emptyMessage="No units set up yet."
+              />
+            </View>
+
+            <View className="w-full gap-2">
+              <Text className="text-sm font-semibold" style={{ color: colors.text }}>
                 Batch (Optional)
               </Text>
               <TextInput
@@ -267,6 +297,35 @@ const DonatedItemModal = forwardRef<BottomSheetModal, DonatedItemModalProps>(
                   }
                   label={formData.status ? "Verified Good" : "Needs Review"}
                 />
+              </View>
+
+              {/* isActive is the actual "is this line item available for
+                  donation" toggle — separate from Item Status above,
+                  which is a quality/condition flag, not availability.
+                  Previously this was never exposed here at all: it only
+                  ever existed as a hardcoded `true` default, so the
+                  creator had no way to actually turn a line item off.
+                  Availability also depends on expiryDate (see
+                  isDonationItemAvailable in donation.types.ts) — this
+                  toggle alone doesn't guarantee an item is claimable if
+                  it's already expired, which is called out below. */}
+              <View className="w-full gap-2">
+                <Text className="text-sm font-semibold" style={{ color: colors.text }}>
+                  Available for Donation
+                </Text>
+                <ActiveCheckbox
+                  value={formData.isActive}
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, isActive: value }))
+                  }
+                  label={formData.isActive ? "Available" : "Not available"}
+                />
+                {formData.isActive && formData.expiryDate.getTime() < Date.now() && (
+                  <Text className="text-xs font-medium" style={{ color: colors.warning }}>
+                    This item is expired, so it won't actually be claimable
+                    even while marked available.
+                  </Text>
+                )}
               </View>
             </View>
 
