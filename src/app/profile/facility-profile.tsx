@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   Switch,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import * as Location from "expo-location";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -25,6 +27,8 @@ import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { FacilityType, FacilityDeliveryOption } from "@/features/profile/types/profile.types";
 import KycSection from "@/features/profile/components/kyc-section";
+import ProfileUpdateRequestModal from "@/features/profile-updates/components/profile-update-request-modal";
+import PhoneVerificationSheet from "@/features/profile/components/phone-verification-sheet";
 import { useFacilityFieldAccess } from "@/features/profile/hooks/use-facility-field-access";
 import ReferencePicker from "@/shared/components/forms/reference-picker";
 import MultiSelectPicker from "@/shared/components/forms/multi-select-picker";
@@ -188,6 +192,8 @@ export default function FacilityProfileScreen() {
   }
 
   const isVerified = facility.kyc.status === "verified";
+  const requestModalRef = useRef<BottomSheetModal>(null);
+  const phoneVerificationRef = useRef<BottomSheetModal>(null);
   const isUserVerified = user.kyc.status === "verified";
   const isOwner = viewerRole === "owner";
   const isMember = viewerRole === "owner" || viewerRole === "member";
@@ -322,12 +328,25 @@ export default function FacilityProfileScreen() {
             )}
           </View>
 
-          <Field label="Facility Name" editing={editing} value={name} onChange={setName} colors={colors} />
+          {isVerified && (
+            <Pressable
+              onPress={() => requestModalRef.current?.present()}
+              className="flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl mb-1"
+              style={{ backgroundColor: colors.backgroundElement }}
+            >
+              <MaterialCommunityIcons name="file-edit-outline" size={16} color={colors.primary} />
+              <Text className="text-sm font-semibold" style={{ color: colors.primary }}>
+                Request Profile Update
+              </Text>
+            </Pressable>
+          )}
+
+          <Field label="Facility Name" editing={editing && !isVerified} value={name} onChange={setName} colors={colors} />
 
           <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>
             Type
           </Text>
-          {editing ? (
+          {editing && !isVerified ? (
             <View className="flex-row flex-wrap gap-2 mt-1.5">
               {FACILITY_TYPES.map((option) => {
                 const active = type === option;
@@ -360,9 +379,9 @@ export default function FacilityProfileScreen() {
 
           <View className="mt-3.5">
             <Text className="text-xs font-semibold" style={{ color: colors.text }}>
-              Location
+              Ghana Post GPS
             </Text>
-            {editing ? (
+            {editing && !isVerified ? (
               <LocationPicker
                 value={location}
                 onChangeText={setLocation}
@@ -387,8 +406,34 @@ export default function FacilityProfileScreen() {
                     className="text-[11px] mt-0.5"
                     style={{ color: colors.textSecondary }}
                   >
-                    GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                    Current location: {latitude.toFixed(4)}, {longitude.toFixed(4)}
                   </Text>
+                )}
+                {/* Current location (GPS coordinates) stays freely
+                    updatable even once verified — only the Ghana Post
+                    GPS text above is locked. */}
+                {isVerified && (
+                  <Pressable
+                    onPress={async () => {
+                      const { status } = await Location.requestForegroundPermissionsAsync();
+                      if (status !== "granted") {
+                        toast.error("Location permission denied.");
+                        return;
+                      }
+                      const position = await Location.getCurrentPositionAsync({
+                        accuracy: Location.Accuracy.Balanced,
+                      });
+                      setLatitude(position.coords.latitude);
+                      setLongitude(position.coords.longitude);
+                      toast.success("Current location updated.");
+                    }}
+                    className="flex-row items-center gap-1 mt-1.5"
+                  >
+                    <MaterialCommunityIcons name="crosshairs-gps" size={13} color={colors.primary} />
+                    <Text className="text-xs font-semibold" style={{ color: colors.primary }}>
+                      Update Current Location
+                    </Text>
+                  </Pressable>
                 )}
               </>
             )}
@@ -398,7 +443,7 @@ export default function FacilityProfileScreen() {
             <Text className="text-xs font-semibold" style={{ color: colors.text }}>
               Region
             </Text>
-            {editing ? (
+            {editing && !isVerified ? (
               <ReferencePicker
                 title="Select Region"
                 options={regionOptions}
@@ -414,21 +459,41 @@ export default function FacilityProfileScreen() {
               </Text>
             )}
           </View>
-          <Field label="Address" editing={editing} value={address} onChange={setAddress} colors={colors} />
+          <Field label="Address" editing={editing && !isVerified} value={address} onChange={setAddress} colors={colors} />
           {canSee("phone") && (
             <Field
               label="Phone"
-              editing={editing}
+              editing={editing && !isVerified}
               value={phone}
               onChange={setPhone}
               colors={colors}
               keyboardType="phone-pad"
             />
           )}
+          {canSee("phone") && Boolean(phone) && facility.phoneAdminApproved && (
+            facility.phoneVerifiedAt ? (
+              <View className="flex-row items-center gap-1 mt-1.5">
+                <MaterialCommunityIcons name="check-decagram" size={13} color={colors.success} />
+                <Text className="text-xs font-semibold" style={{ color: colors.success }}>
+                  Verified
+                </Text>
+              </View>
+            ) : (
+              <Pressable
+                onPress={() => phoneVerificationRef.current?.present()}
+                className="flex-row items-center gap-1 mt-1.5"
+              >
+                <MaterialCommunityIcons name="phone-alert-outline" size={13} color={colors.primary} />
+                <Text className="text-xs font-semibold" style={{ color: colors.primary }}>
+                  Not verified — Verify Now
+                </Text>
+              </Pressable>
+            )
+          )}
           {canSee("email") && (
             <Field
               label="Email"
-              editing={editing}
+              editing={editing && !isVerified}
               value={email}
               onChange={setEmail}
               colors={colors}
@@ -438,7 +503,7 @@ export default function FacilityProfileScreen() {
           {canSee("registrationNumber") && (
             <Field
               label="Registration Number"
-              editing={editing}
+              editing={editing && !isVerified}
               value={registrationNumber}
               onChange={setRegistrationNumber}
               colors={colors}
@@ -874,6 +939,31 @@ export default function FacilityProfileScreen() {
           <View className="h-6" />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <ProfileUpdateRequestModal
+        ref={requestModalRef}
+        entityType="facility"
+        entityId={facility.id}
+        currentValues={{
+          name: facility.name,
+          type: facility.type,
+          location: facility.location,
+          region: facility.region,
+          address: facility.address ?? null,
+          phone: facility.phone ?? null,
+          email: facility.email ?? null,
+          registrationNumber: facility.registrationNumber ?? null,
+        }}
+        onSubmitted={() => requestModalRef.current?.dismiss()}
+      />
+
+      <PhoneVerificationSheet
+        ref={phoneVerificationRef}
+        entityType="facility"
+        entityId={facility.id}
+        phone={phone}
+        onVerified={() => phoneVerificationRef.current?.dismiss()}
+      />
     </SafeAreaView>
   );
 }

@@ -13,7 +13,7 @@ const ChatListSkeleton: React.FC = () => {
               <Skeleton width="45%" height={13} />
               <Skeleton width={32} height={11} />
             </View>
-            <Skeleton width="65%" height={12} className="mt-1.5" />
+            <Skeleton width="65%" height={12} style={{ marginTop: 6 }} />
           </View>
         </View>
       ))}

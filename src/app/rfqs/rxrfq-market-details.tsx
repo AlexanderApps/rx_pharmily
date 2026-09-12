@@ -195,6 +195,26 @@ const RxMarketplaceDetailScreen: React.FC = () => {
           </Text>
         ) : null}
 
+        {/* Categories */}
+        {item.categories.length > 0 && (
+          <View className="flex-row flex-wrap gap-1.5 mb-5">
+            {item.categories.map((cat) => (
+              <View
+                key={cat}
+                className="px-2.5 py-1 rounded-lg"
+                style={{ backgroundColor: colors.backgroundElement }}
+              >
+                <Text
+                  className="text-xs font-medium"
+                  style={{ color: colors.textSecondary }}
+                >
+                  {cat}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* ── Delivery & Deadlines ── */}
         <SectionHeader title="Delivery & deadlines" />
         <Card>

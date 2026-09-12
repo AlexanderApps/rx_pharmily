@@ -10,6 +10,7 @@ import MediscopeListCard from "@/features/mediscope/components/mediscope-list-ca
 interface MediscopeListContainerProps {
   requests: MediscopeCardData[];
   onCardPress: (id: string) => void;
+  isCreatorView?: boolean;
 }
 
 // See rxrfq-list-container.tsx for the full rationale.
@@ -18,6 +19,7 @@ const COLUMNS_BY_BREAKPOINT = { compact: 1, regular: 2, wide: 3 } as const;
 const MediscopeListContainer: React.FC<MediscopeListContainerProps> = ({
   requests,
   onCardPress,
+  isCreatorView = false,
 }) => {
   const { colors } = useTheme();
   const breakpoint = useBreakpoint();
@@ -40,7 +42,7 @@ const MediscopeListContainer: React.FC<MediscopeListContainerProps> = ({
           columnWrapperStyle={numColumns > 1 ? { gap: 12 } : undefined}
           renderItem={({ item }) => (
             <View style={{ flex: 1, marginBottom: 12 }}>
-              <MediscopeListCard item={item} onPress={() => onCardPress(item.id)} />
+              <MediscopeListCard item={item} onPress={() => onCardPress(item.id)} showResponseCount={isCreatorView} />
             </View>
           )}
           ListEmptyComponent={

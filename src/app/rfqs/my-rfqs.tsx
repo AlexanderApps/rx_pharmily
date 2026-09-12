@@ -132,6 +132,7 @@ export default function MyRxRfqScreen() {
         <ThemedView style={{ flex: 1 }}>
           <RxRfqListContainer
             rfqs={filteredRfqs}
+            isCreatorView
             onCardPress={(id) =>
               router.push({
                 pathname: "/rfqs/rxrfq-details-screen",

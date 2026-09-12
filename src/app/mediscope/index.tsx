@@ -216,6 +216,7 @@ export default function MediscopeScreen() {
                 params: { mine: "true" },
               })
             }
+            emptyMessage="No MediScope requests yet — submit one to get responses from facilities"
           >
             {myRecentRequests.map((item, index, slicedArray) => (
               <MediscopeRow

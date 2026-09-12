@@ -41,6 +41,10 @@ export interface AdminUserSummary {
   kycStatus: string;
   avatarColor: string;
   createdAt: Date;
+  isBanned: boolean;
+  isSuspended: boolean;
+  suspendedUntil?: Date;
+  moderationReason?: string;
 }
 
 function mapUserSummaryRow(row: any): AdminUserSummary {
@@ -52,6 +56,10 @@ function mapUserSummaryRow(row: any): AdminUserSummary {
     kycStatus: row.kyc_status,
     avatarColor: row.avatar_color,
     createdAt: new Date(row.created_at),
+    isBanned: row.is_banned ?? false,
+    isSuspended: row.is_suspended ?? false,
+    suspendedUntil: row.suspended_until ? new Date(row.suspended_until) : undefined,
+    moderationReason: row.moderation_reason ?? undefined,
   };
 }
 
@@ -67,6 +75,11 @@ const EMPTY_USER: UserProfile = {
   kyc: { status: "unverified", documents: [] },
   createdAt: new Date(),
   publicVisibility: DEFAULT_USER_VISIBILITY,
+  isPharmacist: false,
+  isPss: false,
+  isAvailableAsSuperintendent: false,
+  isBanned: false,
+  isSuspended: false,
 };
 
 function mapKycFields(row: any): KycRecord {
@@ -103,6 +116,13 @@ function mapUserRow(row: any): UserProfile {
     isPss: row.is_pss ?? false,
     isAvailableAsSuperintendent: row.is_available_as_superintendent ?? false,
     title: row.title ?? undefined,
+    gender: row.gender ?? undefined,
+    phoneVerifiedAt: row.phone_verified_at ? new Date(row.phone_verified_at) : undefined,
+    phoneAdminApproved: row.phone_admin_approved ?? false,
+    isBanned: row.is_banned ?? false,
+    isSuspended: row.is_suspended ?? false,
+    suspendedUntil: row.suspended_until ? new Date(row.suspended_until) : undefined,
+    moderationReason: row.moderation_reason ?? undefined,
   };
 }
 
@@ -127,6 +147,12 @@ function mapFacilityRow(row: any): FacilityProfile {
     logoUrl: row.logo_url ?? undefined,
     deliveryOptions: row.delivery_options ?? [],
     insuranceAccepted: row.insurance_accepted ?? [],
+    phoneVerifiedAt: row.phone_verified_at ? new Date(row.phone_verified_at) : undefined,
+    phoneAdminApproved: row.phone_admin_approved ?? false,
+    isBanned: row.is_banned ?? false,
+    isSuspended: row.is_suspended ?? false,
+    suspendedUntil: row.suspended_until ? new Date(row.suspended_until) : undefined,
+    moderationReason: row.moderation_reason ?? undefined,
   };
 }
 
@@ -138,6 +164,7 @@ function mapOrganizationRow(row: any, facilityIds: string[]): OrganizationProfil
     registrationNumber: row.registration_number ?? undefined,
     headquartersLocation: row.headquarters_location ?? undefined,
     region: row.region ?? undefined,
+    address: row.address ?? undefined,
     email: row.email ?? undefined,
     phone: row.phone ?? undefined,
     adminUserId: row.admin_user_id,
@@ -148,6 +175,12 @@ function mapOrganizationRow(row: any, facilityIds: string[]): OrganizationProfil
     latitude: row.latitude ?? undefined,
     longitude: row.longitude ?? undefined,
     logoUrl: row.logo_url ?? undefined,
+    phoneVerifiedAt: row.phone_verified_at ? new Date(row.phone_verified_at) : undefined,
+    phoneAdminApproved: row.phone_admin_approved ?? false,
+    isBanned: row.is_banned ?? false,
+    isSuspended: row.is_suspended ?? false,
+    suspendedUntil: row.suspended_until ? new Date(row.suspended_until) : undefined,
+    moderationReason: row.moderation_reason ?? undefined,
   };
 }
 
@@ -407,7 +440,7 @@ type ProfileStore = {
   getMyFacilities: () => FacilityProfile[];
   getFacilityMembers: (facilityId: string) => FacilityMembership[];
 
-  updateUserProfile: (data: UserProfileFormData) => Promise<void>;
+  updateUserProfile: (data: UserProfileFormData) => Promise<boolean>;
   updateFacilityProfile: (id: string, data: FacilityProfileFormData) => Promise<void>;
   updateOrganizationProfile: (id: string, data: OrganizationProfileFormData) => Promise<void>;
 
@@ -511,7 +544,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   fetchAllUsers: async () => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, email, account_role, kyc_status, avatar_color, created_at")
+      .select("id, full_name, email, account_role, kyc_status, avatar_color, created_at, is_banned, is_suspended, suspended_until, moderation_reason")
       .order("created_at", { ascending: false });
     if (error) {
       console.warn("[profile] fetchAllUsers failed:", error.message);
@@ -841,14 +874,22 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         longitude: data.longitude ?? null,
         avatar_url: data.avatarUrl ?? null,
         title: data.title ?? null,
+        gender: data.gender ?? null,
         is_available_as_superintendent: data.isAvailableAsSuperintendent ?? false,
       })
       .eq("id", userId);
     if (error) {
+      // Previously only logged — the screen would still exit edit mode
+      // as if the save succeeded, so a failure here (e.g. the now-fixed
+      // superintendent/profession trigger, or any other future
+      // constraint) was invisible: the person would see their edits
+      // vanish on next load with no explanation at all. Returning
+      // false lets the screen actually tell them it didn't save.
       console.warn("[profile] updateUserProfile failed:", error.message);
-      return;
+      return false;
     }
     set((state) => ({ user: { ...state.user, ...data } }));
+    return true;
   },
 
   updateFacilityProfile: async (id, data) => {
@@ -888,6 +929,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         registration_number: data.registrationNumber ?? null,
         headquarters_location: data.headquartersLocation ?? null,
         region: data.region ?? null,
+        address: data.address ?? null,
         email: data.email ?? null,
         phone: data.phone ?? null,
         latitude: data.latitude ?? null,

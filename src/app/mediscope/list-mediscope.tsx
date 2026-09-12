@@ -92,6 +92,7 @@ export default function ListMediscope() {
         <ThemedView style={{ flex: 1 }}>
           <MediscopeListContainer
             requests={cards}
+            isCreatorView={mine === "true"}
             onCardPress={(id) => {
               const isOwner = cards.find((c) => c.id === id)?.isOwner;
               router.push({

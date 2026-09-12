@@ -87,6 +87,8 @@ export type UserTitle =
   | "Prof."
   | "Other";
 
+export type UserGender = "Male" | "Female" | "Other" | "Prefer not to say";
+
 export interface UserProfile {
   id: string;
   fullName: string;
@@ -115,6 +117,13 @@ export interface UserProfile {
   // who's setting it.
   isAvailableAsSuperintendent: boolean;
   title?: UserTitle;
+  gender?: UserGender;
+  phoneVerifiedAt?: Date;
+  phoneAdminApproved?: boolean;
+  isBanned: boolean;
+  isSuspended: boolean;
+  suspendedUntil?: Date;
+  moderationReason?: string;
 }
 
 export interface UserProfileFormData {
@@ -132,6 +141,7 @@ export interface UserProfileFormData {
   // profession is deliberately NOT here — admin-only, set during KYC
   // review, never through this self-service form.
   title?: UserTitle;
+  gender?: UserGender;
   isAvailableAsSuperintendent?: boolean;
 }
 
@@ -188,6 +198,12 @@ export interface FacilityProfile {
   // reference-data catalog — stored as text[] of names directly, same
   // convention as rxrfqs.categories, not uuid foreign keys.
   insuranceAccepted: string[];
+  phoneVerifiedAt?: Date;
+  phoneAdminApproved?: boolean;
+  isBanned: boolean;
+  isSuspended: boolean;
+  suspendedUntil?: Date;
+  moderationReason?: string;
 }
 
 export interface FacilityProfileFormData {
@@ -342,6 +358,7 @@ export interface OrganizationProfile {
   registrationNumber?: string;
   headquartersLocation?: string;
   region?: string;
+  address?: string;
   email?: string;
   phone?: string;
   adminUserId: string;
@@ -352,6 +369,12 @@ export interface OrganizationProfile {
   latitude?: number;
   longitude?: number;
   logoUrl?: string;
+  phoneVerifiedAt?: Date;
+  phoneAdminApproved?: boolean;
+  isBanned: boolean;
+  isSuspended: boolean;
+  suspendedUntil?: Date;
+  moderationReason?: string;
 }
 
 export interface OrganizationProfileFormData {
@@ -360,6 +383,7 @@ export interface OrganizationProfileFormData {
   registrationNumber?: string;
   headquartersLocation?: string;
   region?: string;
+  address?: string;
   email?: string;
   phone?: string;
   latitude?: number;

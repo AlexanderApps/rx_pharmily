@@ -27,6 +27,7 @@ import PrintButton from "@/shared/components/print-button";
 import { buildRfqSummaryHtml } from "@/features/rxrfqs/utils/rxrfq-pdf";
 import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import {
   useRxRfqsStore,
   convertResponseDataToCardData,
@@ -59,6 +60,7 @@ const diffDays = (a: Date, b: Date) =>
 const RxRfqDetailsScreen: React.FC = () => {
   const { colors } = useTheme();
   const router = useRouter();
+  const currentUserId = useAuthStore((state) => state.user?.id);
 
   const actionsSheetRef = useRef<BottomSheetModal>(null);
   const extendSheetRef = useRef<BottomSheetModal>(null);
@@ -123,6 +125,43 @@ const RxRfqDetailsScreen: React.FC = () => {
     return (
       <SafeAreaView style={{ flex: 1 }}>
         <Text>No RFQ found for id: {id}</Text>
+      </SafeAreaView>
+    );
+  }
+
+  // Defensive, not just cosmetic — this screen is reachable by a route
+  // any caller could construct, and at least one already does
+  // regardless of ownership: a chat message linking to an RFQ
+  // (features/chat/components/linked-entity-card.tsx) sends EVERY
+  // participant here, including a vendor who is very much not the
+  // RFQ's creator. Without this check, that vendor would see the full
+  // management view — every individual response, the raw response
+  // count, status actions (close/award/extend deadline) — all of which
+  // should only ever be visible to the RFQ's own creator.
+  const isOwner = rfq.createdBy === currentUserId;
+  if (!isOwner) {
+    return (
+      <SafeAreaView style={{ flex: 1 }}>
+        <View className="p-4 gap-3">
+          <Text className="text-[15px] font-semibold" style={{ color: colors.text }}>
+            This is a management view
+          </Text>
+          <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+            Only the facility that posted this RFQ can manage it.
+          </Text>
+          <TouchableOpacity
+            onPress={() =>
+              router.replace({
+                pathname: "/rfqs/rxrfq-market-details",
+                params: { id: rfq.id },
+              })
+            }
+            className="py-3.5 rounded-xl items-center"
+            style={{ backgroundColor: colors.primary }}
+          >
+            <Text className="text-white text-[15px] font-semibold">View listing</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }

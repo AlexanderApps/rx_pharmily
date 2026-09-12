@@ -99,13 +99,13 @@ const FeedItemRow = React.memo(function FeedItemRow({ item }: { item: FeedItem }
     case "mediscope":
       return (
         <View className="px-4 mt-3">
-          <MediscopeListCard item={item.request} onPress={handleMediscopePress} />
+          <MediscopeListCard item={item.request} onPress={handleMediscopePress} showStatus={false} />
         </View>
       );
     case "donation":
       return (
         <View className="px-4 mt-3">
-          <DonationListCard donation={item.donation} onPress={handleDonationPress} />
+          <DonationListCard donation={item.donation} onPress={handleDonationPress} showStatus={false} />
         </View>
       );
     case "job":
@@ -117,7 +117,7 @@ const FeedItemRow = React.memo(function FeedItemRow({ item }: { item: FeedItem }
     case "rfq":
       return (
         <View className="px-4 mt-3">
-          <RxRfqCard rfq={item.rfq} onPress={handleRfqPress} />
+          <RxRfqCard rfq={item.rfq} onPress={handleRfqPress} showStatus={false} />
         </View>
       );
   }
@@ -131,6 +131,12 @@ export default function HomeScreen() {
   const donations = useDonationStore((state) => state.donations);
   const jobs = useRxJobsStore((state) => state.jobs);
   const rxrfqs = useRxRfqsStore((state) => state.rxrfqs);
+  const fetchPosts = usePostsStore((state) => state.fetchPosts);
+  const fetchAds = useAdsStore((state) => state.fetchAds);
+  const fetchMediscopeRequests = useMediscopeStore((state) => state.fetchRequests);
+  const fetchDonations = useDonationStore((state) => state.fetchDonations);
+  const fetchJobs = useRxJobsStore((state) => state.fetchJobs);
+  const fetchRxRfqs = useRxRfqsStore((state) => state.fetchRxRfqs);
   const userRegion = useProfileStore((state) => state.user.region);
   const hasPermission = usePermissionsStore((state) => state.hasPermission);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -224,13 +230,30 @@ export default function HomeScreen() {
     }, 500);
   }, [loadingMore, hasMore, fullFeed.length]);
 
-  const handleRefresh = useCallback(() => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setVisibleCount(PAGE_SIZE);
-      setRefreshing(false);
-    }, 600);
-  }, []);
+    try {
+      // All 6 sources feeding this feed — previously this just showed a
+      // spinner for 600ms and reset pagination over whatever was
+      // already sitting in these stores (fetched once, at app launch,
+      // in app/_layout.tsx), so pulling to refresh never actually
+      // fetched anything new. Run concurrently rather than sequentially
+      // since these are 6 independent reads with no ordering
+      // dependency between them.
+      await Promise.all([
+        fetchPosts(),
+        fetchAds(),
+        fetchMediscopeRequests(),
+        fetchDonations(),
+        fetchJobs(),
+        fetchRxRfqs(),
+      ]);
+    } catch (err) {
+      console.warn("[home-feed] refresh failed:", err);
+    }
+    setVisibleCount(PAGE_SIZE);
+    setRefreshing(false);
+  }, [fetchPosts, fetchAds, fetchMediscopeRequests, fetchDonations, fetchJobs, fetchRxRfqs]);
 
   // A trivial, stable wrapper — the actual per-kind rendering and
   // onPress logic now lives in FeedItemRow (module scope, memoized)
@@ -255,6 +278,18 @@ export default function HomeScreen() {
             </Text>
           </View>
           <View className="flex-row gap-2">
+            <Pressable
+              onPress={handleRefresh}
+              disabled={refreshing}
+              className="w-[38px] h-[38px] rounded-xl items-center justify-center"
+              style={{ backgroundColor: colors.backgroundSecondary, opacity: refreshing ? 0.6 : 1 }}
+            >
+              {refreshing ? (
+                <ActivityIndicator size="small" color={colors.text} />
+              ) : (
+                <MaterialCommunityIcons name="refresh" size={20} color={colors.text} />
+              )}
+            </Pressable>
             <View
               className="w-[38px] h-[38px] rounded-xl items-center justify-center"
               style={{ backgroundColor: colors.backgroundSecondary }}
@@ -316,7 +351,7 @@ export default function HomeScreen() {
       <View className="h-[6px] mt-[18px]" style={{ backgroundColor: colors.border }} />
     </View>
     ),
-    [colors],
+    [colors, handleRefresh, refreshing],
   );
 
   const ListFooter = () => {

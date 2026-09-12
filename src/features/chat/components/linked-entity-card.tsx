@@ -4,6 +4,8 @@ import { router } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { ChatLinkedEntity } from "@/features/chat/types/chat.types";
+import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
+import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 
 const ENTITY_META: Record<
   ChatLinkedEntity["type"],
@@ -16,12 +18,23 @@ const ENTITY_META: Record<
 
 function navigateToEntity(entity: ChatLinkedEntity) {
   switch (entity.type) {
-    case "rfq":
+    case "rfq": {
+      // rxrfq-details-screen.tsx guards itself against non-owners
+      // regardless (see that screen's own comment on why), so this is
+      // purely a UX improvement, not the actual security boundary —
+      // checking ownership here just means a vendor chatting about
+      // someone else's RFQ lands directly on the correct public view
+      // instead of briefly hitting a "this is a management view"
+      // redirect screen first.
+      const currentUserId = useAuthStore.getState().user?.id;
+      const rfq = useRxRfqsStore.getState().rxrfqMarketPlace.find((r) => r.id === entity.id);
+      const isOwner = rfq?.createdBy === currentUserId;
       router.push({
-        pathname: "/rfqs/rxrfq-details-screen",
+        pathname: isOwner ? "/rfqs/rxrfq-details-screen" : "/rfqs/rxrfq-market-details",
         params: { id: entity.id },
       });
       return;
+    }
     case "mediscope":
       // Mediscope doesn't have a per-item detail screen yet — land on the
       // feature's home screen rather than a broken deep link.

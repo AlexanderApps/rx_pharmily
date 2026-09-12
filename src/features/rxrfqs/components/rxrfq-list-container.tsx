@@ -65,6 +65,7 @@ const RxRfqListContainer: React.FC<RxRfqListProps> = ({
               <RxRfqCard
                 rfq={item}
                 showActions={isCreatorView}
+                showResponseCount={isCreatorView}
                 onPress={() => onCardPress(item.id)}
                 onEdit={onCardEdit ? () => onCardEdit(item.id) : undefined}
                 onDelete={onCardDelete ? () => onCardDelete(item.id) : undefined}

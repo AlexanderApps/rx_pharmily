@@ -9,6 +9,17 @@ import { MediscopeCardData } from "@/features/mediscope/types/mediscope.types";
 interface MediscopeListCardProps {
   item: MediscopeCardData;
   onPress?: (item: MediscopeCardData) => void;
+  // The home feed only ever includes already-published items (see
+  // fullFeed's own filtering in app/(tabs)/index.tsx), so a status
+  // badge that would always read "Published" there conveys nothing —
+  // it's only actually informative on screens that can show a mix of
+  // statuses (the owner's own list, search results, etc).
+  showStatus?: boolean;
+  // Defaults to false — response count is competitive information (how
+  // many facilities have already responded) that should only be visible
+  // to the request's own creator, not to other facilities deciding
+  // whether to respond.
+  showResponseCount?: boolean;
 }
 
 const STATUS_META: Record<
@@ -23,7 +34,7 @@ const STATUS_META: Record<
   expired: { label: "Expired", icon: "clock-alert-outline", tone: "error" },
 };
 
-const MediscopeListCard: React.FC<MediscopeListCardProps> = ({ item, onPress }) => {
+const MediscopeListCard: React.FC<MediscopeListCardProps> = ({ item, onPress, showStatus = true, showResponseCount = false }) => {
   const { colors } = useTheme();
   const statusMeta = STATUS_META[item.status];
   const statusColor = colors[statusMeta.tone];
@@ -62,19 +73,25 @@ const MediscopeListCard: React.FC<MediscopeListCardProps> = ({ item, onPress }) 
           </Text>
         </View>
 
-        <View className="flex-row items-center gap-1 px-2 py-1 rounded-lg" style={{ backgroundColor: statusColor + "18" }}>
-          <MaterialCommunityIcons name={statusMeta.icon} size={11} color={statusColor} />
-          <Text className="text-[10px] font-bold" style={{ color: statusColor }}>{statusMeta.label}</Text>
-        </View>
+        {showStatus && (
+          <View className="flex-row items-center gap-1 px-2 py-1 rounded-lg" style={{ backgroundColor: statusColor + "18" }}>
+            <MaterialCommunityIcons name={statusMeta.icon} size={11} color={statusColor} />
+            <Text className="text-[10px] font-bold" style={{ color: statusColor }}>{statusMeta.label}</Text>
+          </View>
+        )}
       </View>
 
       <View className="flex-row justify-between items-center mt-3 ml-14">
-        <View className="flex-row items-center px-2 py-1 rounded-lg gap-1" style={{ backgroundColor: colors.info + "14" }}>
-          <MaterialCommunityIcons name="reply-all-outline" size={12} color={colors.info} />
-          <Text className="text-[11px] font-bold" style={{ color: colors.info }}>
-            {item.responseCount} {item.responseCount === 1 ? "response" : "responses"}
-          </Text>
-        </View>
+        {showResponseCount ? (
+          <View className="flex-row items-center px-2 py-1 rounded-lg gap-1" style={{ backgroundColor: colors.info + "14" }}>
+            <MaterialCommunityIcons name="reply-all-outline" size={12} color={colors.info} />
+            <Text className="text-[11px] font-bold" style={{ color: colors.info }}>
+              {item.responseCount} {item.responseCount === 1 ? "response" : "responses"}
+            </Text>
+          </View>
+        ) : (
+          <View />
+        )}
 
         <Text className="text-[11px]" style={{ color: colors.textSecondary }}>
           {format(item.createdAt)}

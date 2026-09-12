@@ -264,6 +264,7 @@ export default function RxRfqScreen() {
             backgroundColor={colors.backgroundSecondary}
             textColor={colors.text}
             onViewAllPress={() => router.push("/rfqs/my-rfqs")}
+            emptyMessage="No active RxRFQs yet — post one to get quotes from facilities"
           >
             {myRecentRfqs.map((item, index, slicedArray) => (
               <RequestCardRow

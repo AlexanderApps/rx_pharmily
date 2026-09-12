@@ -158,7 +158,7 @@ export default function DonationsScreen() {
         <PermissionGate permission="donations.view" featureName="Donations">
         <Animated.ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerClassName="pb-[120px]"
+          contentContainerStyle={{ paddingBottom: 120 }}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
             { useNativeDriver: true }
@@ -233,6 +233,7 @@ export default function DonationsScreen() {
                 params: { mine: "true" },
               })
             }
+            emptyMessage="No active donations yet — list an item to give away surplus stock"
           >
             {myRecentDonations.map((item, index, slicedArray) => (
               <DonationRow

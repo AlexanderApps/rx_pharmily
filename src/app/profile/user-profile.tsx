@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Switch,
 } from "react-native";
 import { router } from "expo-router";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -18,11 +19,14 @@ import LocationPicker from "@/shared/components/location-picker";
 import { useUserFieldAccess } from "@/features/profile/hooks/use-user-field-access";
 import AvatarUpload from "@/shared/components/avatar-upload";
 import LoadingImage from "@/shared/components/loading-image";
+import { toast } from "@/shared/hooks/use-toast";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
-import { UserRole, UserTitle } from "@/features/profile/types/profile.types";
+import { UserRole, UserTitle, UserGender } from "@/features/profile/types/profile.types";
 import KycSection from "@/features/profile/components/kyc-section";
 import ReferencePicker from "@/shared/components/forms/reference-picker";
 import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
+import ProfileUpdateRequestModal from "@/features/profile-updates/components/profile-update-request-modal";
+import PhoneVerificationSheet from "@/features/profile/components/phone-verification-sheet";
 
 const ROLES: UserRole[] = [
   "Pharmacist",
@@ -42,6 +46,8 @@ const TITLES: UserTitle[] = [
   "Prof.",
   "Other",
 ];
+
+const GENDERS: UserGender[] = ["Male", "Female", "Other", "Prefer not to say"];
 
 export default function UserProfileScreen() {
   const { colors } = useTheme();
@@ -79,6 +85,7 @@ export default function UserProfileScreen() {
   const [longitude, setLongitude] = useState<number | undefined>(user.longitude);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
   const [title, setTitle] = useState<UserTitle | undefined>(user.title);
+  const [gender, setGender] = useState<UserGender | undefined>(user.gender);
   const [isAvailableAsSuperintendent, setIsAvailableAsSuperintendent] = useState(
     user.isAvailableAsSuperintendent,
   );
@@ -90,6 +97,13 @@ export default function UserProfileScreen() {
 
   const { role: viewerRole, canSee } = useUserFieldAccess(user);
 
+  // Once verified, the locked fields (see LOCKED_FIELDS.user) can no
+  // longer be changed directly through this form — a request, reviewed
+  // by an admin, is required instead.
+  const isVerified = user.kyc.status === "verified";
+  const requestModalRef = useRef<BottomSheetModal>(null);
+  const phoneVerificationRef = useRef<BottomSheetModal>(null);
+
   const initials = user.fullName
     .split(" ")
     .map((p) => p[0])
@@ -97,8 +111,12 @@ export default function UserProfileScreen() {
     .join("")
     .toUpperCase();
 
-  const handleSave = () => {
-    updateUserProfile({
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
+    const ok = await updateUserProfile({
       fullName: fullName.trim(),
       email: email.trim(),
       phone: phone.trim() || undefined,
@@ -111,8 +129,14 @@ export default function UserProfileScreen() {
       longitude,
       avatarUrl,
       title,
+      gender,
       isAvailableAsSuperintendent,
     });
+    setSaving(false);
+    if (!ok) {
+      toast.error("Couldn't save your profile. Please try again.");
+      return;
+    }
     setEditing(false);
   };
 
@@ -153,15 +177,48 @@ export default function UserProfileScreen() {
             )}
           </View>
 
-          <Field label="Full Name" editing={editing} value={fullName} onChange={setFullName} colors={colors} />
+          {isVerified && (
+            <Pressable
+              onPress={() => requestModalRef.current?.present()}
+              className="flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl mb-1"
+              style={{ backgroundColor: colors.backgroundElement }}
+            >
+              <MaterialCommunityIcons name="file-edit-outline" size={16} color={colors.primary} />
+              <Text className="text-sm font-semibold" style={{ color: colors.primary }}>
+                Request Profile Update
+              </Text>
+            </Pressable>
+          )}
+
+          <Field label="Full Name" editing={editing && !isVerified} value={fullName} onChange={setFullName} colors={colors} />
           {canSee("email") && (
             <Field label="Email" editing={editing} value={email} onChange={setEmail} colors={colors} keyboardType="email-address" />
           )}
           {canSee("phone") && (
-            <Field label="Phone" editing={editing} value={phone} onChange={setPhone} colors={colors} keyboardType="phone-pad" />
+            <Field label="Phone" editing={editing && !isVerified} value={phone} onChange={setPhone} colors={colors} keyboardType="phone-pad" />
+          )}
+          {canSee("phone") && Boolean(phone) && user.phoneAdminApproved && (
+            user.phoneVerifiedAt ? (
+              <View className="flex-row items-center gap-1 mt-1.5">
+                <MaterialCommunityIcons name="check-decagram" size={13} color={colors.success} />
+                <Text className="text-xs font-semibold" style={{ color: colors.success }}>
+                  Verified
+                </Text>
+              </View>
+            ) : (
+              <Pressable
+                onPress={() => phoneVerificationRef.current?.present()}
+                className="flex-row items-center gap-1 mt-1.5"
+              >
+                <MaterialCommunityIcons name="phone-alert-outline" size={13} color={colors.primary} />
+                <Text className="text-xs font-semibold" style={{ color: colors.primary }}>
+                  Not verified — Verify Now
+                </Text>
+              </Pressable>
+            )
           )}
 
-          <View style={{ marginTop: 14 }}>
+          <View className="mt-3.5">
             <Text className="text-xs font-semibold" style={{ color: colors.text }}>Location</Text>
             {editing ? (
               <LocationPicker
@@ -182,7 +239,7 @@ export default function UserProfileScreen() {
               <>
                 <Text className="text-sm mt-1" style={{ color: colors.text }}>{location || "-"}</Text>
                 {latitude !== undefined && longitude !== undefined && (
-                  <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+                  <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>
                     GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
                   </Text>
                 )}
@@ -190,7 +247,7 @@ export default function UserProfileScreen() {
             )}
           </View>
 
-          <View style={{ marginTop: 14 }}>
+          <View className="mt-3.5">
             <Text className="text-xs font-semibold" style={{ color: colors.text }}>Region</Text>
             {editing ? (
               <ReferencePicker
@@ -207,69 +264,100 @@ export default function UserProfileScreen() {
             )}
           </View>
 
-          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>Role</Text>
-          {editing ? (
-            <View className="flex-row flex-wrap gap-2 mt-1.5">
-              {ROLES.map((option) => {
-                const active = role === option;
-                return (
-                  <Pressable
-                    key={option}
-                    onPress={() => setRole(option)}
-                    className="px-3 py-2 rounded-full"
-                    style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
-                  >
-                    <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
-                      {option}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : (
-            <Text className="text-sm mt-1" style={{ color: colors.text }}>{user.role}</Text>
-          )}
+          <View className="mt-3.5">
+            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Role</Text>
+            {editing && !isVerified ? (
+              <View className="flex-row flex-wrap gap-2 mt-1.5">
+                {ROLES.map((option) => {
+                  const active = role === option;
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => setRole(option)}
+                      className="px-3 py-2 rounded-full"
+                      style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
+                    >
+                      <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
+                        {option}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : (
+              <Text className="text-sm mt-1" style={{ color: colors.text }}>{user.role}</Text>
+            )}
+          </View>
 
           {/* Always read-only, even in edit mode — profession is
               admin-only, set during KYC review, never through this
               self-service form. The DB itself enforces this with a
               trigger regardless; this is just not offering a control
               that would only ever fail to save. */}
-          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>Profession</Text>
-          <Text className="text-sm mt-1" style={{ color: colors.text }}>
-            {user.profession ?? "Not yet set (assigned during KYC review)"}
-          </Text>
+          <View className="mt-3.5">
+            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Profession</Text>
+            <Text className="text-sm mt-1" style={{ color: colors.text }}>
+              {user.profession ?? "Not yet set (assigned during KYC review)"}
+            </Text>
+          </View>
 
-          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>Title</Text>
-          {editing ? (
-            <View className="flex-row flex-wrap gap-2 mt-1.5">
-              {TITLES.map((option) => {
-                const active = title === option;
-                return (
-                  <Pressable
-                    key={option}
-                    onPress={() => setTitle(option)}
-                    className="px-3 py-2 rounded-full"
-                    style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
-                  >
-                    <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
-                      {option}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : (
-            <Text className="text-sm mt-1" style={{ color: colors.text }}>{user.title ?? "-"}</Text>
-          )}
+          <View className="mt-3.5">
+            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Title</Text>
+            {editing && !isVerified ? (
+              <View className="flex-row flex-wrap gap-2 mt-1.5">
+                {TITLES.map((option) => {
+                  const active = title === option;
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => setTitle(option)}
+                      className="px-3 py-2 rounded-full"
+                      style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
+                    >
+                      <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
+                        {option}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : (
+              <Text className="text-sm mt-1" style={{ color: colors.text }}>{user.title ?? "-"}</Text>
+            )}
+          </View>
+
+          <View className="mt-3.5">
+            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Gender</Text>
+            {editing ? (
+              <View className="flex-row flex-wrap gap-2 mt-1.5">
+                {GENDERS.map((option) => {
+                  const active = gender === option;
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => setGender(option)}
+                      className="px-3 py-2 rounded-full"
+                      style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
+                    >
+                      <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
+                        {option}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : (
+              <Text className="text-sm mt-1" style={{ color: colors.text }}>{user.gender ?? "-"}</Text>
+            )}
+          </View>
 
           {/* Only a verified pharmacist can be marked available as
               superintendent — the DB itself enforces this via a
               trigger, this UI gate just avoids showing a control that
               would only ever fail to save for anyone else. */}
           {user.isPharmacist && (
-            <>
-              <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>
+            <View className="mt-3.5">
+              <Text className="text-xs font-semibold" style={{ color: colors.text }}>
                 Available as Superintendent
               </Text>
               {editing ? (
@@ -291,13 +379,13 @@ export default function UserProfileScreen() {
                   {user.isAvailableAsSuperintendent ? "Available" : "Not available"}
                 </Text>
               )}
-            </>
+            </View>
           )}
 
           {canSee("licenseNumber") && (
             <Field
               label="License Number"
-              editing={editing}
+              editing={editing && !isVerified}
               value={licenseNumber}
               onChange={setLicenseNumber}
               colors={colors}
@@ -318,11 +406,11 @@ export default function UserProfileScreen() {
             My Facilities ({myFacilities.length})
           </Text>
           {myFacilities.length === 0 ? (
-            <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+            <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
               You're not a member of any facility yet.
             </Text>
           ) : (
-            <View style={{ gap: 8, marginBottom: 14 }}>
+            <View className="gap-2 mb-3.5">
               {myFacilities.map((f) => (
                 <Pressable
                   key={f.id}
@@ -344,7 +432,7 @@ export default function UserProfileScreen() {
 
           <View className="h-px my-[18px]" style={{ backgroundColor: colors.border }} />
 
-          <Text className="text-xs font-semibold mb-1" style={{ color: colors.text }}>Public Profile</Text>
+          <Text className="text-xs font-semibold mb-2" style={{ color: colors.text }}>Public Profile</Text>
           <Text className="text-xs leading-[17px] mb-2.5" style={{ color: colors.textSecondary }}>
             Anyone can see your name, avatar, and role when they tap your avatar. Email and phone
             are hidden unless you turn them on.
@@ -383,6 +471,29 @@ export default function UserProfileScreen() {
           <View style={{ height: 24 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <ProfileUpdateRequestModal
+        ref={requestModalRef}
+        entityType="user"
+        entityId={user.id}
+        currentValues={{
+          fullName: user.fullName,
+          phone: user.phone ?? null,
+          profession: user.profession ?? null,
+          title: user.title ?? null,
+          licenseNumber: user.licenseNumber ?? null,
+          role: user.role,
+        }}
+        onSubmitted={() => requestModalRef.current?.dismiss()}
+      />
+
+      <PhoneVerificationSheet
+        ref={phoneVerificationRef}
+        entityType="user"
+        entityId={user.id}
+        phone={phone}
+        onVerified={() => phoneVerificationRef.current?.dismiss()}
+      />
     </SafeAreaView>
   );
 }
@@ -405,7 +516,7 @@ function Field({
   multiline?: boolean;
 }) {
   return (
-    <View style={{ marginTop: 14 }}>
+    <View className="mt-3.5">
       <Text className="text-xs font-semibold" style={{ color: colors.text }}>{label}</Text>
       {editing ? (
         <TextInput

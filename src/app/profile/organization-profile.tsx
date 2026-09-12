@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Switch,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import * as Location from "expo-location";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -28,6 +30,8 @@ import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { OrganizationType } from "@/features/profile/types/profile.types";
 import KycSection from "@/features/profile/components/kyc-section";
 import KycStatusBadge from "@/features/profile/components/kyc-status-badge";
+import ProfileUpdateRequestModal from "@/features/profile-updates/components/profile-update-request-modal";
+import PhoneVerificationSheet from "@/features/profile/components/phone-verification-sheet";
 
 const ORG_TYPES: OrganizationType[] = [
   "Pharmacy Chain",
@@ -82,6 +86,7 @@ export default function OrganizationProfileScreen() {
   const [registrationNumber, setRegistrationNumber] = useState(organization?.registrationNumber ?? "");
   const [headquartersLocation, setHeadquartersLocation] = useState(organization?.headquartersLocation ?? "");
   const [region, setRegion] = useState(organization?.region ?? "");
+  const [address, setAddress] = useState(organization?.address ?? "");
   const [latitude, setLatitude] = useState<number | undefined>(organization?.latitude);
   const [longitude, setLongitude] = useState<number | undefined>(organization?.longitude);
   const [logoUrl, setLogoUrl] = useState(organization?.logoUrl);
@@ -106,6 +111,7 @@ export default function OrganizationProfileScreen() {
     setRegistrationNumber(organization.registrationNumber ?? "");
     setHeadquartersLocation(organization.headquartersLocation ?? "");
     setRegion(organization.region ?? "");
+    setAddress(organization.address ?? "");
     setLatitude(organization.latitude);
     setLongitude(organization.longitude);
     setEmail(organization.email ?? "");
@@ -131,6 +137,8 @@ export default function OrganizationProfileScreen() {
   }
 
   const isVerified = organization.kyc.status === "verified";
+  const requestModalRef = useRef<BottomSheetModal>(null);
+  const phoneVerificationRef = useRef<BottomSheetModal>(null);
   const isOrgAdmin = viewerRole === "owner";
   const canManageRequests = viewerRole === "owner" || viewerRole === "admin";
   const orgFacilities = facilities.filter((f) => organization.facilityIds.includes(f.id));
@@ -145,6 +153,7 @@ export default function OrganizationProfileScreen() {
       registrationNumber: registrationNumber.trim() || undefined,
       headquartersLocation: headquartersLocation.trim() || undefined,
       region: region.trim() || undefined,
+      address: address.trim() || undefined,
       email: email.trim() || undefined,
       phone: phone.trim() || undefined,
       latitude,
@@ -205,10 +214,23 @@ export default function OrganizationProfileScreen() {
             )}
           </View>
 
-          <Field label="Organization Name" editing={editing} value={name} onChange={setName} colors={colors} />
+          {isVerified && (
+            <Pressable
+              onPress={() => requestModalRef.current?.present()}
+              className="flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl mb-1"
+              style={{ backgroundColor: colors.backgroundElement }}
+            >
+              <MaterialCommunityIcons name="file-edit-outline" size={16} color={colors.primary} />
+              <Text className="text-sm font-semibold" style={{ color: colors.primary }}>
+                Request Profile Update
+              </Text>
+            </Pressable>
+          )}
+
+          <Field label="Organization Name" editing={editing && !isVerified} value={name} onChange={setName} colors={colors} />
 
           <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>Type</Text>
-          {editing ? (
+          {editing && !isVerified ? (
             <View className="flex-row flex-wrap gap-2 mt-1.5">
               {ORG_TYPES.map((option) => {
                 const active = type === option;
@@ -233,15 +255,15 @@ export default function OrganizationProfileScreen() {
           {canSee("registrationNumber") && (
             <Field
               label="Registration Number"
-              editing={editing}
+              editing={editing && !isVerified}
               value={registrationNumber}
               onChange={setRegistrationNumber}
               colors={colors}
             />
           )}
           <View style={{ marginTop: 14 }}>
-            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Headquarters Location</Text>
-            {editing ? (
+            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Ghana Post GPS (Headquarters)</Text>
+            {editing && !isVerified ? (
               <LocationPicker
                 value={headquartersLocation}
                 onChangeText={setHeadquartersLocation}
@@ -263,15 +285,39 @@ export default function OrganizationProfileScreen() {
                 </Text>
                 {latitude !== undefined && longitude !== undefined && (
                   <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
-                    GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                    Current location: {latitude.toFixed(4)}, {longitude.toFixed(4)}
                   </Text>
+                )}
+                {isVerified && (
+                  <Pressable
+                    onPress={async () => {
+                      const { status } = await Location.requestForegroundPermissionsAsync();
+                      if (status !== "granted") {
+                        toast.error("Location permission denied.");
+                        return;
+                      }
+                      const position = await Location.getCurrentPositionAsync({
+                        accuracy: Location.Accuracy.Balanced,
+                      });
+                      setLatitude(position.coords.latitude);
+                      setLongitude(position.coords.longitude);
+                      toast.success("Current location updated.");
+                    }}
+                    className="flex-row items-center gap-1 mt-1.5"
+                  >
+                    <MaterialCommunityIcons name="crosshairs-gps" size={13} color={colors.primary} />
+                    <Text className="text-xs font-semibold" style={{ color: colors.primary }}>
+                      Update Current Location
+                    </Text>
+                  </Pressable>
                 )}
               </>
             )}
           </View>
+          <Field label="Address" editing={editing && !isVerified} value={address} onChange={setAddress} colors={colors} />
           <View style={{ marginTop: 14 }}>
             <Text className="text-xs font-semibold" style={{ color: colors.text }}>Region</Text>
-            {editing ? (
+            {editing && !isVerified ? (
               <ReferencePicker
                 title="Select Region"
                 options={regionOptions}
@@ -286,10 +332,30 @@ export default function OrganizationProfileScreen() {
             )}
           </View>
           {canSee("email") && (
-            <Field label="Email" editing={editing} value={email} onChange={setEmail} colors={colors} />
+            <Field label="Email" editing={editing && !isVerified} value={email} onChange={setEmail} colors={colors} />
           )}
           {canSee("phone") && (
-            <Field label="Phone" editing={editing} value={phone} onChange={setPhone} colors={colors} />
+            <Field label="Phone" editing={editing && !isVerified} value={phone} onChange={setPhone} colors={colors} />
+          )}
+          {canSee("phone") && Boolean(phone) && organization.phoneAdminApproved && (
+            organization.phoneVerifiedAt ? (
+              <View className="flex-row items-center gap-1 mt-1.5">
+                <MaterialCommunityIcons name="check-decagram" size={13} color={colors.success} />
+                <Text className="text-xs font-semibold" style={{ color: colors.success }}>
+                  Verified
+                </Text>
+              </View>
+            ) : (
+              <Pressable
+                onPress={() => phoneVerificationRef.current?.present()}
+                className="flex-row items-center gap-1 mt-1.5"
+              >
+                <MaterialCommunityIcons name="phone-alert-outline" size={13} color={colors.primary} />
+                <Text className="text-xs font-semibold" style={{ color: colors.primary }}>
+                  Not verified — Verify Now
+                </Text>
+              </Pressable>
+            )
           )}
 
           <View className="h-px my-[18px]" style={{ backgroundColor: colors.border }} />
@@ -398,6 +464,29 @@ export default function OrganizationProfileScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      <ProfileUpdateRequestModal
+        ref={requestModalRef}
+        entityType="organization"
+        entityId={organization.id}
+        currentValues={{
+          name: organization.name,
+          type: organization.type,
+          location: organization.headquartersLocation ?? null,
+          region: organization.region ?? null,
+          address: organization.address ?? null,
+          phone: organization.phone ?? null,
+          email: organization.email ?? null,
+        }}
+        onSubmitted={() => requestModalRef.current?.dismiss()}
+      />
+
+      <PhoneVerificationSheet
+        ref={phoneVerificationRef}
+        entityType="organization"
+        entityId={organization.id}
+        phone={phone}
+        onVerified={() => phoneVerificationRef.current?.dismiss()}
+      />
     </SafeAreaView>
   );
 }

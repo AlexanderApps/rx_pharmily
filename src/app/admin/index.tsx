@@ -15,6 +15,7 @@ import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { isAdminRole, isSuperadminRole } from "@/features/auth/types/auth.types";
 import { useBreakpoint } from "@/shared/hooks/use-breakpoint";
 import { usePaymentsStore } from "@/features/payments/hooks/use-payments-data";
+import { useProfileUpdateStore } from "@/features/profile-updates/hooks/use-profile-update-data";
 
 export default function AdminHubScreen() {
   const { colors } = useTheme();
@@ -46,6 +47,8 @@ export default function AdminHubScreen() {
   const fetchReports = useHelpStore((state) => state.fetchReports);
   const products = useCatalogStore((state) => state.products);
   const formularyRequests = useCatalogStore((state) => state.formularyRequests);
+  const profileUpdateRequests = useProfileUpdateStore((state) => state.requests);
+  const fetchPendingProfileUpdateRequests = useProfileUpdateStore((state) => state.fetchPendingRequests);
   const facilityCreationRequests = useProfileStore((state) => state.facilityCreationRequests);
   const organizationCreationRequests = useProfileStore(
     (state) => state.organizationCreationRequests,
@@ -80,6 +83,7 @@ export default function AdminHubScreen() {
     fetchUsersForKycReview();
     fetchPendingPayments();
     fetchRxLinkRequests();
+    fetchPendingProfileUpdateRequests();
   }, []);
 
   const pendingAdsCount = useMemo(
@@ -110,6 +114,10 @@ export default function AdminHubScreen() {
   const pendingFormularyCount = useMemo(
     () => formularyRequests.filter((r) => r.status === "pending").length,
     [formularyRequests],
+  );
+  const pendingProfileUpdateCount = useMemo(
+    () => profileUpdateRequests.filter((r) => r.status === "pending").length,
+    [profileUpdateRequests],
   );
   const pendingFacilityOrgRequestsCount = useMemo(
     () =>
@@ -192,6 +200,25 @@ export default function AdminHubScreen() {
       color: "#0891b2",
       count: pendingFormularyCount,
       route: "/admin/formulary-requests",
+    },
+    {
+      key: "profile-updates",
+      title: "Profile Update Requests",
+      description: "Review requested changes to verified user, facility, and organization profiles.",
+      icon: "account-edit-outline" as const,
+      color: "#7c3aed",
+      count: pendingProfileUpdateCount,
+      route: "/admin/profile-update-requests",
+    },
+    {
+      key: "moderation",
+      title: "Account Moderation",
+      description: "Ban or suspend users, facilities, and organizations, with a full audit trail.",
+      icon: "account-cancel-outline" as const,
+      color: "#dc2626",
+      count: 0,
+      countLabel: "manage",
+      route: "/admin/moderation",
     },
     {
       key: "reference-data",

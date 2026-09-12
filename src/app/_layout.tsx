@@ -14,6 +14,7 @@ import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
 import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { isCurrentlyRestricted } from "@/features/moderation/types/moderation.types";
 import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
 import { useDonationStore } from "@/features/donations/hooks/use-donation-data";
 import { useMediscopeStore } from "@/features/mediscope/hooks/use-mediscope-data";
@@ -46,6 +47,7 @@ export default function RootLayout() {
   const registerForPush = usePushRegistrationStore((state) => state.registerForPush);
   const fetchPermissions = usePermissionsStore((state) => state.fetchPermissions);
   const fetchMyProfile = useProfileStore((state) => state.fetchMyProfile);
+  const currentUser = useProfileStore((state) => state.user);
   const fetchFacilities = useProfileStore((state) => state.fetchFacilities);
   const fetchOrganizations = useProfileStore((state) => state.fetchOrganizations);
   const fetchMyFacilityMemberships = useProfileStore((state) => state.fetchMyFacilityMemberships);
@@ -119,6 +121,13 @@ export default function RootLayout() {
   }, [session]);
 
   const onAuthScreen = segments[0] === "login" || segments[0] === "signup";
+  const onRestrictedScreen = segments[0] === "account-restricted";
+  // isCurrentlyRestricted accounts for a suspension that's technically
+  // expired but hasn't been cleared by the hourly cron job yet — see
+  // that function's own comment. currentUser starts as EMPTY_USER
+  // (isBanned/isSuspended both false) before fetchMyProfile resolves,
+  // so this never blocks access based on data that hasn't loaded yet.
+  const isRestricted = isCurrentlyRestricted(currentUser);
 
   useEffect(() => {
     if (isLoading) return; // don't redirect until the initial session check resolves
@@ -126,8 +135,15 @@ export default function RootLayout() {
       router.replace("/login");
     } else if (session && onAuthScreen) {
       router.replace("/(tabs)");
+    } else if (session && isRestricted && !onRestrictedScreen) {
+      router.replace("/account-restricted");
+    } else if (session && !isRestricted && onRestrictedScreen) {
+      // A suspension could have been lifted (or expired and cleared)
+      // while they were already sitting on this screen — don't leave
+      // them stuck there once it no longer applies.
+      router.replace("/(tabs)");
     }
-  }, [isLoading, session, segments]);
+  }, [isLoading, session, segments, isRestricted, onRestrictedScreen]);
 
   if (isLoading) {
     return (

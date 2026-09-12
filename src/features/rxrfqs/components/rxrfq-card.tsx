@@ -11,6 +11,18 @@ interface RxRfqCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   showActions?: boolean;
+  // The home feed only ever includes already-published RFQs (see
+  // fullFeed's own filtering in app/(tabs)/index.tsx), so a status
+  // badge that would always read "Published" there conveys nothing —
+  // it's only actually informative on screens that can show a mix of
+  // statuses (the owner's own list, etc).
+  showStatus?: boolean;
+  // Defaults to false — response count is competitive information
+  // (how many vendors have already bid) that should only be visible to
+  // the RFQ's own creator, not to other vendors browsing or deciding
+  // whether to respond. Explicitly opted into by RxRfqListContainer's
+  // isCreatorView, not left to each caller to remember.
+  showResponseCount?: boolean;
 }
 
 const STATUS_META: Record<
@@ -31,6 +43,8 @@ const RxRfqCard: React.FC<RxRfqCardProps> = ({
   onEdit,
   onDelete,
   showActions = true,
+  showStatus = true,
+  showResponseCount = false,
 }) => {
   const { colors } = useTheme();
   const statusMeta = STATUS_META[rfq.status];
@@ -73,10 +87,12 @@ const RxRfqCard: React.FC<RxRfqCardProps> = ({
           <Text className="text-[11px] mt-px" style={{ color: colors.textSecondary }}>{rfq.code}</Text>
         </View>
 
-        <View className="flex-row items-center gap-1 px-2 py-1 rounded-lg" style={{ backgroundColor: statusColor + "18" }}>
-          <MaterialCommunityIcons name={statusMeta.icon} size={11} color={statusColor} />
-          <Text className="text-[10px] font-bold" style={{ color: statusColor }}>{statusMeta.label}</Text>
-        </View>
+        {showStatus && (
+          <View className="flex-row items-center gap-1 px-2 py-1 rounded-lg" style={{ backgroundColor: statusColor + "18" }}>
+            <MaterialCommunityIcons name={statusMeta.icon} size={11} color={statusColor} />
+            <Text className="text-[10px] font-bold" style={{ color: statusColor }}>{statusMeta.label}</Text>
+          </View>
+        )}
       </View>
 
       <View className="flex-row items-center gap-1 mt-2.5 ml-[52px]">
@@ -102,7 +118,7 @@ const RxRfqCard: React.FC<RxRfqCardProps> = ({
             </Text>
           </View>
 
-          {rfq.responseCount > 0 && (
+          {showResponseCount && rfq.responseCount > 0 && (
             <View className="flex-row items-center px-2 py-1 rounded-lg gap-1" style={{ backgroundColor: colors.success + "14" }}>
               <MaterialCommunityIcons name="reply-all-outline" size={12} color={colors.success} />
               <Text className="text-[11px] font-bold" style={{ color: colors.success }}>

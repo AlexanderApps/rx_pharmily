@@ -6,6 +6,7 @@ import MaxWidthLayout from "@/shared/components/max-width-layout";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ThemedView } from "@/shared/components/themed-view";
+import { toast } from "@/shared/hooks/use-toast";
 import SearchButton from "@/shared/components/search-button";
 import { usePostsStore } from "@/features/posts/hooks/use-posts-data";
 import PostCard from "@/features/posts/components/post-card";
@@ -106,13 +107,13 @@ const FeedItemRow = React.memo(function FeedItemRow({ item }: { item: FeedItem }
     case "mediscope":
       return (
         <View className="px-4 mt-3">
-          <MediscopeListCard item={item.request} onPress={handleMediscopePress} />
+          <MediscopeListCard item={item.request} onPress={handleMediscopePress} showStatus={false} />
         </View>
       );
     case "donation":
       return (
         <View className="px-4 mt-3">
-          <DonationListCard donation={item.donation} onPress={handleDonationPress} />
+          <DonationListCard donation={item.donation} onPress={handleDonationPress} showStatus={false} />
         </View>
       );
     case "job":
@@ -124,7 +125,7 @@ const FeedItemRow = React.memo(function FeedItemRow({ item }: { item: FeedItem }
     case "rfq":
       return (
         <View className="px-4 mt-3">
-          <RxRfqCard rfq={item.rfq} onPress={handleRfqPress} />
+          <RxRfqCard rfq={item.rfq} onPress={handleRfqPress} showStatus={false} />
         </View>
       );
   }
@@ -138,6 +139,12 @@ export default function HomeScreen() {
   const donations = useDonationStore((state) => state.donations);
   const jobs = useRxJobsStore((state) => state.jobs);
   const rxrfqs = useRxRfqsStore((state) => state.rxrfqs);
+  const fetchPosts = usePostsStore((state) => state.fetchPosts);
+  const fetchAds = useAdsStore((state) => state.fetchAds);
+  const fetchMediscopeRequests = useMediscopeStore((state) => state.fetchRequests);
+  const fetchDonations = useDonationStore((state) => state.fetchDonations);
+  const fetchJobs = useRxJobsStore((state) => state.fetchJobs);
+  const fetchRxRfqs = useRxRfqsStore((state) => state.fetchRxRfqs);
   const userRegion = useProfileStore((state) => state.user.region);
   const hasPermission = usePermissionsStore((state) => state.hasPermission);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -239,13 +246,53 @@ export default function HomeScreen() {
     }, 500);
   }, [loadingMore, hasMore, fullFeed.length]);
 
-  const handleRefresh = useCallback(() => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setVisibleCount(PAGE_SIZE);
-      setRefreshing(false);
-    }, 600);
-  }, []);
+    // A successful refresh that happens to find no new content looks
+    // identical, on screen, to one that silently failed — nothing
+    // changes either way. Comparing total counts before/after is what
+    // lets a genuinely successful "you're already caught up" refresh
+    // tell itself apart from that, confirmed by a debugging pass that
+    // traced an earlier "pull-to-refresh isn't working" report to
+    // exactly this: the refetch was succeeding the whole time.
+    const countBefore =
+      posts.length + ads.length + mediscopeRequests.length + donations.length + jobs.length + rxrfqs.length;
+
+    // Promise.allSettled rather than Promise.all — one source failing
+    // to refresh shouldn't prevent the other 5 from actually updating,
+    // which Promise.all's reject-on-first-failure behavior would do.
+    const results = await Promise.allSettled([
+      fetchPosts(),
+      fetchAds(),
+      fetchMediscopeRequests(),
+      fetchDonations(),
+      fetchJobs(),
+      fetchRxRfqs(),
+    ]);
+    const failedCount = results.filter((r) => r.status === "rejected").length;
+    if (failedCount > 0) {
+      console.warn(`[home-feed] ${failedCount} of 6 refresh sources failed`);
+    }
+
+    // Read via getState(), not the posts/ads/etc. variables above —
+    // those are fixed at the time this callback was created and would
+    // still show the pre-refresh values here regardless of what the
+    // stores actually did.
+    const countAfter =
+      usePostsStore.getState().posts.length +
+      useAdsStore.getState().ads.length +
+      useMediscopeStore.getState().requests.length +
+      useDonationStore.getState().donations.length +
+      useRxJobsStore.getState().jobs.length +
+      useRxRfqsStore.getState().rxrfqs.length;
+
+    if (failedCount === 0 && countAfter <= countBefore) {
+      toast.info("You're all caught up");
+    }
+
+    setVisibleCount(PAGE_SIZE);
+    setRefreshing(false);
+  }, [fetchPosts, fetchAds, fetchMediscopeRequests, fetchDonations, fetchJobs, fetchRxRfqs]);
 
   // A trivial, stable wrapper — the actual per-kind rendering and
   // onPress logic now lives in FeedItemRow (module scope, memoized)

@@ -69,11 +69,34 @@ const Toast: React.FC = () => {
 
   return (
     <SafeAreaView className="absolute left-0 right-0 bottom-0 items-center z-[1000]" pointerEvents="box-none">
+      {/* Plain style props, deliberately, not className — NativeWind's
+          className support for react-native-reanimated's Animated.View
+          has a real, confirmed, version-dependent bug on web (see
+          nativewind/nativewind#1181 and
+          software-mansion/react-native-reanimated#6665 and #8329):
+          className is silently never applied to Animated.View on web
+          across multiple Reanimated versions, only patched in
+          NativeWind 4.2.0+. This toast rendered with none of its
+          layout/visual classes applied at all on web — full-width,
+          unstyled, icon/text/close-button stacking instead of a single
+          row — before this fix. style props are never affected by this
+          issue regardless of which exact NativeWind/Reanimated version
+          combination is actually installed, so this is the robust fix,
+          not just a version bump that could regress again later. */}
       <Animated.View
-        className="flex-row items-center gap-2.5 max-w-[480px] w-[92%] mb-3 px-3.5 py-3 rounded-xl border"
         style={[
           animatedStyle,
           {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+            maxWidth: 480,
+            width: "92%",
+            marginBottom: 12,
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+            borderRadius: 12,
+            borderWidth: 1,
             backgroundColor: colors.backgroundSecondary,
             borderColor: colors.border,
             shadowColor: "#000",

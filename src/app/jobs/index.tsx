@@ -222,6 +222,7 @@ export default function RxJobsScreen() {
             backgroundColor={colors.backgroundSecondary}
             textColor={colors.text}
             onViewAllPress={() => router.push("/jobs/my-jobs")}
+            emptyMessage="No jobs posted yet — post one to start hiring"
           >
             {myRecentJobs.map((item: Job, index, slicedArray) => (
               <JobRow

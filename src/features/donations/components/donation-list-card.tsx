@@ -11,6 +11,12 @@ interface DonationListCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   showActions?: boolean;
+  // The home feed only ever includes already-open donations (see
+  // fullFeed's own filtering in app/(tabs)/index.tsx), so a status
+  // badge that would always read "Open" there conveys nothing — it's
+  // only actually informative on screens that can show a mix of
+  // statuses (the owner's own list, etc).
+  showStatus?: boolean;
 }
 
 const STATUS_META: Record<
@@ -28,6 +34,7 @@ const DonationListCard: React.FC<DonationListCardProps> = ({
   onEdit,
   onDelete,
   showActions = true,
+  showStatus = true,
 }) => {
   const { colors } = useTheme();
   const statusMeta = STATUS_META[donation.status];
@@ -63,10 +70,12 @@ const DonationListCard: React.FC<DonationListCardProps> = ({
           </Text>
         </View>
 
-        <View className="flex-row items-center gap-1 px-2 py-1 rounded-lg" style={{ backgroundColor: statusColor + "18" }}>
-          <MaterialCommunityIcons name={statusMeta.icon} size={11} color={statusColor} />
-          <Text className="text-[10px] font-bold" style={{ color: statusColor }}>{statusMeta.label}</Text>
-        </View>
+        {showStatus && (
+          <View className="flex-row items-center gap-1 px-2 py-1 rounded-lg" style={{ backgroundColor: statusColor + "18" }}>
+            <MaterialCommunityIcons name={statusMeta.icon} size={11} color={statusColor} />
+            <Text className="text-[10px] font-bold" style={{ color: statusColor }}>{statusMeta.label}</Text>
+          </View>
+        )}
       </View>
 
       <View className="flex-row items-center gap-1 mt-2.5 ml-[52px]">

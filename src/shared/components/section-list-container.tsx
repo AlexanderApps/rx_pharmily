@@ -1,6 +1,7 @@
 import React from "react";
 import { Text, View, Pressable } from "react-native";
 import { noSelectStyle } from "@/shared/constants/text-selection";
+import { useTheme } from "@/shared/hooks/use-theme";
 
 interface SectionListContainerProps {
   title: string;
@@ -9,6 +10,15 @@ interface SectionListContainerProps {
   backgroundColor: string;
   children: React.ReactElement | React.ReactNode;
   textColor: string;
+  // Shown in place of children when there's nothing to list — appropriate
+  // for a section of the person's own content (e.g. "My Active RxRFQs"),
+  // where "nothing here yet" is itself useful context. If omitted, the
+  // whole section — header, "View All" link, and all — renders nothing
+  // when empty, rather than a title dangling over a blank card. That's
+  // the right default for discovery/marketplace sections (e.g. "Nearby
+  // Requests"), where there's nothing actionable to say about an empty
+  // result set.
+  emptyMessage?: string;
 }
 
 export const SectionListContainer = ({
@@ -18,12 +28,17 @@ export const SectionListContainer = ({
   backgroundColor,
   textColor,
   children,
+  emptyMessage,
 }: SectionListContainerProps) => {
+  const { colors } = useTheme();
+  const isEmpty = React.Children.count(children) === 0;
+  if (isEmpty && !emptyMessage) return null;
+
   return (
     <View className="px-5 mt-6">
       <View className="flex-row justify-between items-center mb-3">
         <Text className="text-lg font-semibold" style={{ color: textColor }}>{title}</Text>
-        {onViewAllPress && (
+        {onViewAllPress && !isEmpty && (
           <Pressable
             onPress={onViewAllPress}
             // 1. Catches inaccurate tap targets outside the visual box
@@ -42,7 +57,15 @@ export const SectionListContainer = ({
         )}
       </View>
 
-      <View className="rounded-3xl overflow-hidden" style={{ backgroundColor }}>{children}</View>
+      <View className="rounded-3xl overflow-hidden" style={{ backgroundColor }}>
+        {isEmpty ? (
+          <View className="items-center justify-center py-8 px-5">
+            <Text className="text-sm text-center" style={{ color: colors.textSecondary }}>{emptyMessage}</Text>
+          </View>
+        ) : (
+          children
+        )}
+      </View>
     </View>
   );
 };
