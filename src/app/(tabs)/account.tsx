@@ -88,7 +88,7 @@ export default function AccountScreen() {
           id: "info",
           label: "Information & Terms",
           icon: "information-outline",
-          onPress: () => router.push("/help/faq"),
+          onPress: () => router.push("/help/information-terms"),
         },
       ],
     },
