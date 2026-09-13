@@ -31,6 +31,14 @@ const SECTIONS: {
     route: "/help/eula",
   },
   {
+    key: "privacy",
+    title: "Privacy Policy",
+    description: "How we collect, use, and share information — and what stays private.",
+    icon: "shield-lock-outline",
+    color: "#0d9488",
+    route: "/help/privacy-policy",
+  },
+  {
     key: "faq",
     title: "FAQ",
     description: "Frequently asked questions about accounts, verification, and using the app.",
