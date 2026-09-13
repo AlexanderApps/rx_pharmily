@@ -3,6 +3,8 @@ import { Pressable, Text, ActivityIndicator } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { printOrExportPdf } from "@/shared/utils/pdf";
+import { toast } from "@/shared/hooks/use-toast";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 
 interface PrintButtonProps {
   // Builds the HTML lazily so the (sometimes non-trivial) document assembly
@@ -23,9 +25,16 @@ const PrintButton: React.FC<PrintButtonProps> = ({
 }) => {
   const { colors } = useTheme();
   const [loading, setLoading] = useState(false);
+  const hasPermission = usePermissionsStore((state) => state.hasPermission);
 
   const handlePress = async () => {
     if (loading) return;
+    // Gated here, once, rather than in each of this button's callers —
+    // every screen that renders PrintButton gets the check for free.
+    if (!hasPermission("print.export")) {
+      toast.error("Printing and exporting requires a verified professional account.");
+      return;
+    }
     setLoading(true);
     try {
       await printOrExportPdf(getHtml(), fileName);

@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { useChatStore } from "@/features/chat/hooks/use-chat-data";
+import PermissionGate from "@/shared/components/permission-gate";
 import {
   ChatLinkedEntity,
   ChatMedia,
@@ -228,6 +229,7 @@ export default function ChatThreadScreen() {
   };
 
   return (
+    <PermissionGate permission="chat.use" featureName="RxChat">
     <View
       style={[
         styles.flex1,
@@ -402,6 +404,7 @@ export default function ChatThreadScreen() {
         </View>
       </BottomSheet>
     </View>
+    </PermissionGate>
   );
 }
 

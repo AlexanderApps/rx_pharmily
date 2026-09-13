@@ -15,6 +15,8 @@ import { router } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { usePostsStore } from "@/features/posts/hooks/use-posts-data";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
+import { toast } from "@/shared/hooks/use-toast";
 import { PostType, PostMedia } from "@/features/posts/types/posts.types";
 import MediaPicker from "@/features/posts/components/media-picker";
 
@@ -78,6 +80,10 @@ export default function CreatePostScreen() {
 
   const handlePost = async () => {
     if (!canPost) return;
+    if (!usePermissionsStore.getState().hasPermission("posts.create")) {
+      toast.error("You don't have permission to post right now.");
+      return;
+    }
 
     if (postType === "poll") {
       if (question.trim().length === 0 || filledOptions.length < 2) {

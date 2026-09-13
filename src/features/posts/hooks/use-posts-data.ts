@@ -4,6 +4,7 @@ import { requireUserId } from "@/lib/supabase-store-helpers";
 import { toast } from "@/shared/hooks/use-toast";
 import { Comment, Poll, Post, PostAuthor, PostFormData } from "@/features/posts/types/posts.types";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 
 function mapAuthorFromProfile(profile: any): PostAuthor {
   return {
@@ -418,6 +419,10 @@ export const usePostsStore = create<PostsStore & { pollIdByPost: Record<string, 
   },
 
   toggleLike: async (postId) => {
+    if (!usePermissionsStore.getState().hasPermission("posts.react")) {
+      toast.error("You don't have permission to react to posts right now.");
+      return;
+    }
     const alreadyLiked = get().myLikedPostIds.has(postId);
     const currentPost = get().posts.find((p) => p.id === postId);
     if (!currentPost) return;
@@ -470,6 +475,10 @@ export const usePostsStore = create<PostsStore & { pollIdByPost: Record<string, 
   },
 
   addComment: async (postId, text) => {
+    if (!usePermissionsStore.getState().hasPermission("posts.comment")) {
+      toast.error("You don't have permission to comment right now.");
+      return;
+    }
     const trimmed = text.trim();
     if (!trimmed) return;
     const userId = await requireUserId();
@@ -497,6 +506,10 @@ export const usePostsStore = create<PostsStore & { pollIdByPost: Record<string, 
   },
 
   votePoll: async (postId, optionId) => {
+    if (!usePermissionsStore.getState().hasPermission("posts.react")) {
+      toast.error("You don't have permission to vote on polls right now.");
+      return;
+    }
     const post = get().posts.find((p) => p.id === postId);
     if (!post?.poll) return;
     if (post.poll.closesAt && post.poll.closesAt.getTime() < Date.now()) return;

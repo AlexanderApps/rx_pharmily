@@ -27,6 +27,7 @@ import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import ReferencePicker from "@/shared/components/forms/reference-picker";
 import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 import { OrganizationType } from "@/features/profile/types/profile.types";
 import KycSection from "@/features/profile/components/kyc-section";
 import KycStatusBadge from "@/features/profile/components/kyc-status-badge";
@@ -144,6 +145,7 @@ export default function OrganizationProfileScreen() {
   const isOrgAdmin = viewerRole === "owner";
   const currentUser = useProfileStore((state) => state.user);
   const isUserVerified = currentUser.kyc.status === "verified";
+  const hasPermission = usePermissionsStore((state) => state.hasPermission);
   const canManageRequests = viewerRole === "owner" || viewerRole === "admin";
   const orgFacilities = facilities.filter((f) => organization.facilityIds.includes(f.id));
   const pendingLinkRequests = facilityOrgRequests.filter(
@@ -218,7 +220,7 @@ export default function OrganizationProfileScreen() {
             )}
           </View>
 
-          {isVerified && (
+          {isVerified && hasPermission("profile.request_update") && (
             <Pressable
               onPress={() => requestModalRef.current?.present()}
               className="flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl mb-1"
@@ -231,7 +233,7 @@ export default function OrganizationProfileScreen() {
             </Pressable>
           )}
 
-          {isUserVerified && !isOrgAdmin && (
+          {isUserVerified && hasPermission("ownership_transfer.request") && !isOrgAdmin && (
             <Pressable
               onPress={() => ownershipTransferModalRef.current?.present()}
               className="flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl mb-1"

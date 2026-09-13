@@ -25,6 +25,7 @@ import LoadingImage from "@/shared/components/loading-image";
 import { toast } from "@/shared/hooks/use-toast";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 import { FacilityType, FacilityDeliveryOption } from "@/features/profile/types/profile.types";
 import KycSection from "@/features/profile/components/kyc-section";
 import ProfileUpdateRequestModal from "@/features/profile-updates/components/profile-update-request-modal";
@@ -197,6 +198,7 @@ export default function FacilityProfileScreen() {
   const ownershipTransferModalRef = useRef<BottomSheetModal>(null);
   const phoneVerificationRef = useRef<BottomSheetModal>(null);
   const isUserVerified = user.kyc.status === "verified";
+  const hasPermission = usePermissionsStore((state) => state.hasPermission);
   const isOwner = viewerRole === "owner";
   const isMember = viewerRole === "owner" || viewerRole === "member";
   const canManageMembers = viewerRole === "owner" || viewerRole === "admin";
@@ -330,7 +332,7 @@ export default function FacilityProfileScreen() {
             )}
           </View>
 
-          {isVerified && (
+          {isVerified && hasPermission("profile.request_update") && (
             <Pressable
               onPress={() => requestModalRef.current?.present()}
               className="flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl mb-1"
@@ -343,7 +345,7 @@ export default function FacilityProfileScreen() {
             </Pressable>
           )}
 
-          {isUserVerified && !isOwner && (
+          {isUserVerified && hasPermission("ownership_transfer.request") && !isOwner && (
             <Pressable
               onPress={() => ownershipTransferModalRef.current?.present()}
               className="flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl mb-1"

@@ -12,6 +12,7 @@ import { BsFlatList } from "@/shared/components/bs/bs-primitives";
 import ChatListItem from "@/features/chat/components/chat-list-item";
 import ChatListSkeleton from "@/features/chat/components/chat-list-skeleton";
 import { useChatStore, UserSearchResult } from "@/features/chat/hooks/use-chat-data";
+import PermissionGate from "@/shared/components/permission-gate";
 
 export default function ChatListScreen() {
   const { colors } = useTheme();
@@ -87,6 +88,7 @@ export default function ChatListScreen() {
   };
 
   return (
+    <PermissionGate permission="chat.use" featureName="RxChat">
     <View
       className="flex-1"
       style={{
@@ -249,5 +251,6 @@ export default function ChatListScreen() {
         />
       </BottomSheet>
     </View>
+    </PermissionGate>
   );
 }
