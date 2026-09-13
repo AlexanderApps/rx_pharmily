@@ -61,6 +61,10 @@ function mapDonationRow(row: any): Donation {
     createdAt: new Date(row.created_at),
     createdBy: row.created_by,
     responseCount: row.response_count,
+    isRemoved: row.is_removed ?? false,
+    removedReason: row.removed_reason ?? undefined,
+    removedBy: row.removed_by ?? undefined,
+    removedAt: row.removed_at ? new Date(row.removed_at) : undefined,
   };
 }
 
@@ -83,6 +87,10 @@ function mapResponseRow(row: any, responderFacilityName: string): DonationRespon
     status: row.status,
     createdAt: new Date(row.created_at),
     createdBy: row.created_by,
+    isRemoved: row.is_removed ?? false,
+    removedReason: row.removed_reason ?? undefined,
+    removedBy: row.removed_by ?? undefined,
+    removedAt: row.removed_at ? new Date(row.removed_at) : undefined,
   };
 }
 
@@ -102,6 +110,7 @@ export function convertToCardData(donation: Donation): DonationCardData {
     isActive: donation.isActive,
     responseCount: donation.responseCount,
     isOwner: donation.createdBy === useProfileStore.getState().user.id,
+    isRemoved: donation.isRemoved,
   };
 }
 

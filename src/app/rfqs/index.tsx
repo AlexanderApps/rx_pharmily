@@ -285,7 +285,7 @@ export default function RxRfqScreen() {
             {nearByRequests
               .filter(
                 (data) =>
-                  data.facilityLocation === "Accra" && data.status === "published",
+                  data.facilityLocation === "Accra" && data.status === "published" && !data.isRemoved,
               )
               .slice(0, 10)
               .map((item, index) => (

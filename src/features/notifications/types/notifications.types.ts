@@ -42,7 +42,10 @@ export type NotificationCategory =
   | "facility_organization_request_received"
   | "facility_organization_decision"
   // Catalog
-  | "formulary_request_decision";
+  | "formulary_request_decision"
+  // Ownership transfer
+  | "ownership_transfer_decision"
+  | "ownership_transferred";
 
 export interface NotificationCategoryMeta {
   category: NotificationCategory;

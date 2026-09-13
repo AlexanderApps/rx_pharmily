@@ -11,6 +11,7 @@ import DetailSkeleton from "@/shared/components/detail-skeleton";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useDonationStore } from "@/features/donations/hooks/use-donation-data";
+import ModerationControl from "@/features/content-moderation/components/moderation-control";
 import {
   DonationItem,
   DonationStatus,
@@ -319,6 +320,12 @@ export default function DonationDetailsScreen() {
       />
 
       <ScrollView contentContainerClassName="p-4 gap-3.5">
+        <ModerationControl
+          contentType="donation"
+          isRemoved={donation.isRemoved}
+          removedReason={donation.removedReason}
+        />
+
         {/* Posted by */}
         <View className="flex-row items-center gap-2.5 mb-3.5">
           <ClickableAvatar

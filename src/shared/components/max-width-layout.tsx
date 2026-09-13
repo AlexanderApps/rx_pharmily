@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Platform, StyleProp, ViewStyle } from "react-native";
-import { useBreakpoint } from "@/shared/hooks/use-breakpoint";
 
 // Distinct from useBreakpoint's compact/regular/wide (shared/hooks/
 // use-breakpoint.ts) — that scale describes how wide the *viewport* is;
@@ -44,21 +43,23 @@ const MaxWidthLayout: React.FC<MaxWidthLayoutProps> = ({
   children,
   style,
 }) => {
-  const breakpoint = useBreakpoint();
-
   if (Platform.OS !== "web") {
     return <>{children}</>;
   }
 
-  // px-6 (24px/side) reads fine once there's real width to spare, but
-  // on a narrow mobile-web viewport that's a much bigger bite out of
-  // the available space — the same squeeze this component exists to
-  // avoid on desktop, just showing up at the other end of the scale.
-  // px-4 matches this app's own native screens' established mobile
-  // content padding (see e.g. the home screen's own px-4 sections).
+  // Deliberately no horizontal padding here — every screen that wraps
+  // its content in this component already brings its own (a
+  // paddingHorizontal on its list's contentContainerStyle, or px-4/
+  // px-5 on its own sections), the same padding it needs regardless of
+  // this wrapper since MaxWidthLayout is a no-op on native. Adding
+  // padding here too meant it stacked on top of each screen's own,
+  // producing visibly more horizontal margin on web than native at an
+  // equivalent viewport width — exactly the "extra x-axis space" bug
+  // this fixes. This component's only remaining job is capping width
+  // and centering once there's real width to spare.
   return (
     <View
-      className={breakpoint === "compact" ? "w-full self-center px-4" : "w-full self-center px-6"}
+      className="w-full self-center"
       style={[{ maxWidth: CONTENT_WIDTHS[size] }, style]}
     >
       {children}

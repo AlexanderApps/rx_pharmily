@@ -52,6 +52,10 @@ export interface Job extends JobListing {
   facilityId?: string;
   organizationId?: string;
   isCustom: boolean;
+  isRemoved: boolean;
+  removedReason?: string;
+  removedBy?: string;
+  removedAt?: Date;
 }
 
 // Shape used by the post-a-job form — everything except server-assigned
@@ -88,6 +92,10 @@ export interface JobApplication {
   coverNote?: string;
   appliedAt: Date;
   status: ApplicationStatus;
+  isRemoved: boolean;
+  removedReason?: string;
+  removedBy?: string;
+  removedAt?: Date;
 }
 
 // Which registered entity (if any) actually posted this job, for

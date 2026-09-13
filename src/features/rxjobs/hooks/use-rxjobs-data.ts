@@ -51,6 +51,10 @@ function mapJobRow(row: any): Job {
     facilityId: row.facility_id ?? undefined,
     organizationId: row.organization_id ?? undefined,
     isCustom: row.is_custom,
+    isRemoved: row.is_removed ?? false,
+    removedReason: row.removed_reason ?? undefined,
+    removedBy: row.removed_by ?? undefined,
+    removedAt: row.removed_at ? new Date(row.removed_at) : undefined,
   };
 }
 
@@ -65,6 +69,10 @@ function mapApplicationRow(row: any): JobApplication {
     coverNote: row.cover_note ?? undefined,
     appliedAt: new Date(row.applied_at),
     status: row.status,
+    isRemoved: row.is_removed ?? false,
+    removedReason: row.removed_reason ?? undefined,
+    removedBy: row.removed_by ?? undefined,
+    removedAt: row.removed_at ? new Date(row.removed_at) : undefined,
   };
 }
 

@@ -252,7 +252,7 @@ export default function DonationsScreen() {
             onViewAllPress={() => router.push("/donations/list-donations")}
           >
             {donationCards
-              .filter((item) => item.status === "opened")
+              .filter((item) => item.status === "opened" && !item.isRemoved)
               .slice(0, 10)
               .map((item) => (
                 <DonationHsCard

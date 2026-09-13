@@ -31,6 +31,7 @@ import { OrganizationType } from "@/features/profile/types/profile.types";
 import KycSection from "@/features/profile/components/kyc-section";
 import KycStatusBadge from "@/features/profile/components/kyc-status-badge";
 import ProfileUpdateRequestModal from "@/features/profile-updates/components/profile-update-request-modal";
+import OwnershipTransferRequestModal from "@/features/ownership-transfer/components/ownership-transfer-request-modal";
 import PhoneVerificationSheet from "@/features/profile/components/phone-verification-sheet";
 
 const ORG_TYPES: OrganizationType[] = [
@@ -138,8 +139,11 @@ export default function OrganizationProfileScreen() {
 
   const isVerified = organization.kyc.status === "verified";
   const requestModalRef = useRef<BottomSheetModal>(null);
+  const ownershipTransferModalRef = useRef<BottomSheetModal>(null);
   const phoneVerificationRef = useRef<BottomSheetModal>(null);
   const isOrgAdmin = viewerRole === "owner";
+  const currentUser = useProfileStore((state) => state.user);
+  const isUserVerified = currentUser.kyc.status === "verified";
   const canManageRequests = viewerRole === "owner" || viewerRole === "admin";
   const orgFacilities = facilities.filter((f) => organization.facilityIds.includes(f.id));
   const pendingLinkRequests = facilityOrgRequests.filter(
@@ -223,6 +227,19 @@ export default function OrganizationProfileScreen() {
               <MaterialCommunityIcons name="file-edit-outline" size={16} color={colors.primary} />
               <Text className="text-sm font-semibold" style={{ color: colors.primary }}>
                 Request Profile Update
+              </Text>
+            </Pressable>
+          )}
+
+          {isUserVerified && !isOrgAdmin && (
+            <Pressable
+              onPress={() => ownershipTransferModalRef.current?.present()}
+              className="flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl mb-1"
+              style={{ backgroundColor: colors.backgroundElement }}
+            >
+              <MaterialCommunityIcons name="account-key-outline" size={16} color={colors.primary} />
+              <Text className="text-sm font-semibold" style={{ color: colors.primary }}>
+                Request Ownership
               </Text>
             </Pressable>
           )}
@@ -478,6 +495,14 @@ export default function OrganizationProfileScreen() {
           email: organization.email ?? null,
         }}
         onSubmitted={() => requestModalRef.current?.dismiss()}
+      />
+
+      <OwnershipTransferRequestModal
+        ref={ownershipTransferModalRef}
+        entityType="organization"
+        entityId={organization.id}
+        entityName={organization.name}
+        onSubmitted={() => ownershipTransferModalRef.current?.dismiss()}
       />
 
       <PhoneVerificationSheet

@@ -235,7 +235,7 @@ export default function MediscopeScreen() {
             onViewAllPress={() => router.push("/mediscope/list-mediscope")}
           >
             {cards
-              .filter((item) => item.status === "published")
+              .filter((item) => item.status === "published" && !item.isRemoved)
               .slice(0, 10)
               .map((item) => (
                 <MediscopeHsCard

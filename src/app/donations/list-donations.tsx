@@ -34,7 +34,7 @@ export default function Donations() {
     () =>
       [...donations]
         .filter((d) =>
-          mine === "true" ? d.createdBy === currentUserId : d.status === "opened",
+          mine === "true" ? d.createdBy === currentUserId : d.status === "opened" && !d.isRemoved,
         )
         .sort(
           (a, b) =>

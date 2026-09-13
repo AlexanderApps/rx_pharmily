@@ -28,6 +28,7 @@ import { buildRfqSummaryHtml } from "@/features/rxrfqs/utils/rxrfq-pdf";
 import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
+import ModerationControl from "@/features/content-moderation/components/moderation-control";
 import {
   useRxRfqsStore,
   convertResponseDataToCardData,
@@ -83,9 +84,7 @@ const RxRfqDetailsScreen: React.FC = () => {
   }, [id]);
 
   const rfq: RxRfqsData | null = useMemo(() => {
-    let data = rxRfqData.find((item) => item.id === id);
-    if (!data) return null;
-    return { ...data, isBanned: false, bannedAt: new Date() };
+    return rxRfqData.find((item) => item.id === id) ?? null;
   }, [rxRfqData, id]);
 
   const responses: RxRfqResponseCardData[] = useMemo(
@@ -277,35 +276,13 @@ const RxRfqDetailsScreen: React.FC = () => {
           contentContainerStyle={{ padding: 16, gap: 12 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Flagged warning */}
-          {rfq.isBanned && (
-            <View
-              className="flex-row items-start gap-2.5 rounded-xl border p-3"
-              style={{
-                backgroundColor: colors.error + "12",
-                borderColor: colors.error + "30",
-              }}
-            >
-              <MaterialCommunityIcons
-                name="shield-alert-outline"
-                size={18}
-                color={colors.error}
-              />
-              <View style={{ flex: 1 }}>
-                <Text className="text-[13px] font-bold" style={{ color: colors.error }}>
-                  This RFQ has been flagged
-                </Text>
-                {rfq.justificationNotes ? (
-                  <Text
-                    className="text-xs mt-0.5"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    {rfq.justificationNotes}
-                  </Text>
-                ) : null}
-              </View>
-            </View>
-          )}
+          {/* Content moderation — remove/restore for admins, a removed
+              notice for everyone else. See features/content-moderation. */}
+          <ModerationControl
+            contentType="rxrfq"
+            isRemoved={rfq.isRemoved}
+            removedReason={rfq.removedReason}
+          />
 
           {/* Award banner */}
           {rfq.status === "awarded" && (

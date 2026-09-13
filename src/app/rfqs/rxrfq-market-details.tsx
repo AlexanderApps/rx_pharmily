@@ -18,6 +18,7 @@ import {
   FabGroup,
 } from "@/features/rxrfqs/components/rds";
 import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
+import ModerationControl from "@/features/content-moderation/components/moderation-control";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ContextText } from "@/shared/components/context-text";
@@ -157,6 +158,12 @@ const RxMarketplaceDetailScreen: React.FC = () => {
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16 }}
         showsVerticalScrollIndicator={false}
       >
+        <ModerationControl
+          contentType="rxrfq"
+          isRemoved={item.isRemoved}
+          removedReason={item.removedReason}
+        />
+
         {/* Facility hero block */}
         <View className="flex-row items-center gap-3 mb-3">
           <ClickableAvatar
@@ -293,6 +300,10 @@ const RxMarketplaceDetailScreen: React.FC = () => {
       <FabGroup
         isBookmarked={isBookmarked}
         onSubmit={() => {
+          if (item.isRemoved) {
+            toast.error("This RFQ has been removed and can no longer be responded to.");
+            return;
+          }
           if (!hasPermission("rxrfq.respond")) {
             toast.error("Responding to an RxRFQ requires a verified professional account.");
             return;

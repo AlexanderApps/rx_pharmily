@@ -12,6 +12,7 @@ import LoadingImage from "@/shared/components/loading-image";
 import MediscopeNamePlaceholder from "@/features/mediscope/components/mediscope-name-placeholder";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useMediscopeStore } from "@/features/mediscope/hooks/use-mediscope-data";
+import ModerationControl from "@/features/content-moderation/components/moderation-control";
 import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 import { MediscopeResponseFormData } from "@/features/mediscope/types/mediscope.types";
 import MediscopeResponseSheet from "@/features/mediscope/components/mediscope-response-sheet";
@@ -55,7 +56,7 @@ export default function MediscopeMarketDetailsScreen() {
     );
   }
 
-  const canRespond = request.status === "published" && hasPermission("mediscope.respond");
+  const canRespond = request.status === "published" && !request.isRemoved && hasPermission("mediscope.respond");
 
   const handleSubmitResponse = async (data: MediscopeResponseFormData) => {
     const ok = await addResponse(data);
@@ -115,6 +116,12 @@ export default function MediscopeMarketDetailsScreen() {
       </View>
 
       <ScrollView contentContainerClassName="px-4 pt-4">
+        <ModerationControl
+          contentType="mediscope_request"
+          isRemoved={request.isRemoved}
+          removedReason={request.removedReason}
+        />
+
         {request.imageUrl ? (
           <LoadingImage
             source={{ uri: request.imageUrl }}

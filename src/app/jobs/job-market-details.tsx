@@ -10,6 +10,7 @@ import DetailSkeleton from "@/shared/components/detail-skeleton";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useRxJobsStore } from "@/features/rxjobs/hooks/use-rxjobs-data";
+import ModerationControl from "@/features/content-moderation/components/moderation-control";
 import { ApplicationStatus, JobStatus, getJobPosterEntity } from "@/features/rxjobs/types/rxjobs.types";
 
 const fmtDate = (d?: Date) =>
@@ -146,7 +147,7 @@ export default function JobMarketDetailsScreen() {
   const statusMeta = JOB_STATUS_META[job.status];
   const posterEntity = getJobPosterEntity(job);
   const statusColor = colors[statusMeta.tone];
-  const canApply = job.status === "open" && !hasApplied(job.id);
+  const canApply = job.status === "open" && !job.isRemoved && !hasApplied(job.id);
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
@@ -201,6 +202,12 @@ export default function JobMarketDetailsScreen() {
       </View>
 
       <ScrollView contentContainerClassName="px-4 pt-4 pb-6">
+        <ModerationControl
+          contentType="job"
+          isRemoved={job.isRemoved}
+          removedReason={job.removedReason}
+        />
+
         {/* Posted by */}
         <View className="flex-row items-center gap-2.5 mb-3.5">
           <ClickableAvatar

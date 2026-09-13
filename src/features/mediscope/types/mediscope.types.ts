@@ -53,6 +53,10 @@ export interface MediscopeRequest {
   publishedAt?: Date;
   responseCount: number;
   fulfilledResponseId?: string;
+  isRemoved: boolean;
+  removedReason?: string;
+  removedBy?: string;
+  removedAt?: Date;
 }
 
 export interface MediscopeFormData {
@@ -80,6 +84,7 @@ export interface MediscopeCardData {
   submissionDeadline?: Date;
   responseCount: number;
   isOwner: boolean;
+  isRemoved: boolean;
 }
 
 export type MediscopeAvailability = "full" | "partial";
@@ -98,6 +103,10 @@ export interface MediscopeResponse {
   comment?: string;
   createdAt: Date;
   createdBy: string;
+  isRemoved: boolean;
+  removedReason?: string;
+  removedBy?: string;
+  removedAt?: Date;
 }
 
 export interface MediscopeResponseFormData {

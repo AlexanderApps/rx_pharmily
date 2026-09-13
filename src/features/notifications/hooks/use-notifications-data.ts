@@ -210,6 +210,20 @@ export const CATEGORY_META: NotificationCategoryMeta[] = [
     description: "A medication you requested for the catalog is accepted or rejected.",
     defaultEnabled: true,
   },
+  {
+    category: "ownership_transfer_decision",
+    section: "Account",
+    label: "Ownership request decisions",
+    description: "Your request to become the owner of a facility or organization is approved or rejected.",
+    defaultEnabled: true,
+  },
+  {
+    category: "ownership_transferred",
+    section: "Account",
+    label: "Ownership changed",
+    description: "You're no longer the owner of a facility or organization you used to own.",
+    defaultEnabled: true,
+  },
 ];
 
 function buildDefaultSettings(): NotificationSettings {

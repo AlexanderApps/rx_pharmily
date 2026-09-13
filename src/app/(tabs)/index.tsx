@@ -169,7 +169,7 @@ export default function HomeScreen() {
       .map((ad) => ({ kind: "ad", key: `ad-${ad.id}`, ad }));
 
     const mediscopeItems: FeedItem[] = mediscopeRequests
-      .filter((r) => r.status === "published")
+      .filter((r) => r.status === "published" && !r.isRemoved)
       .map((r) => ({
         kind: "mediscope",
         key: `mediscope-${r.id}`,
@@ -177,7 +177,7 @@ export default function HomeScreen() {
       }));
 
     const donationItems: FeedItem[] = donations
-      .filter((d) => d.status === "opened")
+      .filter((d) => d.status === "opened" && !d.isRemoved)
       .map((d) => ({
         kind: "donation",
         key: `donation-${d.id}`,
@@ -185,11 +185,11 @@ export default function HomeScreen() {
       }));
 
     const jobItems: FeedItem[] = jobs
-      .filter((j) => j.status === "open")
+      .filter((j) => j.status === "open" && !j.isRemoved)
       .map((j) => ({ kind: "job", key: `job-${j.id}`, job: j }));
 
     const rfqItems: FeedItem[] = rxrfqs
-      .filter((r) => r.status === "published")
+      .filter((r) => r.status === "published" && !r.isRemoved)
       .map((r) => ({ kind: "rfq", key: `rfq-${r.id}`, rfq: r }));
 
     const allItems: FeedItem[] = [

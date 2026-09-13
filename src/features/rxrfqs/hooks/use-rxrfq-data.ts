@@ -75,6 +75,10 @@ function mapRfqRow(row: any): RxRfqMarketPlaceData {
     awardedVendorId: row.awarded_vendor_id ?? undefined,
     awardDate: row.award_date ? new Date(row.award_date) : undefined,
     justificationNotes: row.justification_notes ?? undefined,
+    isRemoved: row.is_removed ?? false,
+    removedReason: row.removed_reason ?? undefined,
+    removedBy: row.removed_by ?? undefined,
+    removedAt: row.removed_at ? new Date(row.removed_at) : undefined,
   };
 }
 
@@ -123,6 +127,10 @@ function mapResponseRow(row: any, vendorFacilityName: string): RxRfqResponseData
     totalRequiredCosts: Number(row.total_required_costs),
     totalOptionalCosts: Number(row.total_optional_costs),
     grandTotal: Number(row.grand_total),
+    isRemoved: row.is_removed ?? false,
+    removedReason: row.removed_reason ?? undefined,
+    removedBy: row.removed_by ?? undefined,
+    removedAt: row.removed_at ? new Date(row.removed_at) : undefined,
   };
 }
 
@@ -172,6 +180,7 @@ function toCardData(rfq: RxRfqMarketPlaceData): RxRfqCardData {
     submissionDeadline: rfq.submissionDeadline,
     productCount: rfq.productCount,
     responseCount: rfq.responseCount,
+    isRemoved: rfq.isRemoved,
   };
 }
 

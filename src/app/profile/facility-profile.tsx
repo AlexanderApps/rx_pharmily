@@ -28,6 +28,7 @@ import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { FacilityType, FacilityDeliveryOption } from "@/features/profile/types/profile.types";
 import KycSection from "@/features/profile/components/kyc-section";
 import ProfileUpdateRequestModal from "@/features/profile-updates/components/profile-update-request-modal";
+import OwnershipTransferRequestModal from "@/features/ownership-transfer/components/ownership-transfer-request-modal";
 import PhoneVerificationSheet from "@/features/profile/components/phone-verification-sheet";
 import { useFacilityFieldAccess } from "@/features/profile/hooks/use-facility-field-access";
 import ReferencePicker from "@/shared/components/forms/reference-picker";
@@ -193,6 +194,7 @@ export default function FacilityProfileScreen() {
 
   const isVerified = facility.kyc.status === "verified";
   const requestModalRef = useRef<BottomSheetModal>(null);
+  const ownershipTransferModalRef = useRef<BottomSheetModal>(null);
   const phoneVerificationRef = useRef<BottomSheetModal>(null);
   const isUserVerified = user.kyc.status === "verified";
   const isOwner = viewerRole === "owner";
@@ -337,6 +339,19 @@ export default function FacilityProfileScreen() {
               <MaterialCommunityIcons name="file-edit-outline" size={16} color={colors.primary} />
               <Text className="text-sm font-semibold" style={{ color: colors.primary }}>
                 Request Profile Update
+              </Text>
+            </Pressable>
+          )}
+
+          {isUserVerified && !isOwner && (
+            <Pressable
+              onPress={() => ownershipTransferModalRef.current?.present()}
+              className="flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl mb-1"
+              style={{ backgroundColor: colors.backgroundElement }}
+            >
+              <MaterialCommunityIcons name="account-key-outline" size={16} color={colors.primary} />
+              <Text className="text-sm font-semibold" style={{ color: colors.primary }}>
+                Request Ownership
               </Text>
             </Pressable>
           )}
@@ -955,6 +970,14 @@ export default function FacilityProfileScreen() {
           registrationNumber: facility.registrationNumber ?? null,
         }}
         onSubmitted={() => requestModalRef.current?.dismiss()}
+      />
+
+      <OwnershipTransferRequestModal
+        ref={ownershipTransferModalRef}
+        entityType="facility"
+        entityId={facility.id}
+        entityName={facility.name}
+        onSubmitted={() => ownershipTransferModalRef.current?.dismiss()}
       />
 
       <PhoneVerificationSheet

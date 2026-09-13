@@ -60,8 +60,10 @@ export interface RxRfqsData extends RxRfqsFormData {
   publishedAt: Date;
   createdAt: Date;
   createdBy: string;
-  isBanned: boolean;
-  bannedAt: Date;
+  isRemoved: boolean;
+  removedReason?: string;
+  removedBy?: string;
+  removedAt?: Date;
   productCount: number;
   responseCount: number;
   awardedVendorId?: string;
@@ -82,11 +84,12 @@ export interface RxRfqCardData {
   submissionDeadline: Date;
   productCount: number;
   responseCount: number;
+  isRemoved: boolean;
 }
 
 export interface RxRfqMarketPlaceData extends Omit<
   RxRfqsData,
-  "isBanned" | "bannedAt" | "justificationNotes"
+  "justificationNotes"
 > {}
 
 export type RxRfqResponseStatusType =
@@ -148,6 +151,10 @@ export interface RxRfqResponseData extends RxRfqResponseFormData {
   totalRequiredCosts: number;
   totalOptionalCosts: number;
   grandTotal: number;
+  isRemoved: boolean;
+  removedReason?: string;
+  removedBy?: string;
+  removedAt?: Date;
 }
 
 export interface RxRfqResponseCardData {

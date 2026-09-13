@@ -43,6 +43,7 @@ export default function SearchJobs() {
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
     return jobs.filter((job) => {
+      if (job.isRemoved) return false;
       if (job.status !== "open" && job.postedBy !== currentUserId) return false;
       if (typeFilter && job.jobType !== typeFilter) return false;
       if (categoryFilter && !job.categories.includes(categoryFilter)) return false;

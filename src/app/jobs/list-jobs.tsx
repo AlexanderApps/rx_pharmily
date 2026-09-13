@@ -16,7 +16,7 @@ export default function ListJobs() {
   const { colors } = useTheme();
   const currentUserId = useAuthStore((state) => state.user?.id);
   const jobs = useRxJobsStore((state) => state.jobs);
-  const visibleJobs = jobs.filter((j) => j.status === "open" || j.postedBy === currentUserId);
+  const visibleJobs = jobs.filter((j) => !j.isRemoved && (j.status === "open" || j.postedBy === currentUserId));
 
   return (
     <ThemedView style={{ flex: 1 }}>

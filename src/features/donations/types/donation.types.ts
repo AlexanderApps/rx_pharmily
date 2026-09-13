@@ -92,6 +92,10 @@ export interface Donation {
   createdAt: Date;
   createdBy: string;
   responseCount: number;
+  isRemoved: boolean;
+  removedReason?: string;
+  removedBy?: string;
+  removedAt?: Date;
 }
 
 // Shape used by the add/edit form — everything except the server-assigned
@@ -120,6 +124,7 @@ export interface DonationCardData {
   isActive: boolean;
   responseCount: number;
   isOwner: boolean;
+  isRemoved: boolean;
 }
 
 // ─── responses (claims) ────────────────────────────────────────────────
@@ -147,6 +152,10 @@ export interface DonationResponse {
   status: DonationResponseStatus;
   createdAt: Date;
   createdBy: string;
+  isRemoved: boolean;
+  removedReason?: string;
+  removedBy?: string;
+  removedAt?: Date;
 }
 
 export interface DonationResponseFormData {

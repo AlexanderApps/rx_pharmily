@@ -9,6 +9,7 @@ import { toast } from "@/shared/hooks/use-toast";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useDonationStore } from "@/features/donations/hooks/use-donation-data";
+import ModerationControl from "@/features/content-moderation/components/moderation-control";
 import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 import { DonationResponseFormData, isDonationItemAvailable, getExpiryTier } from "@/features/donations/types/donation.types";
 import DonationClaimSheet, {
@@ -57,7 +58,7 @@ export default function DonationMarketDetailsScreen() {
   }
 
   const activeItems = donation.donatedItems.filter(isDonationItemAvailable);
-  const canClaim = donation.status === "opened" && activeItems.length > 0 && hasPermission("donations.claim");
+  const canClaim = donation.status === "opened" && !donation.isRemoved && activeItems.length > 0 && hasPermission("donations.claim");
 
   const handleSubmitClaim = async (data: DonationResponseFormData) => {
     const ok = await addResponse(data);
@@ -134,6 +135,12 @@ export default function DonationMarketDetailsScreen() {
       </View>
 
       <ScrollView contentContainerClassName="px-4 pt-4">
+        <ModerationControl
+          contentType="donation"
+          isRemoved={donation.isRemoved}
+          removedReason={donation.removedReason}
+        />
+
         {/* Hero */}
         <View className="flex-row items-center gap-3 mb-3">
           <ClickableAvatar

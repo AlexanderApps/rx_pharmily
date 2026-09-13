@@ -11,6 +11,7 @@ import DetailSkeleton from "@/shared/components/detail-skeleton";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useRxJobsStore } from "@/features/rxjobs/hooks/use-rxjobs-data";
+import ModerationControl from "@/features/content-moderation/components/moderation-control";
 import {
   ApplicationStatus,
   JobStatus,
@@ -251,6 +252,12 @@ export default function JobDetailsScreen() {
       </View>
 
       <ScrollView contentContainerClassName="px-4 pt-4">
+        <ModerationControl
+          contentType="job"
+          isRemoved={job.isRemoved}
+          removedReason={job.removedReason}
+        />
+
         {/* Posted by */}
         <View className="flex-row items-center gap-2.5 mb-3.5">
           <ClickableAvatar

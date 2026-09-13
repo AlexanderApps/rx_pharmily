@@ -76,6 +76,7 @@ export default function RxJobsScreen() {
       jobs.filter(
         (j) =>
           j.urgency === "Immediate" &&
+          !j.isRemoved &&
           (j.status === "open" || j.postedBy === currentUserId),
       ),
     [jobs, currentUserId],
@@ -260,7 +261,7 @@ export default function RxJobsScreen() {
             onViewAllPress={() => router.push("/jobs/list-jobs")}
           >
             {[...jobs]
-              .filter((item) => item.status === "open")
+              .filter((item) => item.status === "open" && !item.isRemoved)
               .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
               .slice(0, 10)
               .map((item) => (

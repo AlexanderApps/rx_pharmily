@@ -53,6 +53,10 @@ function mapRequestRow(row: any): MediscopeRequest {
     publishedAt: row.published_at ? new Date(row.published_at) : undefined,
     responseCount: row.response_count,
     fulfilledResponseId: row.fulfilled_response_id ?? undefined,
+    isRemoved: row.is_removed ?? false,
+    removedReason: row.removed_reason ?? undefined,
+    removedBy: row.removed_by ?? undefined,
+    removedAt: row.removed_at ? new Date(row.removed_at) : undefined,
   };
 }
 
@@ -68,6 +72,10 @@ function mapResponseRow(row: any, vendorFacilityName: string): MediscopeResponse
     comment: row.comment ?? undefined,
     createdAt: new Date(row.created_at),
     createdBy: row.created_by,
+    isRemoved: row.is_removed ?? false,
+    removedReason: row.removed_reason ?? undefined,
+    removedBy: row.removed_by ?? undefined,
+    removedAt: row.removed_at ? new Date(row.removed_at) : undefined,
   };
 }
 
@@ -86,6 +94,7 @@ export function convertToCardData(request: MediscopeRequest): MediscopeCardData 
     submissionDeadline: request.submissionDeadline,
     responseCount: request.responseCount,
     isOwner: request.createdBy === useProfileStore.getState().user.id,
+    isRemoved: request.isRemoved,
   };
 }
 

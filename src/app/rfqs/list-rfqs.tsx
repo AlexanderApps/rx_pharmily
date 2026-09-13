@@ -21,7 +21,7 @@ export default function ListRFQs() {
   // available to respond to, so they don't belong in a browse of what's
   // currently open for quotes.
   const publishedRfqs = useMemo(
-    () => rxRfqData.filter((rfq) => rfq.status === "published"),
+    () => rxRfqData.filter((rfq) => rfq.status === "published" && !rfq.isRemoved),
     [rxRfqData],
   );
 

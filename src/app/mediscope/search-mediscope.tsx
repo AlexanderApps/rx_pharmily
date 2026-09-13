@@ -35,6 +35,7 @@ export default function SearchMediscope() {
     const q = search.trim().toLowerCase();
     return requests
       .filter((r) => {
+        if (r.isRemoved) return false;
         if (statusFilter && r.status !== statusFilter) return false;
         if (!q) return true;
         return (

@@ -13,6 +13,7 @@ import LoadingImage from "@/shared/components/loading-image";
 import MediscopeNamePlaceholder from "@/features/mediscope/components/mediscope-name-placeholder";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useMediscopeStore } from "@/features/mediscope/hooks/use-mediscope-data";
+import ModerationControl from "@/features/content-moderation/components/moderation-control";
 import { MediscopeStatus } from "@/features/mediscope/types/mediscope.types";
 import MediscopeResponseCard from "@/features/mediscope/components/mediscope-response-card";
 import PrintButton from "@/shared/components/print-button";
@@ -183,6 +184,12 @@ export default function MediscopeDetailsScreen() {
       />
 
       <ScrollView contentContainerClassName="p-4 gap-3.5">
+        <ModerationControl
+          contentType="mediscope_request"
+          isRemoved={request.isRemoved}
+          removedReason={request.removedReason}
+        />
+
         {request.imageUrl ? (
           <LoadingImage
             source={{ uri: request.imageUrl }}

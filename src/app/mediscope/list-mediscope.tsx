@@ -31,7 +31,7 @@ export default function ListMediscope() {
     const userId = useProfileStore.getState().user.id;
     return [...requests]
       .filter((r) =>
-        mine === "true" ? r.createdBy === userId : r.status === "published",
+        mine === "true" ? r.createdBy === userId : r.status === "published" && !r.isRemoved,
       )
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .map(convertToCardData);

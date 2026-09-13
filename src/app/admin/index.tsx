@@ -16,6 +16,7 @@ import { isAdminRole, isSuperadminRole } from "@/features/auth/types/auth.types"
 import { useBreakpoint } from "@/shared/hooks/use-breakpoint";
 import { usePaymentsStore } from "@/features/payments/hooks/use-payments-data";
 import { useProfileUpdateStore } from "@/features/profile-updates/hooks/use-profile-update-data";
+import { useOwnershipTransferStore } from "@/features/ownership-transfer/hooks/use-ownership-transfer-data";
 
 export default function AdminHubScreen() {
   const { colors } = useTheme();
@@ -49,6 +50,8 @@ export default function AdminHubScreen() {
   const formularyRequests = useCatalogStore((state) => state.formularyRequests);
   const profileUpdateRequests = useProfileUpdateStore((state) => state.requests);
   const fetchPendingProfileUpdateRequests = useProfileUpdateStore((state) => state.fetchPendingRequests);
+  const ownershipTransferRequests = useOwnershipTransferStore((state) => state.requests);
+  const fetchPendingOwnershipTransferRequests = useOwnershipTransferStore((state) => state.fetchPendingRequests);
   const facilityCreationRequests = useProfileStore((state) => state.facilityCreationRequests);
   const organizationCreationRequests = useProfileStore(
     (state) => state.organizationCreationRequests,
@@ -84,6 +87,7 @@ export default function AdminHubScreen() {
     fetchPendingPayments();
     fetchRxLinkRequests();
     fetchPendingProfileUpdateRequests();
+    fetchPendingOwnershipTransferRequests();
   }, []);
 
   const pendingAdsCount = useMemo(
@@ -118,6 +122,10 @@ export default function AdminHubScreen() {
   const pendingProfileUpdateCount = useMemo(
     () => profileUpdateRequests.filter((r) => r.status === "pending").length,
     [profileUpdateRequests],
+  );
+  const pendingOwnershipTransferCount = useMemo(
+    () => ownershipTransferRequests.filter((r) => r.status === "pending").length,
+    [ownershipTransferRequests],
   );
   const pendingFacilityOrgRequestsCount = useMemo(
     () =>
@@ -219,6 +227,25 @@ export default function AdminHubScreen() {
       count: 0,
       countLabel: "manage",
       route: "/admin/moderation",
+    },
+    {
+      key: "ownership-transfer",
+      title: "Ownership Transfer Requests",
+      description: "Review requests to take over ownership of a facility or organization.",
+      icon: "account-key-outline" as const,
+      color: "#dc2626",
+      count: pendingOwnershipTransferCount,
+      route: "/admin/ownership-transfer-requests",
+    },
+    {
+      key: "content-moderation",
+      title: "Content Moderation",
+      description: "Search RxRFQ, MediScope, and Jobs (requests and responses) by code or id, then remove with a reason.",
+      icon: "file-search-outline" as const,
+      color: "#dc2626",
+      count: 0,
+      countLabel: "manage",
+      route: "/admin/content-moderation",
     },
     {
       key: "reference-data",
