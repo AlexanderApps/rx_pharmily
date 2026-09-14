@@ -23,6 +23,7 @@ import { toast } from "@/shared/hooks/use-toast";
 import ListSkeleton from "@/shared/components/list-skeleton";
 import LoadingImage from "@/shared/components/loading-image";
 import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 import {
   FormularyRequest,
   FormularyRequestStatus,
@@ -148,6 +149,10 @@ export default function FormularyScreen() {
   };
 
   const handleSubmit = async () => {
+    if (!usePermissionsStore.getState().hasPermission("formulary.request")) {
+      toast.error("Submitting a formulary request requires a verified professional account.");
+      return;
+    }
     if (!productName.trim()) {
       Alert.alert("Missing name", "Give the medication a name.");
       return;
