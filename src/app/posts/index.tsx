@@ -7,6 +7,7 @@ import { usePostsStore } from "@/features/posts/hooks/use-posts-data";
 import PostCard from "@/features/posts/components/post-card";
 import PostComposerTrigger from "@/features/posts/components/post-composer-trigger";
 import ScreenHeader from "@/shared/components/screen-header";
+import PermissionGate from "@/shared/components/permission-gate";
 
 export default function PostsFeedScreen() {
   const { colors } = useTheme();
@@ -21,6 +22,7 @@ export default function PostsFeedScreen() {
   );
 
   return (
+    <PermissionGate permission="posts.view" featureName="Community">
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       <ScreenHeader title="Community" />
 
@@ -45,5 +47,6 @@ export default function PostsFeedScreen() {
         )}
       />
     </SafeAreaView>
+    </PermissionGate>
   );
 }

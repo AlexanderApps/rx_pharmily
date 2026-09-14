@@ -14,6 +14,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import ScreenHeader from "@/shared/components/screen-header";
+import PermissionGate from "@/shared/components/permission-gate";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
 import { usePostsStore } from "@/features/posts/hooks/use-posts-data";
 import PostCard from "@/features/posts/components/post-card";
@@ -68,6 +69,7 @@ export default function PostDetailsScreen() {
   };
 
   return (
+    <PermissionGate permission="posts.view" featureName="Community">
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       {/* Top Header Section */}
       <ScreenHeader title="Post" />
@@ -146,5 +148,6 @@ export default function PostDetailsScreen() {
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </PermissionGate>
   );
 }

@@ -16,6 +16,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { usePostsStore } from "@/features/posts/hooks/use-posts-data";
 import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
+import PermissionGate from "@/shared/components/permission-gate";
 import { toast } from "@/shared/hooks/use-toast";
 import { PostType, PostMedia } from "@/features/posts/types/posts.types";
 import MediaPicker from "@/features/posts/components/media-picker";
@@ -139,6 +140,7 @@ export default function CreatePostScreen() {
   };
 
   return (
+    <PermissionGate permission="posts.create" featureName="Posting">
     <SafeAreaView
       className="flex-1"
       style={{ backgroundColor: colors.background }}
@@ -523,5 +525,6 @@ export default function CreatePostScreen() {
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </PermissionGate>
   );
 }
