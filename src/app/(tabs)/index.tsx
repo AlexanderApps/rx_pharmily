@@ -146,6 +146,7 @@ export default function HomeScreen() {
   const fetchJobs = useRxJobsStore((state) => state.fetchJobs);
   const fetchRxRfqs = useRxRfqsStore((state) => state.fetchRxRfqs);
   const userRegion = useProfileStore((state) => state.user.region);
+  const isVerified = useProfileStore((state) => state.user.kyc.status === "verified");
   const hasPermission = usePermissionsStore((state) => state.hasPermission);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -403,6 +404,63 @@ export default function HomeScreen() {
     }
     return <View className="h-6" />;
   };
+
+  // Non-verified users don't get the feed at all — a simple, modern
+  // shortcut screen to the 3 features that don't require verification
+  // (RxVital, RxLink, RxHelp are 'public' tier; everything else in the
+  // feed — RxRFQs, MediScope, Donations, Jobs, community posts — is
+  // 'verified'-and-up), replacing the FYP rather than adding to it.
+  if (!isVerified) {
+    return (
+      <ThemedView className="flex-1">
+        <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
+          <MaxWidthLayout size="standard" style={{ flex: 1 }}>
+            <View className="flex-1 items-center justify-center px-6 gap-8">
+              <View className="items-center gap-2">
+                <MaterialCommunityIcons name="shield-check-outline" size={40} color={colors.primary} />
+                <Text className="text-xl font-bold text-center" style={{ color: colors.text }}>
+                  Get verified for full access
+                </Text>
+                <Text className="text-sm text-center leading-[20px]" style={{ color: colors.textSecondary }}>
+                  RxRFQs, MediScope, Donations, Jobs, and the community feed open up once your account is verified. In the meantime, here's what's available to you.
+                </Text>
+              </View>
+
+              <View className="w-full gap-3.5">
+                {[
+                  { label: "RxVital", description: "Track and log vital signs and health metrics.", icon: "heart-pulse" as const, color: "#dc2626", route: "/vitals" },
+                  { label: "RxLink", description: "Search and connect to source medications.", icon: "pill" as const, color: "#0d9488", route: "/rxlink" },
+                  { label: "RxHelp", description: "FAQ, consults, and asking a pharmacist.", icon: "lifebuoy" as const, color: "#2563eb", route: "/help" },
+                ].map((item) => (
+                  <Pressable
+                    key={item.label}
+                    onPress={() => router.push(item.route as any)}
+                    className="flex-row items-center gap-3.5 rounded-[18px] border p-4"
+                    style={{ backgroundColor: colors.backgroundSecondary, borderColor: colors.border }}
+                  >
+                    <View className="w-13 h-13 rounded-xl items-center justify-center" style={{ backgroundColor: item.color + "18" }}>
+                      <MaterialCommunityIcons name={item.icon} size={26} color={item.color} />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-base font-bold" style={{ color: colors.text }}>{item.label}</Text>
+                      <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>{item.description}</Text>
+                    </View>
+                    <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textSecondary} />
+                  </Pressable>
+                ))}
+              </View>
+
+              <Pressable onPress={() => router.push("/profile/user-profile" as any)}>
+                <Text className="text-sm font-semibold" style={{ color: colors.primary }}>
+                  Start verification
+                </Text>
+              </Pressable>
+            </View>
+          </MaxWidthLayout>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView className="flex-1">
