@@ -450,15 +450,19 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   startConversation: async (participant, context) => {
-    // Reuse an existing thread with this person only when starting a
-    // plain (context-free) chat — a "message the vendor about this RFQ"
-    // action always opens a fresh, purpose-anchored thread rather than
-    // dropping into whatever unrelated conversation already existed.
-    if (!context) {
-      const existing = get().conversations.find(
-        (c) => c.participant.kind === "user" && c.participant.id === participant.id && !c.context,
-      );
-      if (existing) return existing.id;
+    // Fast-path only — matches start_conversation's own (now
+    // unconditional) reuse logic, which is what's actually responsible
+    // for correctness regardless of what this local cache happens to
+    // know. One conversation per person, whether or not this call is
+    // also carrying a context to attach as a message.
+    const existing = get().conversations.find(
+      (c) => c.participant.kind === "user" && c.participant.id === participant.id,
+    );
+    if (existing) {
+      if (context) {
+        await get().sendMessage(existing.id, { linkedEntity: context });
+      }
+      return existing.id;
     }
 
     // Creating the conversation and its participant row(s) happens
@@ -489,11 +493,14 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   startFacilityConversation: async (facility, context) => {
-    if (!context) {
-      const existing = get().conversations.find(
-        (c) => c.participant.kind === "facility" && c.participant.id === facility.id && !c.context,
-      );
-      if (existing) return existing.id;
+    const existing = get().conversations.find(
+      (c) => c.participant.kind === "facility" && c.participant.id === facility.id,
+    );
+    if (existing) {
+      if (context) {
+        await get().sendMessage(existing.id, { linkedEntity: context });
+      }
+      return existing.id;
     }
 
     const { data: conversationId, error } = await supabase.rpc("start_conversation", {
