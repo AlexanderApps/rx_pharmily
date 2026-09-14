@@ -5,6 +5,9 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { ChatLinkedEntity } from "@/features/chat/types/chat.types";
 import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
+import { useMediscopeStore } from "@/features/mediscope/hooks/use-mediscope-data";
+import { useDonationStore } from "@/features/donations/hooks/use-donation-data";
+import { useRxJobsStore } from "@/features/rxjobs/hooks/use-rxjobs-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 
 const ENTITY_META: Record<
@@ -14,9 +17,11 @@ const ENTITY_META: Record<
   rfq: { icon: "file-document-outline", label: "RFQ" },
   mediscope: { icon: "heart-search", label: "Mediscope" },
   donation: { icon: "heart-outline", label: "Donation" },
+  job: { icon: "briefcase-outline", label: "Job" },
 };
 
 function navigateToEntity(entity: ChatLinkedEntity) {
+  const currentUserId = useAuthStore.getState().user?.id;
   switch (entity.type) {
     case "rfq": {
       // rxrfq-details-screen.tsx guards itself against non-owners
@@ -26,7 +31,6 @@ function navigateToEntity(entity: ChatLinkedEntity) {
       // someone else's RFQ lands directly on the correct public view
       // instead of briefly hitting a "this is a management view"
       // redirect screen first.
-      const currentUserId = useAuthStore.getState().user?.id;
       const rfq = useRxRfqsStore.getState().rxrfqMarketPlace.find((r) => r.id === entity.id);
       const isOwner = rfq?.createdBy === currentUserId;
       router.push({
@@ -35,14 +39,33 @@ function navigateToEntity(entity: ChatLinkedEntity) {
       });
       return;
     }
-    case "mediscope":
-      // Mediscope doesn't have a per-item detail screen yet — land on the
-      // feature's home screen rather than a broken deep link.
-      router.push("/mediscope");
+    case "mediscope": {
+      const request = useMediscopeStore.getState().requests.find((r) => r.id === entity.id);
+      const isOwner = request?.createdBy === currentUserId;
+      router.push({
+        pathname: isOwner ? "/mediscope/mediscope-details" : "/mediscope/mediscope-market-details",
+        params: { id: entity.id },
+      });
       return;
-    case "donation":
-      router.push("/donations");
+    }
+    case "donation": {
+      const donation = useDonationStore.getState().donations.find((d) => d.id === entity.id);
+      const isOwner = donation?.createdBy === currentUserId;
+      router.push({
+        pathname: isOwner ? "/donations/donation-details" : "/donations/donation-market-details",
+        params: { id: entity.id },
+      });
       return;
+    }
+    case "job": {
+      const job = useRxJobsStore.getState().jobs.find((j) => j.id === entity.id);
+      const isOwner = job?.postedBy === currentUserId;
+      router.push({
+        pathname: isOwner ? "/jobs/job-details" : "/jobs/job-market-details",
+        params: { id: entity.id },
+      });
+      return;
+    }
   }
 }
 

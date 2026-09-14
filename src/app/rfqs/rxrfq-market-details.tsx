@@ -1,6 +1,6 @@
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import {
   ScrollView,
   View,
@@ -18,6 +18,7 @@ import {
   FabGroup,
 } from "@/features/rxrfqs/components/rds";
 import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
+import ShareToChatSheet, { ShareToChatSheetRef } from "@/features/chat/components/share-to-chat-sheet";
 import ModerationControl from "@/features/content-moderation/components/moderation-control";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -32,6 +33,7 @@ const RxMarketplaceDetailScreen: React.FC = () => {
   const { colors } = useTheme();
   const router = useRouter();
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const shareToChatRef = useRef<ShareToChatSheetRef>(null);
   const [isContacting, setIsContacting] = useState(false);
 
   const rxRfqData = useRxRfqsStore((state) => state.rxrfqMarketPlace);
@@ -143,6 +145,13 @@ const RxMarketplaceDetailScreen: React.FC = () => {
             {format(item.publishedAt)}
           </Text>
         </View>
+        <Pressable
+          onPress={() => shareToChatRef.current?.present()}
+          className="w-9 h-9 justify-center items-center"
+          hitSlop={8}
+        >
+          <MaterialCommunityIcons name="share-outline" size={21} color={colors.text} />
+        </Pressable>
         {/* Status pill */}
         <View
           className="px-2.5 py-1 rounded-full"
@@ -316,6 +325,18 @@ const RxMarketplaceDetailScreen: React.FC = () => {
         onContact={handleContact}
         onShare={handleShare}
         onBookmark={() => setIsBookmarked((v) => !v)}
+      />
+
+      <ShareToChatSheet
+        ref={shareToChatRef}
+        entity={{
+          type: "rfq",
+          id: item.id,
+          code: item.code,
+          title: facilityName,
+          subtitle: `${item.productCount} item${item.productCount === 1 ? "" : "s"}`,
+          status: item.status,
+        }}
       />
     </SafeAreaView>
   );

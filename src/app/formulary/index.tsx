@@ -89,7 +89,7 @@ export default function FormularyScreen() {
   );
 
   useEffect(() => {
-    fetchFormularyRequests();
+    fetchFormularyRequests("mine");
   }, []);
 
   const [showForm, setShowForm] = useState(false);

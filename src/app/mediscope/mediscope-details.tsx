@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,6 +17,7 @@ import ModerationControl from "@/features/content-moderation/components/moderati
 import { MediscopeStatus } from "@/features/mediscope/types/mediscope.types";
 import MediscopeResponseCard from "@/features/mediscope/components/mediscope-response-card";
 import PrintButton from "@/shared/components/print-button";
+import ShareToChatSheet, { ShareToChatSheetRef } from "@/features/chat/components/share-to-chat-sheet";
 import { buildMediscopeSummaryHtml } from "@/features/mediscope/utils/mediscope-pdf";
 
 const fmtDate = (d?: Date) =>
@@ -57,6 +58,7 @@ export default function MediscopeDetailsScreen() {
   }, [id]);
 
   const request = useMemo(() => requests.find((r) => r.id === id), [requests, id]);
+  const shareToChatRef = useRef<ShareToChatSheetRef>(null);
   const responses = useMemo(
     () => (id ? (responsesByRequest[id] ?? []) : []),
     [responsesByRequest, id],
@@ -179,6 +181,13 @@ export default function MediscopeDetailsScreen() {
               fileName={`MediScope-${request.code}`}
               getHtml={() => buildMediscopeSummaryHtml(request, responses)}
             />
+            <Pressable
+              onPress={() => shareToChatRef.current?.present()}
+              className="w-[34px] h-[34px] rounded-[10px] items-center justify-center"
+              style={{ backgroundColor: colors.backgroundSecondary }}
+            >
+              <MaterialCommunityIcons name="share-outline" size={18} color={colors.text} />
+            </Pressable>
           </>
         }
       />
@@ -402,6 +411,18 @@ export default function MediscopeDetailsScreen() {
 
         <View className="h-6" />
       </ScrollView>
+
+      <ShareToChatSheet
+        ref={shareToChatRef}
+        entity={{
+          type: "mediscope",
+          id: request.id,
+          code: request.code,
+          title: request.product,
+          subtitle: request.facilityName,
+          status: request.status,
+        }}
+      />
     </SafeAreaView>
   );
 }

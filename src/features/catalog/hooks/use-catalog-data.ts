@@ -62,7 +62,7 @@ type CatalogStore = {
   // never see them, which is also what the database's own RLS enforces
   // independently of whatever this fetch asks for.
   fetchProducts: (includeDeleted?: boolean) => Promise<void>;
-  fetchFormularyRequests: () => Promise<void>;
+  fetchFormularyRequests: (scope?: "mine" | "all") => Promise<void>;
 
   getProduct: (id: string) => Product | undefined;
   searchProducts: (query: string) => Product[];
@@ -120,12 +120,19 @@ export const useCatalogStore = create<CatalogStore>((set, get) => ({
     set({ products: (data ?? []).map(mapProductRow), isLoadingProducts: false });
   },
 
-  fetchFormularyRequests: async () => {
+  fetchFormularyRequests: async (scope = "all") => {
     set({ isLoadingFormularyRequests: true });
-    const { data, error } = await supabase
-      .from("formulary_requests")
-      .select("*")
-      .order("created_at", { ascending: false });
+    let query = supabase.from("formulary_requests").select("*").order("created_at", { ascending: false });
+    if (scope === "mine") {
+      // The user-facing /formulary screen explicitly scopes to its own
+      // requests — without this, an admin viewing that screen would see
+      // everyone's requests too, since the RLS policy's own admin-sees-
+      // all clause (there for the separate /admin/formulary-requests
+      // review screen) doesn't distinguish which screen is asking.
+      const userId = await requireUserId();
+      query = query.eq("created_by", userId);
+    }
+    const { data, error } = await query;
     if (error) {
       console.warn("[catalog] fetchFormularyRequests failed:", error.message);
       set({ isLoadingFormularyRequests: false });

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,6 +20,7 @@ import {
 } from "@/features/donations/types/donation.types";
 import DonationResponseCard from "@/features/donations/components/donation-response-card";
 import PrintButton from "@/shared/components/print-button";
+import ShareToChatSheet, { ShareToChatSheetRef } from "@/features/chat/components/share-to-chat-sheet";
 import { buildDonationItemListHtml } from "@/features/donations/utils/donation-pdf";
 
 const fmtDate = (d?: Date) =>
@@ -151,6 +152,7 @@ export default function DonationDetailsScreen() {
     () => donations.find((d) => d.id === id),
     [donations, id]
   );
+  const shareToChatRef = useRef<ShareToChatSheetRef>(null);
   const responses = useMemo(
     () => (id ? (responsesByDonation[id] ?? []) : []),
     [responsesByDonation, id]
@@ -299,6 +301,13 @@ export default function DonationDetailsScreen() {
               fileName={`Donation-${donation.code}-Items`}
               getHtml={() => buildDonationItemListHtml(donation)}
             />
+            <TouchableOpacity
+              onPress={() => shareToChatRef.current?.present()}
+              className="w-[34px] h-[34px] rounded-[10px] items-center justify-center"
+              style={{ backgroundColor: colors.backgroundSecondary }}
+            >
+              <MaterialCommunityIcons name="share-outline" size={18} color={colors.text} />
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={() =>
                 router.push({
@@ -581,6 +590,18 @@ export default function DonationDetailsScreen() {
 
         <View className="h-6" />
       </ScrollView>
+
+      <ShareToChatSheet
+        ref={shareToChatRef}
+        entity={{
+          type: "donation",
+          id: donation.id,
+          code: donation.code,
+          title: donation.facilityName,
+          subtitle: donation.facilityLocation,
+          status: donation.status,
+        }}
+      />
     </SafeAreaView>
   );
 }

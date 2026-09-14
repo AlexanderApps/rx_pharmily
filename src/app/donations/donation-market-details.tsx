@@ -16,6 +16,7 @@ import DonationClaimSheet, {
   DonationClaimSheetHandle,
 } from "@/features/donations/components/donation-claim-sheet";
 import PrintButton from "@/shared/components/print-button";
+import ShareToChatSheet, { ShareToChatSheetRef } from "@/features/chat/components/share-to-chat-sheet";
 import { buildDonationItemListHtml } from "@/features/donations/utils/donation-pdf";
 
 // Public view — anyone browsing the market lands here. Owners are routed to
@@ -27,6 +28,7 @@ export default function DonationMarketDetailsScreen() {
   const isLoadingDonations = useDonationStore((state) => state.isLoading);
   const addResponse = useDonationStore((state) => state.addResponse);
   const claimSheetRef = useRef<DonationClaimSheetHandle>(null);
+  const shareToChatRef = useRef<ShareToChatSheetRef>(null);
 
   const donation = useMemo(
     () => donations.find((d) => d.id === id),
@@ -131,6 +133,14 @@ export default function DonationMarketDetailsScreen() {
             size={20}
             color={colors.textSecondary}
           />
+        </Pressable>
+
+        <Pressable
+          onPress={() => shareToChatRef.current?.present()}
+          className="w-9 h-9 justify-center items-center"
+          hitSlop={8}
+        >
+          <MaterialCommunityIcons name="chat-plus-outline" size={20} color={colors.textSecondary} />
         </Pressable>
       </View>
 
@@ -328,6 +338,18 @@ export default function DonationMarketDetailsScreen() {
         donationId={donation.id}
         items={donation.donatedItems}
         onSubmit={handleSubmitClaim}
+      />
+
+      <ShareToChatSheet
+        ref={shareToChatRef}
+        entity={{
+          type: "donation",
+          id: donation.id,
+          code: donation.code,
+          title: donation.facilityName,
+          subtitle: donation.facilityLocation,
+          status: donation.status,
+        }}
       />
     </SafeAreaView>
   );

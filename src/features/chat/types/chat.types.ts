@@ -10,7 +10,7 @@
 // conversation's bubbles correctly show which specific member sent each
 // message, not just "the facility."
 
-export type ChatLinkedEntityType = "rfq" | "mediscope" | "donation";
+export type ChatLinkedEntityType = "rfq" | "mediscope" | "donation" | "job";
 
 export type ChatMediaType = "image" | "video";
 

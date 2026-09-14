@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { View, Text, Pressable, ScrollView, TextInput, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -11,6 +11,7 @@ import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useRxJobsStore } from "@/features/rxjobs/hooks/use-rxjobs-data";
 import ModerationControl from "@/features/content-moderation/components/moderation-control";
+import ShareToChatSheet, { ShareToChatSheetRef } from "@/features/chat/components/share-to-chat-sheet";
 import { ApplicationStatus, JobStatus, getJobPosterEntity } from "@/features/rxjobs/types/rxjobs.types";
 
 const fmtDate = (d?: Date) =>
@@ -78,6 +79,7 @@ export default function JobMarketDetailsScreen() {
   }, []);
 
   const job = useMemo(() => jobs.find((j) => j.id === id), [jobs, id]);
+  const shareToChatRef = useRef<ShareToChatSheetRef>(null);
   const myApplication = useMemo(
     () => (job ? applications.find((a) => a.jobId === job.id && a.applicantId === currentUserId) : undefined),
     [applications, job, currentUserId],
@@ -198,6 +200,13 @@ export default function JobMarketDetailsScreen() {
             size={18}
             color={isSaved(job.id) ? colors.primary : colors.text}
           />
+        </Pressable>
+        <Pressable
+          onPress={() => shareToChatRef.current?.present()}
+          className="w-9 h-9 rounded-[10px] justify-center items-center"
+          style={{ backgroundColor: colors.backgroundSecondary }}
+        >
+          <MaterialCommunityIcons name="share-outline" size={18} color={colors.text} />
         </Pressable>
       </View>
 
@@ -399,6 +408,18 @@ export default function JobMarketDetailsScreen() {
           </View>
         )}
       </ScrollView>
+
+      <ShareToChatSheet
+        ref={shareToChatRef}
+        entity={{
+          type: "job",
+          id: job.id,
+          code: job.id.slice(0, 8),
+          title: job.title,
+          subtitle: job.companyName,
+          status: job.status,
+        }}
+      />
     </SafeAreaView>
   );
 }

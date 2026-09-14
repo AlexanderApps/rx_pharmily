@@ -29,6 +29,7 @@ import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import ModerationControl from "@/features/content-moderation/components/moderation-control";
+import ShareToChatSheet, { ShareToChatSheetRef } from "@/features/chat/components/share-to-chat-sheet";
 import {
   useRxRfqsStore,
   convertResponseDataToCardData,
@@ -64,6 +65,7 @@ const RxRfqDetailsScreen: React.FC = () => {
   const currentUserId = useAuthStore((state) => state.user?.id);
 
   const actionsSheetRef = useRef<BottomSheetModal>(null);
+  const shareToChatRef = useRef<ShareToChatSheetRef>(null);
   const extendSheetRef = useRef<BottomSheetModal>(null);
 
   const rxRfqData = useRxRfqsStore((state) => state.rxrfqMarketPlace);
@@ -259,6 +261,17 @@ const RxRfqDetailsScreen: React.FC = () => {
               )
             }
           />
+
+          <TouchableOpacity
+            onPress={() => shareToChatRef.current?.present()}
+            className="p-1.5"
+          >
+            <MaterialCommunityIcons
+              name="share-outline"
+              size={20}
+              color={colors.text}
+            />
+          </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => actionsSheetRef.current?.present()}
@@ -748,6 +761,18 @@ const RxRfqDetailsScreen: React.FC = () => {
           responseCount={responses.length}
           onClose={() => {}}
           onAction={handleStatusAction}
+        />
+
+        <ShareToChatSheet
+          ref={shareToChatRef}
+          entity={{
+            type: "rfq",
+            id: rfq.id,
+            code: rfq.code,
+            title: rfq.code,
+            subtitle: `${rfq.productCount} item${rfq.productCount === 1 ? "" : "s"}`,
+            status: rfq.status,
+          }}
         />
 
         <RxRfqExtendDeadlineSheet
