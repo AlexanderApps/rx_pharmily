@@ -5,6 +5,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { isAdminRole } from "@/features/auth/types/auth.types";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 import { useGlobalSearchStore } from "@/shared/hooks/use-global-search";
 import { SEARCH_COMMANDS, SearchCommand } from "@/shared/utils/command-registry";
 
@@ -20,6 +21,7 @@ const GlobalSearchModal: React.FC = () => {
   const isOpen = useGlobalSearchStore((state) => state.isOpen);
   const close = useGlobalSearchStore((state) => state.close);
   const isAdmin = useAuthStore((state) => isAdminRole(state.profile?.accountRole));
+  const hasPermission = usePermissionsStore((state) => state.hasPermission);
 
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -28,10 +30,12 @@ const GlobalSearchModal: React.FC = () => {
   // Admin-only commands are filtered out of the searchable set entirely
   // for non-admins — not just hidden by category grouping — so an admin
   // action can never appear as a result for a regular user no matter
-  // what they type.
+  // what they type. Same treatment for permission-gated commands: a
+  // non-verified user typing "post donation" gets no result, rather
+  // than a result that then blocks them once they've already navigated.
   const visibleCommands = useMemo(
-    () => SEARCH_COMMANDS.filter((c) => !c.adminOnly || isAdmin),
-    [isAdmin],
+    () => SEARCH_COMMANDS.filter((c) => (!c.adminOnly || isAdmin) && (!c.permission || hasPermission(c.permission))),
+    [isAdmin, hasPermission],
   );
 
   const results = useMemo(() => {

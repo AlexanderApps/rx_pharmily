@@ -23,6 +23,7 @@ import { toast } from "@/shared/hooks/use-toast";
 import ListSkeleton from "@/shared/components/list-skeleton";
 import LoadingImage from "@/shared/components/loading-image";
 import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
+import PermissionGate from "@/shared/components/permission-gate";
 import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 import {
   FormularyRequest,
@@ -177,6 +178,7 @@ export default function FormularyScreen() {
   };
 
   return (
+    <PermissionGate permission="formulary.view" featureName="Formulary">
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       {/* Header */}
       <ScreenHeader
@@ -385,6 +387,7 @@ export default function FormularyScreen() {
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
+    </PermissionGate>
   );
 }
 

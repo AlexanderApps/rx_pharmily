@@ -15,6 +15,13 @@ export interface SearchCommand {
   // just hidden by CSS, so there's nothing to discover by inspecting
   // the page.
   adminOnly?: boolean;
+  // The permission key this command's destination is actually gated
+  // behind (matches the key used elsewhere via hasPermission). Same
+  // filtering treatment as adminOnly — the entry is removed from the
+  // searchable set entirely for someone who lacks it, not just styled
+  // differently, so a non-verified user typing "post donation" gets no
+  // result rather than a result that then blocks them on arrival.
+  permission?: string;
 }
 
 // Add or remove a command by editing this array — nothing else needs to
@@ -24,26 +31,26 @@ export interface SearchCommand {
 export const SEARCH_COMMANDS: SearchCommand[] = [
   // ─── Navigate ─────────────────────────────────────────────────────
   { id: "nav-home", label: "Home", category: "Navigate", icon: "home-outline", route: "/(tabs)" },
-  { id: "nav-community", label: "Community", keywords: ["posts", "feed"], category: "Navigate", icon: "account-group-outline", route: "/posts" },
-  { id: "nav-rfqs", label: "RxRFQs", keywords: ["rfq", "request for quote", "marketplace"], category: "Navigate", icon: "file-document-outline", route: "/rfqs" },
-  { id: "nav-donations", label: "Donations", category: "Navigate", icon: "heart-outline", route: "/donations" },
-  { id: "nav-mediscope", label: "MediScope", keywords: ["mediscope requests"], category: "Navigate", icon: "heart-search", route: "/mediscope" },
-  { id: "nav-jobs", label: "RxJobs", keywords: ["jobs", "careers"], category: "Navigate", icon: "office-building-outline", route: "/jobs" },
-  { id: "nav-ads", label: "RxAds", keywords: ["ads", "advertising"], category: "Navigate", icon: "bullhorn-outline", route: "/ads" },
-  { id: "nav-chat", label: "RxChat", keywords: ["chat", "messages"], category: "Navigate", icon: "chat-outline", route: "/chat" },
-  { id: "nav-formulary", label: "Formulary", category: "Navigate", icon: "clipboard-plus-outline", route: "/formulary" },
-  { id: "nav-vitals", label: "RxVitals", keywords: ["vitals"], category: "Navigate", icon: "heart-pulse", route: "/vitals" },
-  { id: "nav-help", label: "RxHelp", keywords: ["help", "consult", "support"], category: "Navigate", icon: "lifebuoy", route: "/help" },
+  { id: "nav-community", label: "Community", keywords: ["posts", "feed"], category: "Navigate", icon: "account-group-outline", route: "/posts", permission: "posts.view" },
+  { id: "nav-rfqs", label: "RxRFQs", keywords: ["rfq", "request for quote", "marketplace"], category: "Navigate", icon: "file-document-outline", route: "/rfqs", permission: "rxrfq.view" },
+  { id: "nav-donations", label: "Donations", category: "Navigate", icon: "heart-outline", route: "/donations", permission: "donations.view" },
+  { id: "nav-mediscope", label: "MediScope", keywords: ["mediscope requests"], category: "Navigate", icon: "heart-search", route: "/mediscope", permission: "mediscope.view" },
+  { id: "nav-jobs", label: "RxJobs", keywords: ["jobs", "careers"], category: "Navigate", icon: "office-building-outline", route: "/jobs", permission: "jobs.view" },
+  { id: "nav-ads", label: "RxAds", keywords: ["ads", "advertising"], category: "Navigate", icon: "bullhorn-outline", route: "/ads", permission: "ads.view" },
+  { id: "nav-chat", label: "RxChat", keywords: ["chat", "messages"], category: "Navigate", icon: "chat-outline", route: "/chat", permission: "chat.use" },
+  { id: "nav-formulary", label: "Formulary", category: "Navigate", icon: "clipboard-plus-outline", route: "/formulary", permission: "formulary.view" },
+  { id: "nav-vitals", label: "RxVitals", keywords: ["vitals"], category: "Navigate", icon: "heart-pulse", route: "/vitals", permission: "vitals.view" },
+  { id: "nav-help", label: "RxHelp", keywords: ["help", "consult", "support"], category: "Navigate", icon: "lifebuoy", route: "/help", permission: "help.view" },
   { id: "nav-profile", label: "My Profile", keywords: ["account", "settings"], category: "Navigate", icon: "account-outline", route: "/profile" },
   { id: "nav-notifications", label: "Notifications", category: "Navigate", icon: "bell-outline", route: "/notifications" },
 
   // ─── Create ───────────────────────────────────────────────────────
-  { id: "create-ad", label: "Create Ad", keywords: ["new ad", "post ad", "advertise"], category: "Create", icon: "bullhorn-outline", route: "/ads/create-ad" },
-  { id: "create-post", label: "Create Post", keywords: ["new post", "share"], category: "Create", icon: "pencil-outline", route: "/posts/create-post" },
-  { id: "create-rfq", label: "Create RxRFQ", keywords: ["new rfq", "request for quote"], category: "Create", icon: "file-document-plus-outline", route: "/rfqs/add-rfqs" },
-  { id: "create-donation", label: "Post a Donation", keywords: ["new donation", "donate"], category: "Create", icon: "heart-plus-outline", route: "/donations/add-donation" },
-  { id: "create-mediscope", label: "Create MediScope Request", keywords: ["new mediscope"], category: "Create", icon: "heart-search", route: "/mediscope/add-mediscope-request" },
-  { id: "create-job", label: "Post a Job", keywords: ["new job", "hire"], category: "Create", icon: "briefcase-plus-outline", route: "/jobs/post-job" },
+  { id: "create-ad", label: "Create Ad", keywords: ["new ad", "post ad", "advertise"], category: "Create", icon: "bullhorn-outline", route: "/ads/create-ad", permission: "ads.create" },
+  { id: "create-post", label: "Create Post", keywords: ["new post", "share"], category: "Create", icon: "pencil-outline", route: "/posts/create-post", permission: "posts.create" },
+  { id: "create-rfq", label: "Create RxRFQ", keywords: ["new rfq", "request for quote"], category: "Create", icon: "file-document-plus-outline", route: "/rfqs/add-rfqs", permission: "rxrfq.create" },
+  { id: "create-donation", label: "Post a Donation", keywords: ["new donation", "donate"], category: "Create", icon: "heart-plus-outline", route: "/donations/add-donation", permission: "donations.create" },
+  { id: "create-mediscope", label: "Create MediScope Request", keywords: ["new mediscope"], category: "Create", icon: "heart-search", route: "/mediscope/add-mediscope-request", permission: "mediscope.create" },
+  { id: "create-job", label: "Post a Job", keywords: ["new job", "hire"], category: "Create", icon: "briefcase-plus-outline", route: "/jobs/post-job", permission: "jobs.post" },
 
   // ─── Admin ────────────────────────────────────────────────────────
   { id: "admin-hub", label: "Admin Hub", category: "Admin", icon: "shield-crown-outline", route: "/admin", adminOnly: true },
