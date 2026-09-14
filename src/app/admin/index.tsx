@@ -317,6 +317,16 @@ export default function AdminHubScreen() {
       countLabel: "manage",
       route: "/admin/role-management",
     });
+    cards.push({
+      key: "role-permissions",
+      title: "Role & Profession Permissions",
+      description: "Edit what each tier (profession, account role, KYC status) gets by default.",
+      icon: "tune-variant" as const,
+      color: "#9333ea",
+      count: 0,
+      countLabel: "manage",
+      route: "/admin/role-permissions",
+    });
   }
 
   return (

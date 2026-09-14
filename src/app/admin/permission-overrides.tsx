@@ -12,7 +12,9 @@ import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 
 const BASE_ROLE_META: Record<string, { label: string; color: string }> = {
   public: { label: "Public", color: "#64748b" },
-  verified: { label: "Verified", color: "#16a34a" },
+  verified_unclassified: { label: "Verified (unclassified)", color: "#0891b2" },
+  verified_pss: { label: "Verified (PSS)", color: "#0d9488" },
+  verified_pharmacist: { label: "Verified (Pharmacist)", color: "#16a34a" },
   admin: { label: "Admin", color: "#2563eb" },
   superadmin: { label: "Superadmin", color: "#9333ea" },
 };

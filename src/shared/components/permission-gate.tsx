@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -30,30 +31,36 @@ export default function PermissionGate({ permission, children, featureName }: Pe
     return <>{children}</>;
   }
 
+  // Explicit background here — this replaces (not wraps) whatever the
+  // caller would have rendered, including its own SafeAreaView/
+  // background, so this denied state needs its own theme-correct
+  // background rather than inheriting one that's no longer there.
   return (
-    <View className="flex-1 items-center justify-center px-8 gap-3">
-      <View
-        className="w-16 h-16 rounded-full items-center justify-center"
-        style={{ backgroundColor: colors.backgroundSecondary }}
-      >
-        <MaterialCommunityIcons name="shield-lock-outline" size={28} color={colors.textSecondary} />
-      </View>
-      <Text className="text-base font-bold text-center" style={{ color: colors.text }}>
-        Verification required
-      </Text>
-      <Text className="text-sm text-center leading-5" style={{ color: colors.textSecondary }}>
-        {featureName ?? "This feature"} is available to verified professional accounts. Submit your
-        KYC documents to get verified.
-      </Text>
-      <Pressable
-        onPress={() => router.push("/profile/user-profile")}
-        className="mt-2 px-5 py-2.5 rounded-xl"
-        style={{ backgroundColor: colors.primary }}
-      >
-        <Text className="text-sm font-semibold" style={{ color: colors.background }}>
-          Go to verification
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <View className="flex-1 items-center justify-center px-8 gap-3">
+        <View
+          className="w-16 h-16 rounded-full items-center justify-center"
+          style={{ backgroundColor: colors.backgroundSecondary }}
+        >
+          <MaterialCommunityIcons name="shield-lock-outline" size={28} color={colors.textSecondary} />
+        </View>
+        <Text className="text-base font-bold text-center" style={{ color: colors.text }}>
+          Verification required
         </Text>
-      </Pressable>
-    </View>
+        <Text className="text-sm text-center leading-5" style={{ color: colors.textSecondary }}>
+          {featureName ?? "This feature"} is available to verified professional accounts. Submit your
+          KYC documents to get verified.
+        </Text>
+        <Pressable
+          onPress={() => router.push("/profile/user-profile")}
+          className="mt-2 px-5 py-2.5 rounded-xl"
+          style={{ backgroundColor: colors.primary }}
+        >
+          <Text className="text-sm font-semibold" style={{ color: colors.background }}>
+            Go to verification
+          </Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
   );
 }

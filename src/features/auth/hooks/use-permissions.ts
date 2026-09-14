@@ -54,6 +54,14 @@ type PermissionsStore = {
     reason?: string,
   ) => Promise<{ ok: boolean; error?: string }>;
   clearOverride: (userId: string, permissionKey: string) => Promise<{ ok: boolean; error?: string }>;
+
+  // ---- Superadmin-facing: editing what each TIER gets by default -----
+  // Keyed by role, then permission_key — the full role_permissions
+  // table, not just one role/one user, since the editor screen shows
+  // every tier at once.
+  roleDefaults: Record<string, Record<string, boolean>>;
+  fetchRoleDefaults: () => Promise<void>;
+  setRoleDefault: (role: string, permissionKey: string, granted: boolean) => Promise<{ ok: boolean; error?: string }>;
 };
 
 export const usePermissionsStore = create<PermissionsStore>((set, get) => ({
@@ -64,6 +72,7 @@ export const usePermissionsStore = create<PermissionsStore>((set, get) => ({
   targetUserEffective: {},
   targetUserOverrides: [],
   targetUserBaseRole: null,
+  roleDefaults: {},
 
   fetchPermissions: async () => {
     let userId: string;
@@ -183,6 +192,43 @@ export const usePermissionsStore = create<PermissionsStore>((set, get) => ({
       return { ok: false, error: error.message };
     }
     await get().fetchTargetUser(userId);
+    return { ok: true };
+  },
+
+  fetchRoleDefaults: async () => {
+    const { data, error } = await supabase
+      .from("role_permissions")
+      .select("role, permission_key, granted");
+    if (error) {
+      console.warn("[permissions] fetchRoleDefaults failed:", error.message);
+      return;
+    }
+    const roleDefaults: Record<string, Record<string, boolean>> = {};
+    for (const row of data ?? []) {
+      if (!roleDefaults[row.role]) roleDefaults[row.role] = {};
+      roleDefaults[row.role][row.permission_key] = row.granted;
+    }
+    set({ roleDefaults });
+  },
+
+  setRoleDefault: async (role, permissionKey, granted) => {
+    const { error } = await supabase.from("role_permissions").upsert(
+      { role, permission_key: permissionKey, granted },
+      { onConflict: "role,permission_key" },
+    );
+    if (error) {
+      console.warn("[permissions] setRoleDefault failed:", error.message);
+      return { ok: false, error: error.message };
+    }
+    // Optimistic — avoids a full re-fetch of every tier's every
+    // permission for a single toggle; the editor screen already has
+    // exactly the shape it needs to patch in place.
+    set((state) => ({
+      roleDefaults: {
+        ...state.roleDefaults,
+        [role]: { ...state.roleDefaults[role], [permissionKey]: granted },
+      },
+    }));
     return { ok: true };
   },
 }));

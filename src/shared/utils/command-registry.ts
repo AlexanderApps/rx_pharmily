@@ -59,6 +59,7 @@ export const SEARCH_COMMANDS: SearchCommand[] = [
   { id: "admin-faq", label: "FAQ Management", category: "Admin", icon: "help-circle-outline", route: "/admin/faq-management", adminOnly: true },
   { id: "admin-payments", label: "Payments", keywords: ["pending payments", "confirm payment"], category: "Admin", icon: "cash-multiple", route: "/admin/payments", adminOnly: true },
   { id: "admin-roles", label: "Role Management", keywords: ["promote", "superadmin"], category: "Admin", icon: "shield-account", route: "/admin/role-management", adminOnly: true },
+  { id: "admin-role-permissions", label: "Role & Profession Permissions", keywords: ["tier defaults", "pharmacist", "pss", "kyc", "profession"], category: "Admin", icon: "tune-variant", route: "/admin/role-permissions", adminOnly: true },
   { id: "admin-permission-overrides", label: "Permission Overrides", keywords: ["rbac", "abac", "grant", "deny", "custom permission"], category: "Admin", icon: "account-key-outline", route: "/admin/permission-overrides", adminOnly: true },
   { id: "admin-profile-updates", label: "Profile Update Requests", keywords: ["profile changes", "verified profile edits"], category: "Admin", icon: "account-edit-outline", route: "/admin/profile-update-requests", adminOnly: true },
   { id: "admin-account-moderation", label: "Account Moderation", keywords: ["ban", "suspend", "restrict account"], category: "Admin", icon: "account-cancel-outline", route: "/admin/moderation", adminOnly: true },
