@@ -66,6 +66,12 @@ function mapConversationRow(row: any, myId: string): Conversation | null {
   const participantRows = row.conversation_participants ?? [];
   const mine = participantRows.find((p: any) => p.user_id === myId);
 
+  // "Delete for me" is per-participant — a row with deleted_at set
+  // means this specific user cleared it from their own list; the other
+  // participant's copy (their own conversation_participants row) is
+  // untouched and unaffected by this check.
+  if (mine?.deleted_at) return null;
+
   if (row.facility_id) {
     // Exact unread counts aren't tracked per facility member (that would
     // mean an atomic increment across every current member on every
@@ -113,6 +119,7 @@ function mapMessageRow(row: any): ChatMessage {
     media: mapMediaFromRow(row),
     createdAt: new Date(row.created_at),
     status: row.status,
+    isDeleted: row.is_deleted ?? false,
   };
 }
 
@@ -184,6 +191,13 @@ type ChatStore = {
   ) => Promise<void>;
 
   markConversationRead: (conversationId: string) => Promise<void>;
+
+  // Soft deletes — see this migration's own comment
+  // (20260935000000_chat_soft_delete.sql) for why these are two
+  // different shapes: a message is deleted globally by its sender,
+  // a conversation is deleted per-participant ("delete for me").
+  deleteMessage: (conversationId: string, messageId: string) => Promise<boolean>;
+  deleteConversation: (conversationId: string) => Promise<boolean>;
 
   startConversation: (
     participant: { id: string; name: string; facility: string; avatarColor: string },
@@ -447,6 +461,51 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     set((state) => ({
       conversations: state.conversations.map((c) => (c.id === conversationId ? { ...c, unreadCount: 0 } : c)),
     }));
+  },
+
+  // Global, sender-only — the RLS policy backing this only lets a
+  // sender update their own messages, so calling this on someone
+  // else's message fails harmlessly (RLS blocks the write) rather than
+  // needing a client-side ownership check to prevent it.
+  deleteMessage: async (conversationId, messageId) => {
+    const { error } = await supabase
+      .from("messages")
+      .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      .eq("id", messageId);
+    if (error) {
+      console.warn("[chat] deleteMessage failed:", error.message);
+      return false;
+    }
+    set((state) => ({
+      messagesByConversation: {
+        ...state.messagesByConversation,
+        [conversationId]: (state.messagesByConversation[conversationId] ?? []).map((m) =>
+          m.id === messageId ? { ...m, isDeleted: true, text: undefined, linkedEntity: undefined, media: undefined } : m,
+        ),
+      },
+    }));
+    return true;
+  },
+
+  // Per-participant ("delete for me") — only clears this user's own
+  // conversation_participants row, so the other participant's copy is
+  // completely unaffected. Removed from local state immediately so the
+  // list updates without waiting on a refetch.
+  deleteConversation: async (conversationId) => {
+    const myId = await requireUserId();
+    const { error } = await supabase
+      .from("conversation_participants")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("conversation_id", conversationId)
+      .eq("user_id", myId);
+    if (error) {
+      console.warn("[chat] deleteConversation failed:", error.message);
+      return false;
+    }
+    set((state) => ({
+      conversations: state.conversations.filter((c) => c.id !== conversationId),
+    }));
+    return true;
   },
 
   startConversation: async (participant, context) => {

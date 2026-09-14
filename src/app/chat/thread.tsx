@@ -19,6 +19,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { confirm } from "@/shared/hooks/use-confirm";
+import { toast } from "@/shared/hooks/use-toast";
 import { useChatStore } from "@/features/chat/hooks/use-chat-data";
 import PermissionGate from "@/shared/components/permission-gate";
 import {
@@ -61,6 +63,24 @@ export default function ChatThreadScreen() {
   const fetchMessages = useChatStore((state) => state.fetchMessages);
   const sendMessage = useChatStore((state) => state.sendMessage);
   const markConversationRead = useChatStore((state) => state.markConversationRead);
+  const deleteConversation = useChatStore((state) => state.deleteConversation);
+
+  const handleDeleteConversation = async () => {
+    if (!conversation) return;
+    const confirmed = await confirm({
+      title: "Delete this conversation?",
+      message: `This removes it from your own chat list. It won't be deleted for ${conversation.participant.name}.`,
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    const ok = await deleteConversation(conversation.id);
+    if (!ok) {
+      toast.error("Couldn't delete that conversation.");
+      return;
+    }
+    router.back();
+  };
 
   const listRef = useRef<FlatList>(null);
   const linkSheetRef = useRef<LinkPickerSheetHandle>(null);
@@ -288,6 +308,12 @@ export default function ChatThreadScreen() {
               : conversation.participant.facility}
           </Text>
         </View>
+        <TouchableOpacity
+          onPress={handleDeleteConversation}
+          className="p-1.5"
+        >
+          <MaterialCommunityIcons name="delete-outline" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       {/* Context banner */}

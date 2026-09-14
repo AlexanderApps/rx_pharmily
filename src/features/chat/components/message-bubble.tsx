@@ -5,6 +5,8 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { ChatMessage } from "@/features/chat/types/chat.types";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { useChatStore } from "@/features/chat/hooks/use-chat-data";
+import { confirm } from "@/shared/hooks/use-confirm";
+import { toast } from "@/shared/hooks/use-toast";
 import LinkedEntityCard from "@/features/chat/components/linked-entity-card";
 import ChatMediaMessage from "@/features/chat/components/chat-media-message";
 
@@ -30,6 +32,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const { colors } = useTheme();
   const currentUserId = useAuthStore((state) => state.user?.id);
   const retryMessage = useChatStore((state) => state.retryMessage);
+  const deleteMessage = useChatStore((state) => state.deleteMessage);
   const isOwn = message.senderId === currentUserId;
   const isFailed = message.status === "failed";
   // A linked RFQ/donation/etc. card or a photo/video already carries its
@@ -43,9 +46,45 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const metaColor = isOwn ? "rgba(255,255,255,0.75)" : colors.textSecondary;
   const readColor = isOwn ? "#fff" : colors.info;
 
+  const handleLongPress = async () => {
+    // Only the sender can delete their own message — matches the RLS
+    // policy backing deleteMessage, so a non-owner long-pressing here
+    // simply gets no menu rather than an action that would fail anyway.
+    if (!isOwn || message.isDeleted) return;
+    const confirmed = await confirm({
+      title: "Delete this message?",
+      message: "This can't be undone. It'll show as deleted to everyone in this conversation.",
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    const ok = await deleteMessage(message.conversationId, message.id);
+    if (!ok) toast.error("Couldn't delete that message.");
+  };
+
+  if (message.isDeleted) {
+    return (
+      <View
+        className="flex-row px-2.5 my-[5px]"
+        style={{ justifyContent: isOwn ? "flex-end" : "flex-start" }}
+      >
+        <View
+          className="px-3 py-2 rounded-2xl flex-row items-center gap-1.5"
+          style={{ backgroundColor: colors.backgroundElement, maxWidth: "80%" }}
+        >
+          <MaterialCommunityIcons name="cancel" size={14} color={colors.textSecondary} />
+          <Text className="text-[13px] italic" style={{ color: colors.textSecondary }}>
+            This message was deleted
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <Pressable
       onPress={isFailed ? () => retryMessage(message.conversationId, message.id) : undefined}
+      onLongPress={handleLongPress}
       className="flex-row px-2.5 my-[5px]"
       style={{ justifyContent: isOwn ? "flex-end" : "flex-start" }}
     >

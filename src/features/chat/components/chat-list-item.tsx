@@ -4,6 +4,9 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Conversation, ChatMessage } from "@/features/chat/types/chat.types";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
+import { useChatStore } from "@/features/chat/hooks/use-chat-data";
+import { confirm } from "@/shared/hooks/use-confirm";
+import { toast } from "@/shared/hooks/use-toast";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 
 const fmtRelative = (d: Date) => {
@@ -45,10 +48,24 @@ const ChatListItem: React.FC<ChatListItemProps> = ({
   const { colors } = useTheme();
   const { participant, unreadCount, context } = conversation;
   const isFacility = participant.kind === "facility";
+  const deleteConversation = useChatStore((state) => state.deleteConversation);
+
+  const handleLongPress = async () => {
+    const confirmed = await confirm({
+      title: `Delete this conversation?`,
+      message: `This removes it from your own chat list. It won't be deleted for ${participant.name}.`,
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    const ok = await deleteConversation(conversation.id);
+    if (!ok) toast.error("Couldn't delete that conversation.");
+  };
 
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={handleLongPress}
       className="flex-row gap-3 px-4 py-3 items-start active:bg-background-element"
       style={({ pressed }) => [
         { backgroundColor: pressed ? colors.backgroundElement : "transparent" },

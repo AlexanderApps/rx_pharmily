@@ -53,6 +53,7 @@ export interface ChatMessage {
   media?: ChatMedia;
   createdAt: Date;
   status: ChatMessageStatus;
+  isDeleted: boolean;
 }
 
 export interface ChatParticipantUser {
