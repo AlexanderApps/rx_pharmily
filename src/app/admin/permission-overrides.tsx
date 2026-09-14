@@ -154,14 +154,21 @@ export default function PermissionOverridesScreen() {
 
         <ScrollView contentContainerClassName="pb-6">
           {results.map((u) => {
+            // Mirrors get_user_base_role()'s SQL exactly — kept in sync
+            // by hand since this is a client-side preview of what the
+            // DB function would resolve to, not a call to it.
             const derivedRole =
               u.accountRole === "superadmin"
                 ? "superadmin"
                 : u.accountRole === "admin"
                   ? "admin"
-                  : u.kycStatus === "verified"
-                    ? "verified"
-                    : "public";
+                  : u.kycStatus === "verified" && u.profession === "Pharmacist"
+                    ? "verified_pharmacist"
+                    : u.kycStatus === "verified" && (u.profession === "Technician" || u.profession === "MCA")
+                      ? "verified_pss"
+                      : u.kycStatus === "verified"
+                        ? "verified_unclassified"
+                        : "public";
             const meta = BASE_ROLE_META[derivedRole];
             const initials = u.fullName
               .split(" ")
