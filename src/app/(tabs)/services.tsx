@@ -8,9 +8,16 @@ import { useTheme } from "@/shared/hooks/use-theme";
 
 import { router } from "expo-router";
 import ActionButton from "@/shared/components/action-button";
+import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 
 export default function ServiceScreen() {
   const { colors } = useTheme();
+  // A true regular user — never submitted KYC, so there's no reason to
+  // think they're pursuing professional verification — only sees the 3
+  // base features here too, same reasoning as the web sidebar and the
+  // home feed's own shortcut screen.
+  const kycStatus = useProfileStore((state) => state.user.kyc.status);
+  const isRegularUser = kycStatus === "unverified";
 
   return (
     <ThemedView className="flex-1 items-center justify-center">
@@ -41,6 +48,7 @@ export default function ServiceScreen() {
                 Quick Actions
               </Text>
               <View className="flex-row flex-wrap gap-3">
+                {!isRegularUser && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -56,6 +64,8 @@ export default function ServiceScreen() {
                     router.push("/jobs");
                   }}
                 />
+                )}
+                {!isRegularUser && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -71,6 +81,8 @@ export default function ServiceScreen() {
                     router.push("/rfqs");
                   }}
                 />
+                )}
+                {!isRegularUser && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -86,6 +98,8 @@ export default function ServiceScreen() {
                     router.push("/donations");
                   }}
                 />
+                )}
+                {!isRegularUser && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -101,6 +115,7 @@ export default function ServiceScreen() {
                     router.push("/mediscope");
                   }}
                 />
+                )}
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -116,6 +131,7 @@ export default function ServiceScreen() {
                     router.push("/rxlink");
                   }}
                 />
+                {!isRegularUser && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -131,6 +147,8 @@ export default function ServiceScreen() {
                     router.push("/chat");
                   }}
                 />
+                )}
+                {!isRegularUser && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -146,6 +164,7 @@ export default function ServiceScreen() {
                     router.push("/ads");
                   }}
                 />
+                )}
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -161,6 +180,7 @@ export default function ServiceScreen() {
                     router.push("/help");
                   }}
                 />
+                {!isRegularUser && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -176,6 +196,7 @@ export default function ServiceScreen() {
                     router.push("/formulary");
                   }}
                 />
+                )}
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons

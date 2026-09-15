@@ -210,6 +210,13 @@ export const useRxRfqsStore = create<RxRfqsStore>((set, get) => ({
 
   fetchRxRfqs: async () => {
     set({ isLoading: true });
+    // toCardData resolves facility info from useProfileStore's
+    // facilities array — without this, a resolution that races ahead
+    // of the facilities fetch would bake in "Unknown facility"
+    // permanently into the "Nearby Requests" cards.
+    if (!useProfileStore.getState().hasFetchedFacilities) {
+      await useProfileStore.getState().fetchFacilities();
+    }
     const { data, error } = await supabase
       .from("rxrfqs")
       .select(RFQ_SELECT)
@@ -228,6 +235,9 @@ export const useRxRfqsStore = create<RxRfqsStore>((set, get) => ({
   },
 
   fetchRxRfq: async (id) => {
+    if (!useProfileStore.getState().hasFetchedFacilities) {
+      await useProfileStore.getState().fetchFacilities();
+    }
     const { data, error } = await supabase.from("rxrfqs").select(RFQ_SELECT).eq("id", id).single();
     if (error || !data) {
       console.warn("[rxrfq] fetchRxRfq failed:", error?.message);

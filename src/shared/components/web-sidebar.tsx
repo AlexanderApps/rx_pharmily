@@ -84,6 +84,19 @@ const WebSidebar: React.FC = () => {
   const pathname = usePathname();
   const user = useProfileStore((state) => state.user);
   const isAdmin = useAuthStore((state) => isAdminRole(state.profile?.accountRole));
+  const kycStatus = useProfileStore((state) => state.user.kyc.status);
+  // A true regular user — never even submitted KYC, so there's no
+  // reason to think they're pursuing professional verification at all
+  // — only sees the 3 base features. Someone who's submitted (pending)
+  // or had a request rejected has shown intent, so they still see
+  // everything (gated appropriately once they try to use it), same as
+  // the home feed's own "Welcome" vs "Get verified" split.
+  const visiblePrimaryNav = kycStatus === "unverified"
+    ? PRIMARY_NAV.filter((item) => item.href === "/(tabs)")
+    : PRIMARY_NAV;
+  const visibleWorkspaceNav = kycStatus === "unverified"
+    ? WORKSPACE_NAV.filter((item) => ["/rxlink", "/vitals", "/help"].includes(item.href))
+    : WORKSPACE_NAV;
   const [desktopCollapsed, setDesktopCollapsedState] = useState(readPersistedCollapsed);
   const breakpoint = useBreakpoint();
   const isCompact = breakpoint === "compact";
@@ -260,7 +273,7 @@ const WebSidebar: React.FC = () => {
       )}
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="mb-1">{PRIMARY_NAV.map(renderItem)}</View>
+        <View className="mb-1">{visiblePrimaryNav.map(renderItem)}</View>
 
         {!collapsed && (
           <Text
@@ -272,7 +285,7 @@ const WebSidebar: React.FC = () => {
         )}
         {collapsed && <View className="mx-4 my-3 h-px" style={{ backgroundColor: colors.border }} />}
 
-        <View>{WORKSPACE_NAV.map(renderItem)}</View>
+        <View>{visibleWorkspaceNav.map(renderItem)}</View>
 
         {isAdmin && (
           <>

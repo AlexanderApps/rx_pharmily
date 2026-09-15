@@ -139,6 +139,7 @@ export default function HomeScreen() {
   const fetchRxRfqs = useRxRfqsStore((state) => state.fetchRxRfqs);
   const userRegion = useProfileStore((state) => state.user.region);
   const isVerified = useProfileStore((state) => state.user.kyc.status === "verified");
+  const kycStatus = useProfileStore((state) => state.user.kyc.status);
   const hasPermission = usePermissionsStore((state) => state.hasPermission);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -385,12 +386,18 @@ export default function HomeScreen() {
           <MaxWidthLayout size="standard" style={{ flex: 1 }}>
             <View className="flex-1 items-center justify-center px-6 gap-8">
               <View className="items-center gap-2">
-                <MaterialCommunityIcons name="shield-check-outline" size={40} color={colors.primary} />
+                <MaterialCommunityIcons
+                  name={kycStatus === "unverified" ? "compass-outline" : "shield-check-outline"}
+                  size={40}
+                  color={colors.primary}
+                />
                 <Text className="text-xl font-bold text-center" style={{ color: colors.text }}>
-                  Get verified for full access
+                  {kycStatus === "unverified" ? "Welcome to RxPharmily" : "Get verified for full access"}
                 </Text>
                 <Text className="text-sm text-center leading-[20px]" style={{ color: colors.textSecondary }}>
-                  RxRFQs, MediScope, Donations, Jobs, and the community feed open up once your account is verified. In the meantime, here's what's available to you.
+                  {kycStatus === "unverified"
+                    ? "Here's what's available to you."
+                    : "RxRFQs, MediScope, Donations, Jobs, and the community feed open up once your account is verified. In the meantime, here's what's available to you."}
                 </Text>
               </View>
 
@@ -419,8 +426,10 @@ export default function HomeScreen() {
               </View>
 
               <Pressable onPress={() => router.push("/profile/user-profile" as any)}>
-                <Text className="text-sm font-semibold" style={{ color: colors.primary }}>
-                  Start verification
+                <Text className="text-xs text-center" style={{ color: colors.textSecondary }}>
+                  {kycStatus === "unverified"
+                    ? "Pharmacist or pharmacy support staff? Get verified for more features."
+                    : "Start verification"}
                 </Text>
               </Pressable>
             </View>

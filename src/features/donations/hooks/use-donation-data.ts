@@ -143,6 +143,12 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
 
   fetchDonations: async () => {
     set({ isLoading: true });
+    // mapDonationRow resolves facilityName/facilityLocation from
+    // useProfileStore's facilities array — same race as mediscope's
+    // fetchRequests, fixed the same way.
+    if (!useProfileStore.getState().hasFetchedFacilities) {
+      await useProfileStore.getState().fetchFacilities();
+    }
     const { data, error } = await supabase
       .from("donations")
       .select(DONATION_SELECT)
@@ -156,6 +162,9 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
   },
 
   fetchDonation: async (id) => {
+    if (!useProfileStore.getState().hasFetchedFacilities) {
+      await useProfileStore.getState().fetchFacilities();
+    }
     const { data, error } = await supabase.from("donations").select(DONATION_SELECT).eq("id", id).single();
     if (error || !data) {
       console.warn("[donations] fetchDonation failed:", error?.message);

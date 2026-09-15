@@ -127,6 +127,14 @@ export const useMediscopeStore = create<MediscopeStore>((set, get) => ({
 
   fetchRequests: async () => {
     set({ isLoading: true });
+    // mapRequestRow resolves facilityName/facilityLocation from
+    // useProfileStore's facilities array — without this, a request
+    // fetch that resolves before the facilities fetch does would bake
+    // in "Unknown facility" permanently, since mapRequestRow only runs
+    // once at fetch time, not reactively.
+    if (!useProfileStore.getState().hasFetchedFacilities) {
+      await useProfileStore.getState().fetchFacilities();
+    }
     const { data, error } = await supabase
       .from("mediscope_requests")
       .select(REQUEST_SELECT)
@@ -140,6 +148,9 @@ export const useMediscopeStore = create<MediscopeStore>((set, get) => ({
   },
 
   fetchRequest: async (id) => {
+    if (!useProfileStore.getState().hasFetchedFacilities) {
+      await useProfileStore.getState().fetchFacilities();
+    }
     const { data, error } = await supabase.from("mediscope_requests").select(REQUEST_SELECT).eq("id", id).single();
     if (error || !data) {
       console.warn("[mediscope] fetchRequest failed:", error?.message);

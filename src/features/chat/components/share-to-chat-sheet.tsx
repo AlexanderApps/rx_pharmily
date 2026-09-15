@@ -171,7 +171,7 @@ const ShareToChatSheet = forwardRef<ShareToChatSheetRef, ShareToChatSheetProps>(
                           <Text className="text-sm font-semibold" style={{ color: colors.text }} numberOfLines={1}>
                             {user.name}
                           </Text>
-                          {user.facility && (
+                          {Boolean(user.facility) && (
                             <Text className="text-xs" style={{ color: colors.textSecondary }} numberOfLines={1}>
                               {user.facility}
                             </Text>

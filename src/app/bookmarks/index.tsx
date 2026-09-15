@@ -96,7 +96,7 @@ export default function BookmarksScreen() {
                   <Text className="text-[10px] font-bold uppercase" style={{ color: colors.primary }}>
                     {meta.label}
                   </Text>
-                  {item.code && (
+                  {Boolean(item.code) && (
                     <Text className="text-[10px]" style={{ color: colors.textSecondary }}>
                       {item.code}
                     </Text>
@@ -105,7 +105,7 @@ export default function BookmarksScreen() {
                 <Text className="text-sm font-bold mt-0.5" style={{ color: colors.text }} numberOfLines={1}>
                   {item.title}
                 </Text>
-                {item.subtitle && (
+                {Boolean(item.subtitle) && (
                   <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }} numberOfLines={1}>
                     {item.subtitle}
                   </Text>

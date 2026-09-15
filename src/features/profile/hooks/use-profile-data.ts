@@ -31,6 +31,15 @@ import {
 import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
 import { AccountRole, isSuperadminRole } from "@/features/auth/types/auth.types";
 
+// Module-level, not store state — purely a dedup mechanism so that if
+// several other stores' fetches race to ensure facilities are loaded
+// at the same moment (see each of use-rxrfq-data.ts/use-donation-data.ts/
+// use-mediscope-data.ts's own fetch functions), they all await the one
+// underlying request rather than each triggering their own redundant
+// fetch.
+let facilitiesFetchPromise: Promise<void> | null = null;
+
+
 // Lightweight row for the superadmin role-management screen — not the
 // full UserProfile shape, just what's needed to list and manage everyone.
 export interface AdminUserSummary {
@@ -384,6 +393,7 @@ function kycTable(entityType: KycEntityType): "profiles" | "facilities" | "organ
 type ProfileStore = {
   user: UserProfile;
   facilities: FacilityProfile[];
+  hasFetchedFacilities: boolean;
   organizations: OrganizationProfile[];
   facilityMemberships: FacilityMembership[];
   coverLetterTemplates: CoverLetterTemplate[];
@@ -510,6 +520,7 @@ type ProfileStore = {
 export const useProfileStore = create<ProfileStore>((set, get) => ({
   user: EMPTY_USER,
   facilities: [],
+  hasFetchedFacilities: false,
   organizations: [],
   facilityMemberships: [],
   coverLetterTemplates: [],
@@ -649,12 +660,21 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   },
 
   fetchFacilities: async () => {
-    const { data, error } = await supabase.from("facilities").select("*").order("name");
-    if (error) {
-      console.warn("[profile] fetchFacilities failed:", error.message);
+    if (facilitiesFetchPromise) {
+      await facilitiesFetchPromise;
       return;
     }
-    set({ facilities: (data ?? []).map(mapFacilityRow) });
+    facilitiesFetchPromise = (async () => {
+      const { data, error } = await supabase.from("facilities").select("*").order("name");
+      if (error) {
+        console.warn("[profile] fetchFacilities failed:", error.message);
+        set({ hasFetchedFacilities: true });
+        return;
+      }
+      set({ facilities: (data ?? []).map(mapFacilityRow), hasFetchedFacilities: true });
+    })();
+    await facilitiesFetchPromise;
+    facilitiesFetchPromise = null;
   },
 
   fetchOrganizations: async () => {

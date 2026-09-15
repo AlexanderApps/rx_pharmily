@@ -171,7 +171,7 @@ export default function AdminContentModerationScreen() {
                 <Text className="text-sm font-bold" style={{ color: colors.text }} numberOfLines={1}>
                   {item.title}
                 </Text>
-                {item.subtitle && (
+                {Boolean(item.subtitle) && (
                   <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }} numberOfLines={2}>
                     {item.subtitle}
                   </Text>
