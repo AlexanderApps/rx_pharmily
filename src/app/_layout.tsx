@@ -23,6 +23,7 @@ import { useAdsStore } from "@/features/ads/hooks/use-ads-data";
 import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
 import { usePushRegistrationStore } from "@/features/notifications/hooks/use-push-registration";
 import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
+import { useBookmarksStore } from "@/features/bookmarks/hooks/use-bookmarks-data";
 import { registerForWebPush } from "@/features/notifications/hooks/use-web-push-registration";
 import { usePostsStore } from "@/features/posts/hooks/use-posts-data";
 import LogoMark from "@/shared/components/logo-mark";
@@ -46,6 +47,7 @@ export default function RootLayout() {
   const unsubscribeFromNotifications = useNotificationStore((state) => state.unsubscribeFromNotifications);
   const registerForPush = usePushRegistrationStore((state) => state.registerForPush);
   const fetchPermissions = usePermissionsStore((state) => state.fetchPermissions);
+  const fetchBookmarks = useBookmarksStore((state) => state.fetchBookmarks);
   const fetchMyProfile = useProfileStore((state) => state.fetchMyProfile);
   const currentUser = useProfileStore((state) => state.user);
   const fetchFacilities = useProfileStore((state) => state.fetchFacilities);
@@ -101,6 +103,7 @@ export default function RootLayout() {
       // placeholder still sitting there.
       fetchNotificationSettings().then(() => fetchNotifications());
       fetchPermissions();
+      fetchBookmarks();
       subscribeToNotifications(session.user.id);
       // Native and web use genuinely different push mechanisms — see
       // each function's own file for why they can't share one code path.

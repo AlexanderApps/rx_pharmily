@@ -23,6 +23,7 @@ interface NavItem {
 const PRIMARY_NAV: NavItem[] = [
   { label: "Home", href: "/(tabs)", icon: "home-outline", matchPrefixes: ["/(tabs)/index", "/(tabs)"] },
   { label: "Community", href: "/posts", icon: "account-group-outline", matchPrefixes: ["/posts"] },
+  { label: "Bookmarks", href: "/bookmarks", icon: "bookmark-outline", matchPrefixes: ["/bookmarks"] },
 ];
 
 const WORKSPACE_NAV: NavItem[] = [

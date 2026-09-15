@@ -18,6 +18,7 @@ import { MediscopeResponseFormData } from "@/features/mediscope/types/mediscope.
 import MediscopeResponseSheet from "@/features/mediscope/components/mediscope-response-sheet";
 import PrintButton from "@/shared/components/print-button";
 import ShareToChatSheet, { ShareToChatSheetRef } from "@/features/chat/components/share-to-chat-sheet";
+import { useBookmarksStore } from "@/features/bookmarks/hooks/use-bookmarks-data";
 import { buildMediscopeSummaryHtml } from "@/features/mediscope/utils/mediscope-pdf";
 
 // Public view — anyone browsing the market lands here. Owners are routed to
@@ -35,6 +36,8 @@ export default function MediscopeMarketDetailsScreen() {
   const shareToChatRef = useRef<ShareToChatSheetRef>(null);
 
   const request = useMemo(() => requests.find((r) => r.id === id), [requests, id]);
+  const isBookmarked = useBookmarksStore((state) => state.isBookmarked("mediscope", request?.id ?? ""));
+  const toggleBookmark = useBookmarksStore((state) => state.toggleBookmark);
   const responses = useMemo(
     () => (id ? (responsesByRequest[id] ?? []) : []),
     [responsesByRequest, id],
@@ -121,6 +124,25 @@ export default function MediscopeMarketDetailsScreen() {
           hitSlop={8}
         >
           <MaterialCommunityIcons name="chat-plus-outline" size={20} color={colors.textSecondary} />
+        </Pressable>
+        <Pressable
+          onPress={() =>
+            request &&
+            toggleBookmark("mediscope", request.id, {
+              code: request.code,
+              title: request.product,
+              subtitle: request.facilityName,
+              status: request.status,
+            })
+          }
+          className="w-9 h-9 justify-center items-center"
+          hitSlop={8}
+        >
+          <MaterialCommunityIcons
+            name={isBookmarked ? "bookmark" : "bookmark-outline"}
+            size={20}
+            color={isBookmarked ? colors.primary : colors.textSecondary}
+          />
         </Pressable>
       </View>
 

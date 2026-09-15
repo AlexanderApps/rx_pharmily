@@ -17,6 +17,7 @@ import DonationClaimSheet, {
 } from "@/features/donations/components/donation-claim-sheet";
 import PrintButton from "@/shared/components/print-button";
 import ShareToChatSheet, { ShareToChatSheetRef } from "@/features/chat/components/share-to-chat-sheet";
+import { useBookmarksStore } from "@/features/bookmarks/hooks/use-bookmarks-data";
 import { buildDonationItemListHtml } from "@/features/donations/utils/donation-pdf";
 
 // Public view — anyone browsing the market lands here. Owners are routed to
@@ -34,6 +35,8 @@ export default function DonationMarketDetailsScreen() {
     () => donations.find((d) => d.id === id),
     [donations, id]
   );
+  const isBookmarked = useBookmarksStore((state) => state.isBookmarked("donation", donation?.id ?? ""));
+  const toggleBookmark = useBookmarksStore((state) => state.toggleBookmark);
   const hasPermission = usePermissionsStore((state) => state.hasPermission);
 
   if (!donation) {
@@ -141,6 +144,26 @@ export default function DonationMarketDetailsScreen() {
           hitSlop={8}
         >
           <MaterialCommunityIcons name="chat-plus-outline" size={20} color={colors.textSecondary} />
+        </Pressable>
+
+        <Pressable
+          onPress={() =>
+            donation &&
+            toggleBookmark("donation", donation.id, {
+              code: donation.code,
+              title: donation.facilityName,
+              subtitle: donation.facilityLocation,
+              status: donation.status,
+            })
+          }
+          className="w-9 h-9 justify-center items-center"
+          hitSlop={8}
+        >
+          <MaterialCommunityIcons
+            name={isBookmarked ? "bookmark" : "bookmark-outline"}
+            size={20}
+            color={isBookmarked ? colors.primary : colors.textSecondary}
+          />
         </Pressable>
       </View>
 

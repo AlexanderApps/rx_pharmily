@@ -81,7 +81,6 @@ const APPLICATION_SELECT = "*, profiles:applicant_id(full_name)";
 type RxJobsStore = {
   jobs: Job[];
   applications: JobApplication[];
-  savedJobIds: string[];
   isLoading: boolean;
 
   fetchJobs: () => Promise<void>;
@@ -92,7 +91,6 @@ type RxJobsStore = {
   getJob: (id: string) => Job | undefined;
   getApplicationsForJob: (jobId: string) => JobApplication[];
   hasApplied: (jobId: string) => boolean;
-  isSaved: (jobId: string) => boolean;
 
   addJob: (data: JobFormData) => Promise<string | undefined>;
   updateJob: (id: string, data: JobFormData) => Promise<boolean>;
@@ -104,19 +102,11 @@ type RxJobsStore = {
   applyToJob: (jobId: string, coverNote?: string) => Promise<void>;
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => Promise<void>;
 
-  // Bookmarking a job to look at later has no server-side concept behind
-  // it (no table, no notification, nothing else references it) — kept as
-  // local-only UI state rather than inventing a new table for a feature
-  // that was never really "data" so much as a client-side toggle. This
-  // means saved jobs don't survive a re-login, unlike everything else in
-  // this store.
-  toggleSaveJob: (jobId: string) => void;
 };
 
 export const useRxJobsStore = create<RxJobsStore>((set, get) => ({
   jobs: [],
   applications: [],
-  savedJobIds: [],
   isLoading: false,
 
   fetchJobs: async () => {
@@ -188,8 +178,6 @@ export const useRxJobsStore = create<RxJobsStore>((set, get) => ({
     const myId = useProfileStore.getState().user.id;
     return get().applications.some((a) => a.jobId === jobId && a.applicantId === myId);
   },
-
-  isSaved: (jobId) => get().savedJobIds.includes(jobId),
 
   addJob: async (data) => {
     const userId = await requireUserId();

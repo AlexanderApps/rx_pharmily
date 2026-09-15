@@ -62,6 +62,12 @@ export default function AccountScreen() {
       title: "Activity & Settings",
       links: [
         {
+          id: "bookmarks",
+          label: "Bookmarks",
+          icon: "bookmark-outline",
+          onPress: () => router.push("/bookmarks"),
+        },
+        {
           id: "history",
           label: "History",
           icon: "history",

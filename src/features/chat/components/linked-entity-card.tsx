@@ -20,7 +20,7 @@ const ENTITY_META: Record<
   job: { icon: "briefcase-outline", label: "Job" },
 };
 
-function navigateToEntity(entity: ChatLinkedEntity) {
+export function navigateToEntity(entity: ChatLinkedEntity) {
   const currentUserId = useAuthStore.getState().user?.id;
   switch (entity.type) {
     case "rfq": {

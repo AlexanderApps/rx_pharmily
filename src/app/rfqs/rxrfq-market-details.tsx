@@ -27,12 +27,13 @@ import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useChatStore } from "@/features/chat/hooks/use-chat-data";
 import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 import { toast } from "@/shared/hooks/use-toast";
+import { useBookmarksStore } from "@/features/bookmarks/hooks/use-bookmarks-data";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
 
 const RxMarketplaceDetailScreen: React.FC = () => {
   const { colors } = useTheme();
   const router = useRouter();
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const toggleBookmark = useBookmarksStore((state) => state.toggleBookmark);
   const shareToChatRef = useRef<ShareToChatSheetRef>(null);
   const [isContacting, setIsContacting] = useState(false);
 
@@ -49,6 +50,7 @@ const RxMarketplaceDetailScreen: React.FC = () => {
   const item = useMemo(() => {
     return rxRfqData.find((item) => item.id === id);
   }, [rxRfqData, id]);
+  const isBookmarked = useBookmarksStore((state) => state.isBookmarked("rxrfq", item?.id ?? ""));
 
   const incotermDes = useMemo(() => {
     return incotermList.find((option) => option.code === item?.incoterms);
@@ -324,7 +326,15 @@ const RxMarketplaceDetailScreen: React.FC = () => {
         }}
         onContact={handleContact}
         onShare={handleShare}
-        onBookmark={() => setIsBookmarked((v) => !v)}
+        onBookmark={() =>
+          item &&
+          toggleBookmark("rxrfq", item.id, {
+            code: item.code,
+            title: facilityName,
+            subtitle: `${item.productCount} item${item.productCount === 1 ? "" : "s"}`,
+            status: item.status,
+          })
+        }
       />
 
       <ShareToChatSheet

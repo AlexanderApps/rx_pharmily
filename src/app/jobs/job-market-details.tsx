@@ -10,6 +10,7 @@ import DetailSkeleton from "@/shared/components/detail-skeleton";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import ClickableAvatar from "@/features/profile/components/clickable-avatar";
 import { useRxJobsStore } from "@/features/rxjobs/hooks/use-rxjobs-data";
+import { useBookmarksStore } from "@/features/bookmarks/hooks/use-bookmarks-data";
 import ModerationControl from "@/features/content-moderation/components/moderation-control";
 import ShareToChatSheet, { ShareToChatSheetRef } from "@/features/chat/components/share-to-chat-sheet";
 import { ApplicationStatus, JobStatus, getJobPosterEntity } from "@/features/rxjobs/types/rxjobs.types";
@@ -65,8 +66,7 @@ export default function JobMarketDetailsScreen() {
   const fetchMyApplications = useRxJobsStore((state) => state.fetchMyApplications);
   const hasApplied = useRxJobsStore((state) => state.hasApplied);
   const applyToJob = useRxJobsStore((state) => state.applyToJob);
-  const isSaved = useRxJobsStore((state) => state.isSaved);
-  const toggleSaveJob = useRxJobsStore((state) => state.toggleSaveJob);
+  const toggleBookmark = useBookmarksStore((state) => state.toggleBookmark);
 
   const [coverNote, setCoverNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -79,6 +79,7 @@ export default function JobMarketDetailsScreen() {
   }, []);
 
   const job = useMemo(() => jobs.find((j) => j.id === id), [jobs, id]);
+  const isBookmarked = useBookmarksStore((state) => state.isBookmarked("job", job?.id ?? ""));
   const shareToChatRef = useRef<ShareToChatSheetRef>(null);
   const myApplication = useMemo(
     () => (job ? applications.find((a) => a.jobId === job.id && a.applicantId === currentUserId) : undefined),
@@ -191,14 +192,21 @@ export default function JobMarketDetailsScreen() {
           </View>
         </View>
         <Pressable
-          onPress={() => toggleSaveJob(job.id)}
+          onPress={() =>
+            toggleBookmark("job", job.id, {
+              code: job.id.slice(0, 8),
+              title: job.title,
+              subtitle: job.companyName,
+              status: job.status,
+            })
+          }
           className="w-9 h-9 rounded-[10px] justify-center items-center"
           style={{ backgroundColor: colors.backgroundSecondary }}
         >
           <MaterialCommunityIcons
-            name={isSaved(job.id) ? "bookmark" : "bookmark-outline"}
+            name={isBookmarked ? "bookmark" : "bookmark-outline"}
             size={18}
-            color={isSaved(job.id) ? colors.primary : colors.text}
+            color={isBookmarked ? colors.primary : colors.text}
           />
         </Pressable>
         <Pressable
