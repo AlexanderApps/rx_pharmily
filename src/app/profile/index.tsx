@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { View, Text, ScrollView, Pressable, Platform} from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, Redirect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { ThemedView } from "@/shared/components/themed-view";
@@ -34,6 +34,19 @@ export default function ProfileHubScreen() {
     () => organizations.filter((o) => o.adminUserId === user.id),
     [organizations, user.id],
   );
+
+  // A true regular user — never submitted KYC — has no facilities, no
+  // organizations, and no use for templates; everything on this hub
+  // except the single "My Profile" card is pharmacist/PSS-only. Rather
+  // than show a hub that's effectively one card, send them straight to
+  // the profile itself, same reasoning as the home feed and nav
+  // already apply for this same group of users. Placed after the hooks
+  // above (not before) — an early return ahead of useMemo would call a
+  // different number of hooks depending on kyc status, which breaks
+  // React's rule that hooks run in the same order every render.
+  if (user.kyc.status === "unverified") {
+    return <Redirect href="/profile/user-profile" />;
+  }
 
   const userCard = {
     key: "user",
