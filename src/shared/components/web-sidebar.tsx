@@ -84,19 +84,21 @@ const WebSidebar: React.FC = () => {
   const pathname = usePathname();
   const user = useProfileStore((state) => state.user);
   const isAdmin = useAuthStore((state) => isAdminRole(state.profile?.accountRole));
-  const kycStatus = useProfileStore((state) => state.user.kyc.status);
-  // A true regular user — never even submitted KYC, so there's no
-  // reason to think they're pursuing professional verification at all
-  // — only sees the 3 base features. Someone who's submitted (pending)
-  // or had a request rejected has shown intent, so they still see
-  // everything (gated appropriately once they try to use it), same as
-  // the home feed's own "Welcome" vs "Get verified" split.
-  const visiblePrimaryNav = kycStatus === "unverified"
-    ? PRIMARY_NAV.filter((item) => item.href === "/(tabs)")
-    : PRIMARY_NAV;
-  const visibleWorkspaceNav = kycStatus === "unverified"
-    ? WORKSPACE_NAV.filter((item) => ["/rxlink", "/vitals", "/help"].includes(item.href))
-    : WORKSPACE_NAV;
+  const kycStatus = user.kyc.status;
+  // Distinguishes "still might become a professional" (pending/
+  // rejected — show everything, gated appropriately once they try to
+  // use it) from "confirmed not one" — unverified (never tried) and
+  // verified-but-not-a-pharmacist/PSS both mean the 7 professional
+  // features stay hidden, same reasoning as the home feed's own split.
+  const isPursuingVerification = kycStatus === "pending" || kycStatus === "rejected";
+  const hasProfessionalAccess = kycStatus === "verified" && (user.isPharmacist || user.isPss);
+  const showFullNav = hasProfessionalAccess || isPursuingVerification;
+  const visiblePrimaryNav = showFullNav
+    ? PRIMARY_NAV
+    : PRIMARY_NAV.filter((item) => item.href === "/(tabs)");
+  const visibleWorkspaceNav = showFullNav
+    ? WORKSPACE_NAV
+    : WORKSPACE_NAV.filter((item) => ["/rxlink", "/vitals", "/help"].includes(item.href));
   const [desktopCollapsed, setDesktopCollapsedState] = useState(readPersistedCollapsed);
   const breakpoint = useBreakpoint();
   const isCompact = breakpoint === "compact";

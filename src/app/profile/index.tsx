@@ -35,16 +35,23 @@ export default function ProfileHubScreen() {
     [organizations, user.id],
   );
 
-  // A true regular user — never submitted KYC — has no facilities, no
+  // A regular user — confirmed not a pharmacist or pharmacy support
+  // staff, whether because they've never submitted KYC or because
+  // they're verified with profession 'Other' — has no facilities, no
   // organizations, and no use for templates; everything on this hub
   // except the single "My Profile" card is pharmacist/PSS-only. Rather
   // than show a hub that's effectively one card, send them straight to
   // the profile itself, same reasoning as the home feed and nav
-  // already apply for this same group of users. Placed after the hooks
-  // above (not before) — an early return ahead of useMemo would call a
-  // different number of hooks depending on kyc status, which breaks
-  // React's rule that hooks run in the same order every render.
-  if (user.kyc.status === "unverified") {
+  // already apply for this same group of users. Someone still pending
+  // or rejected might yet turn out to be a professional, so they still
+  // see the full hub, same as the sidebar/services screens. Placed
+  // after the hooks above (not before) — an early return ahead of
+  // useMemo would call a different number of hooks depending on kyc
+  // status, which breaks React's rule that hooks run in the same order
+  // every render.
+  const hasProfessionalAccess = user.kyc.status === "verified" && (user.isPharmacist || user.isPss);
+  const isPursuingVerification = user.kyc.status === "pending" || user.kyc.status === "rejected";
+  if (!hasProfessionalAccess && !isPursuingVerification) {
     return <Redirect href="/profile/user-profile" />;
   }
 

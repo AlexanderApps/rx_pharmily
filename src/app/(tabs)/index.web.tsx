@@ -138,8 +138,10 @@ export default function HomeScreen() {
   const fetchJobs = useRxJobsStore((state) => state.fetchJobs);
   const fetchRxRfqs = useRxRfqsStore((state) => state.fetchRxRfqs);
   const userRegion = useProfileStore((state) => state.user.region);
-  const isVerified = useProfileStore((state) => state.user.kyc.status === "verified");
-  const kycStatus = useProfileStore((state) => state.user.kyc.status);
+  const user = useProfileStore((state) => state.user);
+  const hasProfessionalAccess = user.kyc.status === "verified" && (user.isPharmacist || user.isPss);
+  const kycStatus = user.kyc.status;
+  const isPursuingVerification = kycStatus === "pending" || kycStatus === "rejected";
   const hasPermission = usePermissionsStore((state) => state.hasPermission);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -379,7 +381,7 @@ export default function HomeScreen() {
 
   // Non-verified users don't get the feed at all — see the native
   // index.tsx's identical block for the full rationale.
-  if (!isVerified) {
+  if (!hasProfessionalAccess) {
     return (
       <ThemedView className="flex-1">
         <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
@@ -387,17 +389,17 @@ export default function HomeScreen() {
             <View className="flex-1 items-center justify-center px-6 gap-8">
               <View className="items-center gap-2">
                 <MaterialCommunityIcons
-                  name={kycStatus === "unverified" ? "compass-outline" : "shield-check-outline"}
+                  name={isPursuingVerification ? "shield-check-outline" : "compass-outline"}
                   size={40}
                   color={colors.primary}
                 />
                 <Text className="text-xl font-bold text-center" style={{ color: colors.text }}>
-                  {kycStatus === "unverified" ? "Welcome to RxPharmily" : "Get verified for full access"}
+                  {isPursuingVerification ? "Get verified for full access" : "Welcome to RxPharmily"}
                 </Text>
                 <Text className="text-sm text-center leading-[20px]" style={{ color: colors.textSecondary }}>
-                  {kycStatus === "unverified"
-                    ? "Here's what's available to you."
-                    : "RxRFQs, MediScope, Donations, Jobs, and the community feed open up once your account is verified. In the meantime, here's what's available to you."}
+                  {isPursuingVerification
+                    ? "RxRFQs, MediScope, Donations, Jobs, and the community feed open up once your account is verified. In the meantime, here's what's available to you."
+                    : "Here's what's available to you."}
                 </Text>
               </View>
 
@@ -425,13 +427,15 @@ export default function HomeScreen() {
                 ))}
               </View>
 
-              <Pressable onPress={() => router.push("/profile/user-profile" as any)}>
-                <Text className="text-xs text-center" style={{ color: colors.textSecondary }}>
-                  {kycStatus === "unverified"
-                    ? "Pharmacist or pharmacy support staff? Get verified for more features."
-                    : "Start verification"}
-                </Text>
-              </Pressable>
+              {kycStatus !== "verified" && (
+                <Pressable onPress={() => router.push("/profile/user-profile" as any)}>
+                  <Text className="text-xs text-center" style={{ color: colors.textSecondary }}>
+                    {isPursuingVerification
+                      ? "View verification status"
+                      : "Pharmacist or pharmacy support staff? Get verified for more features."}
+                  </Text>
+                </Pressable>
+              )}
             </View>
           </MaxWidthLayout>
         </SafeAreaView>

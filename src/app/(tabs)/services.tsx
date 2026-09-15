@@ -16,8 +16,17 @@ export default function ServiceScreen() {
   // think they're pursuing professional verification — only sees the 3
   // base features here too, same reasoning as the web sidebar and the
   // home feed's own shortcut screen.
-  const kycStatus = useProfileStore((state) => state.user.kyc.status);
-  const isRegularUser = kycStatus === "unverified";
+  // Distinguishes "still might become a professional" (pending/
+  // rejected — keep showing everything) from "confirmed not one" —
+  // unverified (never tried) and verified-but-not-a-pharmacist/PSS
+  // both mean the 7 professional features stay hidden. Verification
+  // alone doesn't unlock them — being verified with profession 'Other'
+  // confirms identity, not professional status.
+  const user = useProfileStore((state) => state.user);
+  const kycStatus = user.kyc.status;
+  const hasProfessionalAccess = kycStatus === "verified" && (user.isPharmacist || user.isPss);
+  const isPursuingVerification = kycStatus === "pending" || kycStatus === "rejected";
+  const isRegularUser = !hasProfessionalAccess && !isPursuingVerification;
 
   return (
     <ThemedView className="flex-1 items-center justify-center">
