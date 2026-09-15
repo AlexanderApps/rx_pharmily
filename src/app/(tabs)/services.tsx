@@ -24,7 +24,7 @@ export default function ServiceScreen() {
   // confirms identity, not professional status.
   const user = useProfileStore((state) => state.user);
   const kycStatus = user.kyc.status;
-  const hasProfessionalAccess = kycStatus === "verified" && (user.isPharmacist || user.isPss);
+  const hasProfessionalAccess = user.roles.some((r) => r !== "public");
   const isPursuingVerification = kycStatus === "pending" || kycStatus === "rejected";
   const isRegularUser = !hasProfessionalAccess && !isPursuingVerification;
 

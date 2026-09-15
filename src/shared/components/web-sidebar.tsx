@@ -91,7 +91,7 @@ const WebSidebar: React.FC = () => {
   // verified-but-not-a-pharmacist/PSS both mean the 7 professional
   // features stay hidden, same reasoning as the home feed's own split.
   const isPursuingVerification = kycStatus === "pending" || kycStatus === "rejected";
-  const hasProfessionalAccess = kycStatus === "verified" && (user.isPharmacist || user.isPss);
+  const hasProfessionalAccess = user.roles.some((r) => r !== "public");
   const showFullNav = hasProfessionalAccess || isPursuingVerification;
   const visiblePrimaryNav = showFullNav
     ? PRIMARY_NAV

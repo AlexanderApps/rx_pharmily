@@ -147,16 +147,17 @@ export default function HomeScreen() {
   const fetchRxRfqs = useRxRfqsStore((state) => state.fetchRxRfqs);
   const userRegion = useProfileStore((state) => state.user.region);
   // Verification alone doesn't unlock the full feed — it only confirms
-  // identity. What actually matters is whether the person is a
-  // pharmacist or pharmacy support staff (isPharmacist/isPss are
-  // derived, DB-generated columns from the admin-set profession field —
-  // see profile.types.ts's own comment on why these can't be
-  // self-reported). A verified user whose profession came back 'Other'
-  // is confirmed to be who they say they are, but confirmed to NOT be
-  // a pharmacy professional — the features stay hidden for them too,
-  // same as someone who's never verified at all.
+  // identity. What actually matters is whether the person holds any
+  // role beyond the 'public' every signed-in user always has (see
+  // profile.types.ts's own comment on how roles gets populated — KYC
+  // approval seeds 'pharmacist'/'pss' as a one-time grant, not an
+  // ongoing sync with profession). A verified user whose profession
+  // came back 'Other' never got a role added, so they're confirmed to
+  // be who they say they are, but confirmed to NOT be a pharmacy
+  // professional — the features stay hidden for them too, same as
+  // someone who's never verified at all.
   const user = useProfileStore((state) => state.user);
-  const hasProfessionalAccess = user.kyc.status === "verified" && (user.isPharmacist || user.isPss);
+  const hasProfessionalAccess = user.roles.some((r) => r !== "public");
   const kycStatus = user.kyc.status;
   // Distinguishes "still might become a professional" (keep the
   // verification-focused message) from "confirmed not one" —

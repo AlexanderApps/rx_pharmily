@@ -86,6 +86,7 @@ const EMPTY_USER: UserProfile = {
   kyc: { status: "unverified", documents: [] },
   createdAt: new Date(),
   publicVisibility: DEFAULT_USER_VISIBILITY,
+  roles: ["public"],
   isPharmacist: false,
   isPss: false,
   isAvailableAsSuperintendent: false,
@@ -123,6 +124,7 @@ function mapUserRow(row: any): UserProfile {
     longitude: row.longitude ?? undefined,
     avatarUrl: row.avatar_url ?? undefined,
     profession: row.profession ?? undefined,
+    roles: row.roles ?? ["public"],
     isPharmacist: row.is_pharmacist ?? false,
     isPss: row.is_pss ?? false,
     isAvailableAsSuperintendent: row.is_available_as_superintendent ?? false,
@@ -341,6 +343,7 @@ export interface KycReviewUser {
   fullName: string;
   kyc: KycRecord;
   profession?: UserProfession;
+  roles: string[];
   isPharmacist: boolean;
   isPss: boolean;
 }
@@ -350,6 +353,7 @@ function mapKycReviewUserRow(row: any): KycReviewUser {
     id: row.id,
     fullName: row.full_name,
     profession: row.profession ?? undefined,
+    roles: row.roles ?? ["public"],
     isPharmacist: row.is_pharmacist ?? false,
     isPss: row.is_pss ?? false,
     kyc: {
@@ -578,7 +582,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     const myId = await requireUserId();
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, kyc_status, kyc_submitted_at, kyc_reviewed_at, kyc_reviewed_by, kyc_rejection_reason, profession, is_pharmacist, is_pss")
+      .select("id, full_name, kyc_status, kyc_submitted_at, kyc_reviewed_at, kyc_reviewed_by, kyc_rejection_reason, profession, roles, is_pharmacist, is_pss")
       .neq("kyc_status", "unverified")
       .neq("id", myId)
       .order("kyc_submitted_at", { ascending: false });
@@ -1222,7 +1226,27 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   },
 
   setUserProfession: async (userId, profession) => {
-    const { error } = await supabase.from("profiles").update({ profession }).eq("id", userId);
+    // One-time seed, not an ongoing sync — this is the only place
+    // profession ever grants a role. Once granted, nothing removes it
+    // automatically if profession later changes away, and nothing
+    // here reverts profession if the role is later removed elsewhere
+    // (e.g. via the role-management screen) — the two are meant to be
+    // able to drift apart after this point, by design.
+    const roleToAdd = profession === "Pharmacist" ? "pharmacist" : profession === "Technician" || profession === "MCA" ? "pss" : null;
+
+    let nextRoles: string[] | undefined;
+    if (roleToAdd) {
+      const { data: current } = await supabase.from("profiles").select("roles").eq("id", userId).single();
+      const currentRoles: string[] = current?.roles ?? ["public"];
+      if (!currentRoles.includes(roleToAdd)) {
+        nextRoles = [...currentRoles, roleToAdd];
+      }
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update(nextRoles ? { profession, roles: nextRoles } : { profession })
+      .eq("id", userId);
     if (error) {
       // The DB's own trigger (trg_enforce_profession_admin_only) is the
       // real enforcement — this client-side call can still fail if
@@ -1233,10 +1257,12 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     }
     set((state) => ({
       usersForKycReview: state.usersForKycReview.map((u) =>
-        u.id === userId ? { ...u, profession, isPharmacist: profession === "Pharmacist", isPss: profession === "Technician" || profession === "MCA" } : u,
+        u.id === userId
+          ? { ...u, profession, isPharmacist: profession === "Pharmacist", isPss: profession === "Technician" || profession === "MCA", ...(nextRoles ? { roles: nextRoles } : {}) }
+          : u,
       ),
       user: state.user.id === userId
-        ? { ...state.user, profession, isPharmacist: profession === "Pharmacist", isPss: profession === "Technician" || profession === "MCA" }
+        ? { ...state.user, profession, isPharmacist: profession === "Pharmacist", isPss: profession === "Technician" || profession === "MCA", ...(nextRoles ? { roles: nextRoles } : {}) }
         : state.user,
     }));
     return { ok: true };

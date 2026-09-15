@@ -139,7 +139,7 @@ export default function HomeScreen() {
   const fetchRxRfqs = useRxRfqsStore((state) => state.fetchRxRfqs);
   const userRegion = useProfileStore((state) => state.user.region);
   const user = useProfileStore((state) => state.user);
-  const hasProfessionalAccess = user.kyc.status === "verified" && (user.isPharmacist || user.isPss);
+  const hasProfessionalAccess = user.roles.some((r) => r !== "public");
   const kycStatus = user.kyc.status;
   const isPursuingVerification = kycStatus === "pending" || kycStatus === "rejected";
   const hasPermission = usePermissionsStore((state) => state.hasPermission);

@@ -49,7 +49,7 @@ export default function ProfileHubScreen() {
   // useMemo would call a different number of hooks depending on kyc
   // status, which breaks React's rule that hooks run in the same order
   // every render.
-  const hasProfessionalAccess = user.kyc.status === "verified" && (user.isPharmacist || user.isPss);
+  const hasProfessionalAccess = user.roles.some((r) => r !== "public");
   const isPursuingVerification = user.kyc.status === "pending" || user.kyc.status === "rejected";
   if (!hasProfessionalAccess && !isPursuingVerification) {
     return <Redirect href="/profile/user-profile" />;

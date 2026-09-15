@@ -108,6 +108,15 @@ export interface UserProfile {
   avatarUrl?: string;
   // Unset (undefined) until an admin reviews KYC and sets it.
   profession?: UserProfession;
+  // The actual, stored multi-role assignment — always includes
+  // 'public'. Setting profession to 'Pharmacist'/'Technician'/'MCA'
+  // during KYC review also adds the matching role here as a one-time
+  // seed (see setUserProfession), but the two are deliberately NOT
+  // kept in sync afterward — removing a role doesn't revert
+  // profession, and changing profession later doesn't touch roles
+  // that were already granted. account_role (admin/superadmin) is the
+  // one role assignment the DB does keep in sync, via its own trigger.
+  roles: string[];
   // Derived from profession, generated columns in the DB — always in
   // sync, never independently settable.
   isPharmacist: boolean;
