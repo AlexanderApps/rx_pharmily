@@ -423,9 +423,25 @@ async function handleRxlinkResponses(payload: WebhookPayload) {
     return;
   }
 
+  if (record.sender_id === request.created_by) {
+    // The requester's own follow-up — no single assigned admin to
+    // notify directly, so this broadcasts to every admin opted into
+    // rxlink_new_entry (reusing that category rather than adding a new
+    // one, which would need its own notification_settings seeding).
+    await insertBroadcastNotification(
+      record.sender_id,
+      "rxlink_new_entry",
+      "New RxLink follow-up",
+      `${request.code} has a new follow-up message from the requester.`,
+      { pathname: "/admin/rxlink-requests", params: { id: request.id } },
+      { adminOnly: true },
+    );
+    return;
+  }
+
   await insertNotification(
     request.created_by,
-    record.responder_id,
+    record.sender_id,
     "rxlink_response_received",
     "New response on your RxLink request",
     `An admin responded to your request ${request.code}.`,

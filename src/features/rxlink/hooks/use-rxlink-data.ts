@@ -7,7 +7,6 @@ import {
   RxLinkImage,
   RxLinkRequest,
   RxLinkResponse,
-  RxLinkStatus,
 } from "@/features/rxlink/types/rxlink.types";
 
 function generateCode(id: string) {
@@ -26,6 +25,12 @@ function mapRequestRow(row: any): RxLinkRequest {
     respondedBy: row.responded_by ?? undefined,
     respondedByName: row.reviewer?.full_name ?? undefined,
     respondedAt: row.responded_at ? new Date(row.responded_at) : undefined,
+    acknowledgedAt: row.acknowledged_at ? new Date(row.acknowledged_at) : undefined,
+    acknowledgedByName: row.acknowledger?.full_name ?? undefined,
+    rejectionReason: row.rejection_reason ?? undefined,
+    requesterClosedAt: row.requester_closed_at ? new Date(row.requester_closed_at) : undefined,
+    adminClosedAt: row.admin_closed_at ? new Date(row.admin_closed_at) : undefined,
+    adminClosedByName: row.admin_closer?.full_name ?? undefined,
   };
 }
 
@@ -39,14 +44,22 @@ function mapImageRow(row: any): RxLinkImage {
   };
 }
 
-function mapResponseRow(row: any): RxLinkResponse {
+// requestCreatedBy is the parent request's own creator — passed in
+// rather than looked up per-row, since every response in one fetch
+// belongs to the same request and it'd be wasteful to re-derive this
+// per row. "From admin" is whoever isn't the request's own creator,
+// not a stored column — this request only ever has two participants.
+function mapResponseRow(row: any, requestCreatedBy: string): RxLinkResponse {
   return {
     id: row.id,
     requestId: row.request_id,
-    responderId: row.responder_id,
-    responderName: row.responder?.full_name ?? "Admin",
+    senderId: row.sender_id,
+    senderName: row.sender?.full_name ?? "Unknown",
+    isFromAdmin: row.sender_id !== requestCreatedBy,
     message: row.message,
     createdAt: new Date(row.created_at),
+    attachmentType: row.attachment_type ?? undefined,
+    attachmentData: row.attachment_data ?? undefined,
   };
 }
 
@@ -71,8 +84,16 @@ type RxLinkStore = {
   getResponses: (requestId: string) => RxLinkResponse[];
 
   submitRequest: (data: RxLinkFormData) => Promise<string | undefined>;
-  closeRequest: (id: string) => Promise<boolean>;
-  respondToRequest: (requestId: string, message: string) => Promise<boolean>;
+  // One message thread, either direction — a requester's own follow-up
+  // and an admin's response are the same underlying row, distinguished
+  // at render time by RxLinkResponse.isFromAdmin, not by two separate
+  // methods or tables.
+  sendMessage: (requestId: string, message: string) => Promise<boolean>;
+
+  acknowledgeRequest: (id: string) => Promise<{ ok: boolean; error?: string }>;
+  rejectRequest: (id: string, reason: string) => Promise<{ ok: boolean; error?: string }>;
+  closeRequestAsRequester: (id: string) => Promise<{ ok: boolean; error?: string }>;
+  closeRequestAsAdmin: (id: string) => Promise<{ ok: boolean; error?: string }>;
 };
 
 export const useRxLinkStore = create<RxLinkStore>((set, get) => ({
@@ -91,7 +112,9 @@ export const useRxLinkStore = create<RxLinkStore>((set, get) => ({
     // filtering needed either way.
     const { data, error } = await supabase
       .from("rxlink_requests")
-      .select("*, requester:created_by(id, full_name), reviewer:responded_by(id, full_name)")
+      .select(
+        "*, requester:created_by(id, full_name), reviewer:responded_by(id, full_name), acknowledger:acknowledged_by(id, full_name), admin_closer:admin_closed_by(id, full_name)",
+      )
       .order("created_at", { ascending: false });
     if (error) {
       console.warn("[rxlink] fetchRequests failed:", error.message);
@@ -126,7 +149,7 @@ export const useRxLinkStore = create<RxLinkStore>((set, get) => ({
     set({ isLoadingResponses: true });
     const { data, error } = await supabase
       .from("rxlink_responses")
-      .select("*, responder:responder_id(id, full_name)")
+      .select("*, sender:sender_id(id, full_name)")
       .eq("request_id", requestId)
       .order("created_at", { ascending: true });
     if (error) {
@@ -134,8 +157,12 @@ export const useRxLinkStore = create<RxLinkStore>((set, get) => ({
       set({ isLoadingResponses: false });
       return;
     }
+    const requestCreatedBy = get().requests.find((r) => r.id === requestId)?.createdBy ?? "";
     set((state) => ({
-      responsesByRequest: { ...state.responsesByRequest, [requestId]: (data ?? []).map(mapResponseRow) },
+      responsesByRequest: {
+        ...state.responsesByRequest,
+        [requestId]: (data ?? []).map((row) => mapResponseRow(row, requestCreatedBy)),
+      },
       isLoadingResponses: false,
     }));
   },
@@ -189,51 +216,77 @@ export const useRxLinkStore = create<RxLinkStore>((set, get) => ({
     return request.id;
   },
 
-  closeRequest: async (id) => {
-    const { error } = await supabase.from("rxlink_requests").update({ status: "closed" }).eq("id", id);
-    if (error) {
-      console.warn("[rxlink] closeRequest failed:", error.message);
-      return false;
-    }
-    set((state) => ({
-      requests: state.requests.map((r) => (r.id === id ? { ...r, status: "closed" as RxLinkStatus } : r)),
-    }));
-    return true;
-  },
-
-  respondToRequest: async (requestId, message) => {
+  sendMessage: async (requestId, message) => {
     const trimmed = message.trim();
     if (!trimmed) return false;
-    const responderId = await requireUserId();
+    const senderId = await requireUserId();
 
     const { data: row, error } = await supabase
       .from("rxlink_responses")
-      .insert({ request_id: requestId, responder_id: responderId, message: trimmed })
-      .select("*, responder:responder_id(id, full_name)")
+      .insert({ request_id: requestId, sender_id: senderId, message: trimmed })
+      .select("*, sender:sender_id(id, full_name)")
       .single();
     if (error || !row) {
-      console.warn("[rxlink] respondToRequest failed:", error?.message);
+      console.warn("[rxlink] sendMessage failed:", error?.message);
       return false;
     }
 
-    await supabase
-      .from("rxlink_requests")
-      .update({ status: "responded", responded_by: responderId, responded_at: new Date().toISOString() })
-      .eq("id", requestId);
-
-    const response = mapResponseRow(row);
+    const requestCreatedBy = get().requests.find((r) => r.id === requestId)?.createdBy ?? "";
+    const response = mapResponseRow(row, requestCreatedBy);
     set((state) => ({
       responsesByRequest: {
         ...state.responsesByRequest,
         [requestId]: [...(state.responsesByRequest[requestId] ?? []), response],
       },
-      requests: state.requests.map((r) =>
-        r.id === requestId
-          ? { ...r, status: "responded" as RxLinkStatus, respondedBy: responderId, respondedAt: new Date() }
-          : r,
-      ),
     }));
 
+    // The DB trigger already advances status to 'responded' server-side
+    // when the sender is an admin — this just re-fetches so the local
+    // list reflects that without hand-computing the same logic twice.
+    if (response.isFromAdmin) {
+      await get().fetchRequests();
+    }
+
     return true;
+  },
+
+  acknowledgeRequest: async (id) => {
+    const { error } = await supabase.rpc("acknowledge_rxlink_request", { p_request_id: id });
+    if (error) {
+      console.warn("[rxlink] acknowledgeRequest failed:", error.message);
+      return { ok: false, error: error.message };
+    }
+    await get().fetchRequests();
+    return { ok: true };
+  },
+
+  rejectRequest: async (id, reason) => {
+    const { error } = await supabase.rpc("reject_rxlink_request", { p_request_id: id, p_reason: reason.trim() });
+    if (error) {
+      console.warn("[rxlink] rejectRequest failed:", error.message);
+      return { ok: false, error: error.message };
+    }
+    await get().fetchRequests();
+    return { ok: true };
+  },
+
+  closeRequestAsRequester: async (id) => {
+    const { error } = await supabase.rpc("close_rxlink_request_as_requester", { p_request_id: id });
+    if (error) {
+      console.warn("[rxlink] closeRequestAsRequester failed:", error.message);
+      return { ok: false, error: error.message };
+    }
+    await get().fetchRequests();
+    return { ok: true };
+  },
+
+  closeRequestAsAdmin: async (id) => {
+    const { error } = await supabase.rpc("close_rxlink_request_as_admin", { p_request_id: id });
+    if (error) {
+      console.warn("[rxlink] closeRequestAsAdmin failed:", error.message);
+      return { ok: false, error: error.message };
+    }
+    await get().fetchRequests();
+    return { ok: true };
   },
 }));

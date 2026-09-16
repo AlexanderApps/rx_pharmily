@@ -15,11 +15,13 @@ interface RxLinkRequestCardProps {
 
 const STATUS_META: Record<
   RxLinkStatus,
-  { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; tone: "success" | "warning" | "info" }
+  { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; tone: "success" | "warning" | "info" | "error" }
 > = {
   pending: { label: "Awaiting response", icon: "clock-outline", tone: "warning" },
+  acknowledged: { label: "Being worked on", icon: "eye-check-outline", tone: "info" },
   responded: { label: "Responded", icon: "check-circle-outline", tone: "success" },
-  closed: { label: "Closed", icon: "archive-outline", tone: "info" },
+  rejected: { label: "Rejected", icon: "close-circle-outline", tone: "error" },
+  resolved: { label: "Resolved", icon: "archive-check-outline", tone: "info" },
 };
 
 const RxLinkRequestCard: React.FC<RxLinkRequestCardProps> = ({ request, requesterName, onPress }) => {

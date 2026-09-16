@@ -24,16 +24,19 @@ export default function AdminRxLinkRequestsScreen() {
   }, []);
 
   // Every open request first, oldest first (so the queue reads like a
-  // to-do list, not a reverse-chronological feed), then closed/handled
-  // ones trailing behind for reference.
+  // to-do list, not a reverse-chronological feed), then handled ones
+  // trailing behind for reference. "Handled" now means the two
+  // terminal states (rejected, resolved) — a request where only one
+  // side has closed still counts as open, correctly, since status only
+  // becomes 'resolved' once both sides have.
   const sorted = useMemo(() => {
     const open = requests
-      .filter((r) => r.status !== "closed")
+      .filter((r) => r.status !== "rejected" && r.status !== "resolved")
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    const closed = requests
-      .filter((r) => r.status === "closed")
+    const handled = requests
+      .filter((r) => r.status === "rejected" || r.status === "resolved")
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return [...open, ...closed];
+    return [...open, ...handled];
   }, [requests]);
 
   if (!isAdmin) {
