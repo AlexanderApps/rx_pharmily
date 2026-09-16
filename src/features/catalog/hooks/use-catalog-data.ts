@@ -7,7 +7,6 @@ import {
   FormularyRequestFormData,
   Product,
 } from "@/features/catalog/types/catalog.types";
-import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
 
 // Row <-> app-type mapping. Supabase/Postgres columns are snake_case; the
 // app's existing types (unchanged, so every consuming screen keeps
@@ -284,13 +283,6 @@ export const useCatalogStore = create<CatalogStore>((set, get) => ({
       ),
     }));
 
-    useNotificationStore.getState().addNotification(
-      request.createdBy,
-      "formulary_request_decision",
-      "Formulary request approved",
-      `"${request.productName}" was approved and is awaiting catalog cleanup.${comment ? ` ${comment}` : ""}`,
-      { pathname: "/formulary" },
-    );
   },
 
   rejectFormularyRequest: async (id, comment) => {
@@ -320,13 +312,6 @@ export const useCatalogStore = create<CatalogStore>((set, get) => ({
       ),
     }));
 
-    useNotificationStore.getState().addNotification(
-      request.createdBy,
-      "formulary_request_decision",
-      "Formulary request declined",
-      `"${request.productName}" was not added: ${comment.trim()}`,
-      { pathname: "/formulary" },
-    );
   },
 
   mergeFormularyRequest: async (id, data) => {
@@ -376,12 +361,5 @@ export const useCatalogStore = create<CatalogStore>((set, get) => ({
       ),
     }));
 
-    useNotificationStore.getState().addNotification(
-      request.createdBy,
-      "formulary_request_decision",
-      "Formulary request added to the catalog",
-      `"${data.name.trim()}" is now available in the product catalog.`,
-      { pathname: "/formulary" },
-    );
   },
 }));

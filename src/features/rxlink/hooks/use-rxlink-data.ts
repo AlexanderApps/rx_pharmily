@@ -9,7 +9,6 @@ import {
   RxLinkResponse,
   RxLinkStatus,
 } from "@/features/rxlink/types/rxlink.types";
-import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
 
 function generateCode(id: string) {
   return `RL-${new Date().getFullYear()}-${id.slice(0, 8).toUpperCase()}`;
@@ -187,14 +186,6 @@ export const useRxLinkStore = create<RxLinkStore>((set, get) => ({
     const request = mapRequestRow(row);
     set((state) => ({ requests: [request, ...state.requests] }));
 
-    useNotificationStore.getState().addBroadcastNotification(
-      "rxlink_new_entry",
-      "New RxLink request",
-      `A new medication search request (${request.code}) needs a response.`,
-      { pathname: "/admin/rxlink-requests", params: { id: request.id } },
-      true,
-    );
-
     return request.id;
   },
 
@@ -242,17 +233,6 @@ export const useRxLinkStore = create<RxLinkStore>((set, get) => ({
           : r,
       ),
     }));
-
-    const request = get().requests.find((r) => r.id === requestId);
-    if (request) {
-      useNotificationStore.getState().addNotification(
-        request.createdBy,
-        "rxlink_response_received",
-        "New response on your RxLink request",
-        `An admin responded to your request ${request.code}.`,
-        { pathname: "/rxlink/request-details", params: { id: requestId } },
-      );
-    }
 
     return true;
   },

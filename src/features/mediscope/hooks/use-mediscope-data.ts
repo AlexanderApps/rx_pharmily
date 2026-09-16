@@ -284,18 +284,6 @@ export const useMediscopeStore = create<MediscopeStore>((set, get) => ({
       return false;
     }
     await get().fetchRequest(id);
-
-    // Same gap as RxRFQ's equivalent function — publishing an existing
-    // draft via this path is separate from create-time, and this was
-    // previously silent for it.
-    if (isFirstPublish && existing) {
-      useNotificationStore.getState().addBroadcastNotification(
-        "mediscope_new_entry",
-        "New MediScope request",
-        `${existing.facilityName} is searching for ${existing.product}.`,
-        { pathname: "/mediscope/mediscope-market-details", params: { id } },
-      );
-    }
     return true;
   },
 
@@ -354,17 +342,6 @@ export const useMediscopeStore = create<MediscopeStore>((set, get) => ({
     await get().fetchRequest(data.requestId);
     await get().fetchResponses(data.requestId);
 
-    const request = get().requests.find((r) => r.id === data.requestId);
-    if (request) {
-      const responderName = (row as any).facilities?.name ?? "A vendor";
-      useNotificationStore.getState().addNotification(
-        request.createdBy,
-        "mediscope_response_received",
-        "New response on your MediScope request",
-        `${responderName} responded to your search for ${request.product}.`,
-        { pathname: "/mediscope/mediscope-details", params: { id: request.id } },
-      );
-    }
     return true;
   },
 

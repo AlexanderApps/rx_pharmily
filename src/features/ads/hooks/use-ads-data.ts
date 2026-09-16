@@ -12,7 +12,6 @@ import {
   FDA_ID_REQUIRED_CATEGORIES,
   ReactionType,
 } from "@/features/ads/types/ads.types";
-import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { usePaymentsStore } from "@/features/payments/hooks/use-payments-data";
 
@@ -459,13 +458,6 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
     }
     await get().fetchAd(id);
 
-    useNotificationStore.getState().addNotification(
-      ad.advertiser.id,
-      "ads_status_decision",
-      "Your ad was approved",
-      `"${ad.title}" is now live.`,
-      { pathname: "/ads/ad-details", params: { id: ad.id } },
-    );
     return true;
   },
 
@@ -495,14 +487,6 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
       return;
     }
     await get().fetchAd(id);
-
-    useNotificationStore.getState().addNotification(
-      ad.advertiser.id,
-      "ads_status_decision",
-      "Your ad was rejected",
-      `"${ad.title}" was rejected: ${reason}`,
-      { pathname: "/ads/ad-details", params: { id: ad.id } },
-    );
   },
 
   suspendAd: async (id, reason) => {
@@ -700,16 +684,5 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
       commentsByAd: { ...state.commentsByAd, [adId]: [...(state.commentsByAd[adId] ?? []), comment] },
       ads: state.ads.map((a) => (a.id === adId ? { ...a, commentCount: a.commentCount + 1 } : a)),
     }));
-
-    const ad = get().ads.find((a) => a.id === adId);
-    if (ad) {
-      useNotificationStore.getState().addNotification(
-        ad.advertiser.id,
-        "ads_new_comment",
-        "New comment on your ad",
-        `${comment.author.name} commented on "${ad.title}".`,
-        { pathname: "/ads/ad-details", params: { id: ad.id } },
-      );
-    }
   },
 }));

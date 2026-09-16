@@ -13,7 +13,6 @@ import {
   ReportFormData,
   ReportTicket,
 } from "@/features/help/types/help.types";
-import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
 
 function mapFaqRow(row: any): FaqItem {
   return { id: row.id, question: row.question, answer: row.answer, category: row.category };
@@ -343,16 +342,6 @@ export const useHelpStore = create<HelpStore>((set, get) => ({
       ),
     }));
 
-    const request = get().consultRequests.find((c) => c.id === requestId);
-    if (request) {
-      useNotificationStore.getState().addNotification(
-        request.createdBy,
-        "consult_response_received",
-        "Consultant replied",
-        `${trimmedName} replied to your request: "${request.subject}".`,
-        { pathname: "/help/consult-details", params: { id: requestId } },
-      );
-    }
     return true;
   },
 
@@ -416,16 +405,6 @@ export const useHelpStore = create<HelpStore>((set, get) => ({
       ),
     }));
 
-    const question = get().questions.find((q) => q.id === questionId);
-    if (question) {
-      useNotificationStore.getState().addNotification(
-        question.createdBy,
-        "pharmacist_response_received",
-        "Your question was answered",
-        `${trimmedName} answered your question${question.medicationName ? ` about ${question.medicationName}` : ""}.`,
-        { pathname: "/help/question-details", params: { id: questionId } },
-      );
-    }
     return true;
   },
 }));

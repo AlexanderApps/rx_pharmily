@@ -10,7 +10,6 @@ import {
   DonationResponseFormData,
   DonationStatus,
 } from "@/features/donations/types/donation.types";
-import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 
 function mapItemRow(row: any): DonationItem {
@@ -248,16 +247,6 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
 
     await get().fetchDonation(row.id);
 
-    const donation = get().donations.find((d) => d.id === row.id);
-    if (donation) {
-      useNotificationStore.getState().addBroadcastNotification(
-        "donation_new_entry",
-        "New donation posted",
-        `${donation.facilityName} posted a new donation (${donation.code}).`,
-        { pathname: "/donations/donation-market-details", params: { id: donation.id } },
-      );
-    }
-
     return row.id;
   },
 
@@ -372,17 +361,6 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
     await get().fetchDonation(data.donationId);
     await get().fetchResponses(data.donationId);
 
-    const donation = get().donations.find((d) => d.id === data.donationId);
-    if (donation) {
-      const responderName = (row as any).facilities?.name ?? "A facility";
-      useNotificationStore.getState().addNotification(
-        donation.createdBy,
-        "donation_claim_received",
-        "New claim on your donation",
-        `${responderName} claimed items from ${donation.code}.`,
-        { pathname: "/donations/donation-details", params: { id: donation.id } },
-      );
-    }
     return true;
   },
 
@@ -414,21 +392,10 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
     await get().fetchDonation(donationId);
     await get().fetchResponses(donationId);
 
-    useNotificationStore.getState().addNotification(
-      response.createdBy,
-      "donation_claim_decision",
-      "Your claim was approved",
-      `Your claim on ${donation.code} was approved.`,
-      { pathname: "/donations/donation-market-details", params: { id: donation.id } },
-    );
     return true;
   },
 
   rejectResponse: async (donationId, responseId) => {
-    const responses = get().responsesByDonation[donationId] ?? [];
-    const response = responses.find((r) => r.id === responseId);
-    const donation = get().donations.find((d) => d.id === donationId);
-
     const { error } = await supabase.from("donation_responses").update({ status: "rejected" }).eq("id", responseId);
     if (error) {
       console.warn("[donations] rejectResponse failed:", error.message);
@@ -437,15 +404,6 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
 
     await get().fetchResponses(donationId);
 
-    if (response && donation) {
-      useNotificationStore.getState().addNotification(
-        response.createdBy,
-        "donation_claim_decision",
-        "Your claim was declined",
-        `Your claim on ${donation.code} was declined.`,
-        { pathname: "/donations/donation-market-details", params: { id: donation.id } },
-      );
-    }
     return true;
   },
 }));

@@ -438,21 +438,6 @@ export const useRxRfqsStore = create<RxRfqsStore>((set, get) => ({
     }
     console.log(`[rxrfq] updateRxRfqStatus: database update to "${status}" succeeded`);
     await get().fetchRxRfq(id);
-
-    // The create form's own status dropdown is dead code (commented out
-    // in rxrfq-req-form.tsx), so this — publishing an existing draft via
-    // the details screen's actions sheet — is the actual, reachable way
-    // an RFQ ever transitions to published. The broadcast belongs here,
-    // not (only) in addRxRfq, or it would never fire for that normal
-    // "create as draft, publish later" workflow.
-    if (isFirstPublish && existing) {
-      useNotificationStore.getState().addBroadcastNotification(
-        "rxrfq_new_entry",
-        "New RxRFQ posted",
-        `${existing.code} — ${existing.description || "a new request for quote"} was posted.`,
-        { pathname: "/rfqs/rxrfq-market-details", params: { id } },
-      );
-    }
   },
 
   extendRxRfqDeadline: async (id, newDeadline) => {
@@ -535,18 +520,6 @@ export const useRxRfqsStore = create<RxRfqsStore>((set, get) => ({
     await get().fetchRxRfq(data.rfqId);
     await get().fetchResponsesForRfq(data.rfqId);
 
-    const targetRfq = get().rxrfqMarketPlace.find((rfq) => rfq.id === data.rfqId);
-    if (targetRfq) {
-      const vendorFacility = useProfileStore.getState().facilities.find((f) => f.id === data.vendorFacility);
-      useNotificationStore.getState().addNotification(
-        targetRfq.createdBy,
-        "rxrfq_response_received",
-        "New response on your RxRFQ",
-        `${vendorFacility?.name ?? "A vendor"} responded to ${targetRfq.code}.`,
-        { pathname: "/rfqs/rxrfq-details-screen", params: { id: targetRfq.id } },
-      );
-    }
-
     return row.id;
   },
 
@@ -562,17 +535,6 @@ export const useRxRfqsStore = create<RxRfqsStore>((set, get) => ({
 
     await get().fetchRxRfq(rfqId);
 
-    const awardedResponse = get().rxrfqResponses.find((r) => r.id === responseId);
-    const awardedRfq = get().rxrfqMarketPlace.find((rfq) => rfq.id === rfqId);
-    if (awardedResponse && awardedRfq) {
-      useNotificationStore.getState().addNotification(
-        awardedResponse.createdBy,
-        "rxrfq_award_decision",
-        "Your quote was awarded",
-        `Your response to ${awardedRfq.code} was awarded.`,
-        { pathname: "/rfqs/response-details", params: { id: awardedResponse.id } },
-      );
-    }
     return true;
   },
 

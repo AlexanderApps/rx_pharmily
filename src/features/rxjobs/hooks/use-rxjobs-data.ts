@@ -8,7 +8,6 @@ import {
   JobApplication,
   JobFormData,
 } from "@/features/rxjobs/types/rxjobs.types";
-import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 
 function mapJobRow(row: any): Job {
@@ -211,13 +210,6 @@ export const useRxJobsStore = create<RxJobsStore>((set, get) => ({
     const job = mapJobRow(row);
     set((state) => ({ jobs: [job, ...state.jobs] }));
 
-    useNotificationStore.getState().addBroadcastNotification(
-      "jobs_new_entry",
-      "New job posted",
-      `${job.companyName} posted "${job.title}".`,
-      { pathname: "/jobs/job-market-details", params: { id: job.id } },
-    );
-
     return job.id;
   },
 
@@ -313,17 +305,6 @@ export const useRxJobsStore = create<RxJobsStore>((set, get) => ({
       applications: [...state.applications, application],
       jobs: state.jobs.map((j) => (j.id === jobId ? { ...j, applicantsCount: j.applicantsCount + 1 } : j)),
     }));
-
-    const job = get().jobs.find((j) => j.id === jobId);
-    if (job) {
-      useNotificationStore.getState().addNotification(
-        job.postedBy,
-        "jobs_application_received",
-        "New applicant",
-        `${application.applicantName} applied to "${job.title}".`,
-        { pathname: "/jobs/job-details", params: { id: job.id } },
-      );
-    }
   },
 
   updateApplicationStatus: async (applicationId, status) => {
@@ -336,18 +317,6 @@ export const useRxJobsStore = create<RxJobsStore>((set, get) => ({
     set((state) => ({
       applications: state.applications.map((a) => (a.id === applicationId ? { ...a, status } : a)),
     }));
-
-    const application = get().applications.find((a) => a.id === applicationId);
-    if (application) {
-      const job = get().jobs.find((j) => j.id === application.jobId);
-      useNotificationStore.getState().addNotification(
-        application.applicantId,
-        "jobs_application_status",
-        "Your application status changed",
-        `Your application${job ? ` for "${job.title}"` : ""} is now "${status}".`,
-        { pathname: "/jobs/job-market-details", params: { id: application.jobId } },
-      );
-    }
   },
 
   toggleSaveJob: (jobId) => {

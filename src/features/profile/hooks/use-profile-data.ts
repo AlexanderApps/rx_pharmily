@@ -1169,7 +1169,13 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         : entityType === "facility"
           ? get().facilities.find((f) => f.id === entityId)?.adminUserId
           : get().organizations.find((o) => o.id === entityId)?.adminUserId;
-    if (kycRecipientId) {
+    // Only facility/organization — 'user' is already covered
+    // server-side by notify-dispatch's handleProfiles (it watches the
+    // profiles table directly), but notify-dispatch has no equivalent
+    // handler for the facilities/organizations tables at all, so those
+    // two still need this client-side call or they'd get no
+    // notification whatsoever, not just a duplicate one.
+    if (kycRecipientId && entityType !== "user") {
       useNotificationStore.getState().addNotification(
         kycRecipientId,
         "kyc_decision",
@@ -1228,7 +1234,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         : entityType === "facility"
           ? get().facilities.find((f) => f.id === entityId)?.adminUserId
           : get().organizations.find((o) => o.id === entityId)?.adminUserId;
-    if (kycRejectRecipientId) {
+    if (kycRejectRecipientId && entityType !== "user") {
       useNotificationStore.getState().addNotification(
         kycRejectRecipientId,
         "kyc_decision",
@@ -1372,14 +1378,6 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
           : r,
       ),
     }));
-
-    useNotificationStore.getState().addNotification(
-      request.requestedBy,
-      "facility_creation_decision",
-      "Facility approved",
-      `"${request.name}" has been created. Submit KYC documents to get it verified.`,
-      { pathname: "/profile/facility-profile", params: { id: facilityRow.id } },
-    );
   },
 
   rejectFacilityCreationRequest: async (id, comment) => {
@@ -1408,14 +1406,6 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
           : r,
       ),
     }));
-
-    useNotificationStore.getState().addNotification(
-      request.requestedBy,
-      "facility_creation_decision",
-      "Facility request declined",
-      `"${request.name}" was not approved: ${comment.trim()}`,
-      { pathname: "/profile" },
-    );
   },
 
   submitOrganizationCreationRequest: async (data) => {
@@ -1495,14 +1485,6 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
           : r,
       ),
     }));
-
-    useNotificationStore.getState().addNotification(
-      request.requestedBy,
-      "organization_creation_decision",
-      "Organization approved",
-      `"${request.name}" has been created. Submit KYC documents to get it verified.`,
-      { pathname: "/profile/organization-profile", params: { id: orgRow.id } },
-    );
   },
 
   rejectOrganizationCreationRequest: async (id, comment) => {
@@ -1531,14 +1513,6 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
           : r,
       ),
     }));
-
-    useNotificationStore.getState().addNotification(
-      request.requestedBy,
-      "organization_creation_decision",
-      "Organization request declined",
-      `"${request.name}" was not approved: ${comment.trim()}`,
-      { pathname: "/profile" },
-    );
   },
 
   requestFacilityMembership: async (facilityId) => {
@@ -1571,16 +1545,6 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     set((state) => ({
       facilityMembershipRequests: [mapFacilityMembershipRequestRow(row), ...state.facilityMembershipRequests],
     }));
-
-    if (facility.adminUserId) {
-      useNotificationStore.getState().addNotification(
-        facility.adminUserId,
-        "facility_membership_request_received",
-        "New membership request",
-        `${get().user.fullName} wants to join ${facility.name}.`,
-        { pathname: "/profile/facility-profile", params: { id: facility.id } },
-      );
-    }
 
     return { ok: true };
   },
@@ -1617,14 +1581,6 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         r.id === id ? { ...r, status: "approved" as const, reviewedBy: reviewerId, reviewedAt: new Date() } : r,
       ),
     }));
-
-    useNotificationStore.getState().addNotification(
-      request.requestedBy,
-      "facility_membership_decision",
-      "Membership request approved",
-      `You're now a member of ${facility?.name ?? "the facility"}.`,
-      { pathname: "/profile/facility-profile", params: { id: request.facilityId } },
-    );
   },
 
   rejectFacilityMembershipRequest: async (id, comment) => {
@@ -1654,14 +1610,6 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
           : r,
       ),
     }));
-
-    useNotificationStore.getState().addNotification(
-      request.requestedBy,
-      "facility_membership_decision",
-      "Membership request declined",
-      `Your request to join ${facility?.name ?? "the facility"} was not approved: ${comment.trim()}`,
-      { pathname: "/profile" },
-    );
   },
 
   removeFacilityMember: async (membershipId) => {
@@ -1701,14 +1649,6 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
       facilityOrganizationRequests: [mapFacilityOrganizationRequestRow(row), ...state.facilityOrganizationRequests],
     }));
 
-    useNotificationStore.getState().addNotification(
-      org.adminUserId,
-      "facility_organization_request_received",
-      "New facility-to-organization request",
-      `${facility.name} wants to join ${org.name}.`,
-      { pathname: "/profile/organization-profile", params: { id: org.id } },
-    );
-
     return { ok: true };
   },
 
@@ -1746,14 +1686,6 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         r.id === id ? { ...r, status: "approved" as const, reviewedBy: reviewerId, reviewedAt: new Date() } : r,
       ),
     }));
-
-    useNotificationStore.getState().addNotification(
-      request.requestedBy,
-      "facility_organization_decision",
-      "Facility joined organization",
-      `${request.facilityName} now belongs to ${request.organizationName}.`,
-      { pathname: "/profile/facility-profile", params: { id: request.facilityId } },
-    );
   },
 
   rejectFacilityOrganizationRequest: async (id, comment) => {
@@ -1782,14 +1714,6 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
           : r,
       ),
     }));
-
-    useNotificationStore.getState().addNotification(
-      request.requestedBy,
-      "facility_organization_decision",
-      "Facility-to-organization request declined",
-      `${request.facilityName}'s request to join ${request.organizationName} was not approved: ${comment.trim()}`,
-      { pathname: "/profile/facility-profile", params: { id: request.facilityId } },
-    );
   },
 
   removeFacilityFromOrganization: async (organizationId, facilityId) => {
