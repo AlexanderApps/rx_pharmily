@@ -41,6 +41,11 @@ export default function AdminModerationDetailScreen() {
   const [reason, setReason] = useState("");
   const [durationDays, setDurationDays] = useState("7");
   const [submitting, setSubmitting] = useState(false);
+  // Independent of expandedAction (which is action cards, mutually
+  // exclusive) — these are purely informational, so there's no reason
+  // they can't both be open, or open alongside an action card, at once.
+  const [showDetails, setShowDetails] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
 
   const allUsers = useProfileStore((state) => state.allUsers);
   const facilities = useProfileStore((state) => state.facilities);
@@ -54,6 +59,12 @@ export default function AdminModerationDetailScreen() {
   const liftRestriction = useModerationStore((state) => state.liftRestriction);
   const fetchHistory = useModerationStore((state) => state.fetchHistory);
   const history = useModerationStore((state) => state.history[`${entityType}:${entityId}`]);
+  const fetchEntityDetails = useModerationStore((state) => state.fetchEntityDetails);
+  const isLoadingDetails = useModerationStore((state) => state.isLoadingDetails);
+  const details = useModerationStore((state) => state.entityDetails[`${entityType}:${entityId}`]);
+  const fetchEntityActivity = useModerationStore((state) => state.fetchEntityActivity);
+  const isLoadingActivity = useModerationStore((state) => state.isLoadingActivity);
+  const activity = useModerationStore((state) => state.entityActivity[`${entityType}:${entityId}`]);
 
   useEffect(() => {
     if (!isAdmin || !entityType || !entityId) return;
@@ -165,6 +176,18 @@ export default function AdminModerationDetailScreen() {
     }
   };
 
+  const handleToggleDetails = () => {
+    const next = !showDetails;
+    setShowDetails(next);
+    if (next && !details) fetchEntityDetails(entityType, entityId);
+  };
+
+  const handleToggleActivity = () => {
+    const next = !showActivity;
+    setShowActivity(next);
+    if (next && !activity) fetchEntityActivity(entityType, entityId);
+  };
+
   if (!entity) {
     return (
       <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
@@ -194,6 +217,95 @@ export default function AdminModerationDetailScreen() {
           <Text className="text-sm font-semibold" style={{ color: isRestricted ? colors.error : colors.success }}>
             {entity.isBanned ? "Currently banned" : entity.isSuspended ? "Currently suspended" : "Active — no restrictions"}
           </Text>
+        </View>
+
+        {/* Informational, lazy-loaded — fetched only the first time each
+            is expanded, not on mount, since most visits to this screen
+            are to take a quick action, not review every detail. */}
+        <View className="gap-3">
+          <View className="rounded-xl overflow-hidden" style={{ backgroundColor: colors.backgroundElement }}>
+            <Pressable onPress={handleToggleDetails} className="flex-row items-center gap-3 p-4">
+              <MaterialCommunityIcons name="card-account-details-outline" size={20} color={colors.textSecondary} />
+              <View className="flex-1">
+                <Text className="text-sm font-semibold" style={{ color: colors.text }}>Details</Text>
+                <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>Contact info, KYC record, and more</Text>
+              </View>
+              <MaterialCommunityIcons name={showDetails ? "chevron-up" : "chevron-down"} size={20} color={colors.textSecondary} />
+            </Pressable>
+            {showDetails && (
+              <View className="gap-2 px-4 pb-4">
+                {isLoadingDetails && !details ? (
+                  <ActivityIndicator color={colors.textSecondary} />
+                ) : details ? (
+                  [
+                    { label: "Email", value: details.email },
+                    { label: "Phone", value: details.phone },
+                    { label: "Role", value: details.role },
+                    { label: "Title", value: details.title },
+                    { label: "License number", value: details.licenseNumber },
+                    { label: "Bio", value: details.bio },
+                    { label: "Region", value: details.region },
+                    { label: "Type", value: details.facilityType ?? details.organizationType },
+                    { label: "Location", value: details.location ?? details.headquartersLocation },
+                    { label: "Address", value: details.address },
+                    { label: "Registration number", value: details.registrationNumber },
+                    { label: "Organization", value: details.organizationName },
+                    { label: "Admin", value: details.adminName },
+                    { label: "Created", value: details.createdAt.toLocaleDateString() },
+                    { label: "KYC submitted", value: details.kycSubmittedAt?.toLocaleString() },
+                    { label: "KYC reviewed", value: details.kycReviewedAt?.toLocaleString() },
+                    { label: "KYC reviewed by", value: details.kycReviewedByName },
+                    { label: "KYC rejection reason", value: details.kycRejectionReason },
+                    { label: "Terms accepted", value: details.termsAcceptedAt?.toLocaleString() },
+                  ]
+                    .filter((row) => row.value)
+                    .map((row) => (
+                      <View key={row.label} className="flex-row justify-between gap-3">
+                        <Text className="text-xs" style={{ color: colors.textSecondary }}>{row.label}</Text>
+                        <Text className="text-xs font-medium flex-1 text-right" style={{ color: colors.text }} numberOfLines={2}>
+                          {row.value}
+                        </Text>
+                      </View>
+                    ))
+                ) : (
+                  <Text className="text-xs" style={{ color: colors.textSecondary }}>Couldn't load details.</Text>
+                )}
+              </View>
+            )}
+          </View>
+
+          <View className="rounded-xl overflow-hidden" style={{ backgroundColor: colors.backgroundElement }}>
+            <Pressable onPress={handleToggleActivity} className="flex-row items-center gap-3 p-4">
+              <MaterialCommunityIcons name="chart-box-outline" size={20} color={colors.textSecondary} />
+              <View className="flex-1">
+                <Text className="text-sm font-semibold" style={{ color: colors.text }}>Activity</Text>
+                <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>What this account has posted</Text>
+              </View>
+              <MaterialCommunityIcons name={showActivity ? "chevron-up" : "chevron-down"} size={20} color={colors.textSecondary} />
+            </Pressable>
+            {showActivity && (
+              <View className="gap-3 px-4 pb-4">
+                {isLoadingActivity && !activity ? (
+                  <ActivityIndicator color={colors.textSecondary} />
+                ) : activity && activity.length > 0 ? (
+                  activity.map((item) => (
+                    <View key={item.label} className="gap-1">
+                      <Text className="text-xs font-semibold" style={{ color: colors.text }}>
+                        {item.label} ({item.count})
+                      </Text>
+                      {item.recentTitles.length > 0 && (
+                        <Text className="text-xs" style={{ color: colors.textSecondary }} numberOfLines={3}>
+                          {item.recentTitles.join(", ")}
+                        </Text>
+                      )}
+                    </View>
+                  ))
+                ) : (
+                  <Text className="text-xs" style={{ color: colors.textSecondary }}>Couldn't load activity.</Text>
+                )}
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Actions — each card is self-contained (icon, title,
