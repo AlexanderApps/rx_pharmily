@@ -125,12 +125,23 @@ export default function RootLayout() {
 
   const onAuthScreen = segments[0] === "login" || segments[0] === "signup";
   const onRestrictedScreen = segments[0] === "account-restricted";
+  const onAcceptTermsScreen = segments[0] === "accept-terms";
   // isCurrentlyRestricted accounts for a suspension that's technically
   // expired but hasn't been cleared by the hourly cron job yet — see
   // that function's own comment. currentUser starts as EMPTY_USER
   // (isBanned/isSuspended both false) before fetchMyProfile resolves,
   // so this never blocks access based on data that hasn't loaded yet.
   const isRestricted = isCurrentlyRestricted(currentUser);
+  // currentUser.id is "" until fetchMyProfile resolves (EMPTY_USER),
+  // and termsAcceptedAt is undefined by default — without the id
+  // check, every signed-in user would look like they'd never accepted
+  // for the moment before their real profile loads, since fetchMyProfile
+  // isn't part of the isLoading session-check gate above (it's fired
+  // separately, fire-and-forget, alongside the rest of the on-auth
+  // fetches). New signups already have terms_accepted_at set at
+  // creation time by the DB trigger, so this only actually fires for
+  // pre-existing accounts that predate this feature.
+  const needsTermsAcceptance = !!currentUser.id && !currentUser.termsAcceptedAt;
 
   useEffect(() => {
     if (isLoading) return; // don't redirect until the initial session check resolves
@@ -145,8 +156,12 @@ export default function RootLayout() {
       // while they were already sitting on this screen — don't leave
       // them stuck there once it no longer applies.
       router.replace("/(tabs)");
+    } else if (session && !isRestricted && needsTermsAcceptance && !onAcceptTermsScreen) {
+      router.replace("/accept-terms");
+    } else if (session && !needsTermsAcceptance && onAcceptTermsScreen) {
+      router.replace("/(tabs)");
     }
-  }, [isLoading, session, segments, isRestricted, onRestrictedScreen]);
+  }, [isLoading, session, segments, isRestricted, onRestrictedScreen, needsTermsAcceptance, onAcceptTermsScreen]);
 
   if (isLoading) {
     return (

@@ -23,6 +23,7 @@ export default function SignUpScreen() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmationSentTo, setConfirmationSentTo] = useState<string | null>(null);
@@ -38,9 +39,13 @@ export default function SignUpScreen() {
       setError("Password must be at least 6 characters.");
       return;
     }
+    if (!termsAccepted) {
+      setError("You need to agree to the Terms of Service and Privacy Policy to continue.");
+      return;
+    }
     setError(null);
     setSubmitting(true);
-    const result = await signUp({ fullName, email, password });
+    const result = await signUp({ fullName, email, password, termsAccepted });
     setSubmitting(false);
 
     if (!result.ok) {
@@ -182,6 +187,39 @@ export default function SignUpScreen() {
             className="border rounded-[10px] px-3.5 py-3 text-sm mt-1.5"
             style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
           />
+
+          <Pressable
+            onPress={() => setTermsAccepted((v) => !v)}
+            className="flex-row items-start gap-2.5 mt-4"
+          >
+            <View
+              className="w-[18px] h-[18px] rounded-[5px] items-center justify-center mt-0.5"
+              style={{
+                backgroundColor: termsAccepted ? colors.primary : "transparent",
+                borderWidth: termsAccepted ? 0 : 1.5,
+                borderColor: colors.border,
+              }}
+            >
+              {termsAccepted && <MaterialCommunityIcons name="check" size={13} color="#fff" />}
+            </View>
+            <Text className="text-xs flex-1 leading-[17px]" style={{ color: colors.textSecondary }}>
+              I agree to the{" "}
+              <Text
+                onPress={() => router.push("/help/eula")}
+                style={{ color: colors.primary, fontWeight: "700" }}
+              >
+                Terms of Service
+              </Text>
+              {" "}and{" "}
+              <Text
+                onPress={() => router.push("/help/privacy-policy")}
+                style={{ color: colors.primary, fontWeight: "700" }}
+              >
+                Privacy Policy
+              </Text>
+              .
+            </Text>
+          </Pressable>
 
           <View className="flex-row items-start gap-2 rounded-[10px] p-3 mt-4" style={{ backgroundColor: colors.warning + "12" }}>
             <MaterialCommunityIcons name="information-outline" size={14} color={colors.warning} />

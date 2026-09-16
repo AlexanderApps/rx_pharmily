@@ -31,8 +31,15 @@ export interface AuthProfile {
   kycStatus: ProfileKycStatus;
 }
 
+// Bumped whenever the EULA/privacy policy changes materially enough to
+// warrant tracking which version someone agreed to — not currently
+// wired to any re-consent flow (see the migration's own comment), just
+// recorded from day one so a later feature doesn't need a backfill.
+export const CURRENT_TERMS_VERSION = "1.0";
+
 export interface SignUpFormData {
   fullName: string;
   email: string;
   password: string;
+  termsAccepted: boolean;
 }

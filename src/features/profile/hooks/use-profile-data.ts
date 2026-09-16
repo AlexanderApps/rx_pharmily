@@ -29,7 +29,7 @@ import {
   UserProfession,
 } from "@/features/profile/types/profile.types";
 import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
-import { AccountRole, isSuperadminRole } from "@/features/auth/types/auth.types";
+import { AccountRole, CURRENT_TERMS_VERSION, isSuperadminRole } from "@/features/auth/types/auth.types";
 
 // Module-level, not store state — purely a dedup mechanism so that if
 // several other stores' fetches race to ensure facilities are loaded
@@ -127,6 +127,7 @@ function mapUserRow(row: any): UserProfile {
     avatarUrl: row.avatar_url ?? undefined,
     profession: row.profession ?? undefined,
     roles: row.roles ?? ["public"],
+    termsAcceptedAt: row.terms_accepted_at ? new Date(row.terms_accepted_at) : undefined,
     isPharmacist: row.is_pharmacist ?? false,
     isPss: row.is_pss ?? false,
     isAvailableAsSuperintendent: row.is_available_as_superintendent ?? false,
@@ -475,6 +476,7 @@ type ProfileStore = {
   ) => Promise<void>;
   removeKycDocument: (entityType: KycEntityType, entityId: string, documentId: string) => Promise<void>;
   submitKyc: (entityType: KycEntityType, entityId: string) => Promise<boolean>;
+  acceptTerms: () => Promise<{ ok: boolean; error?: string }>;
   approveKyc: (entityType: KycEntityType, entityId: string) => Promise<void>;
   // Admin-only — the DB itself also enforces this via a trigger, this
   // is just the client-side entry point. Deliberately separate from
@@ -1107,6 +1109,16 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
       return { organizations: state.organizations.map((o) => (o.id === entityId ? { ...o, kyc: { ...o.kyc, ...patch } } : o)) };
     });
     return true;
+  },
+
+  acceptTerms: async () => {
+    const { error } = await supabase.rpc("accept_terms", { p_version: CURRENT_TERMS_VERSION });
+    if (error) {
+      console.warn("[profile] acceptTerms failed:", error.message);
+      return { ok: false, error: error.message };
+    }
+    set((state) => ({ user: { ...state.user, termsAcceptedAt: new Date() } }));
+    return { ok: true };
   },
 
   approveKyc: async (entityType, entityId) => {

@@ -117,6 +117,10 @@ export interface UserProfile {
   // that were already granted. account_role (admin/superadmin) is the
   // one role assignment the DB does keep in sync, via its own trigger.
   roles: string[];
+  // Undefined = never accepted (accounts created before this existed,
+  // or the server-side enforcement in handle_new_user was somehow
+  // bypassed). See acceptTerms for the one path that sets this.
+  termsAcceptedAt?: Date;
   // Derived from profession, generated columns in the DB — always in
   // sync, never independently settable.
   isPharmacist: boolean;

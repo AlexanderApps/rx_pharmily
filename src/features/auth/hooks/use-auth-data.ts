@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { supabase } from "@/lib/supabase";
-import { AuthProfile, Session, SignUpFormData, User, isAdminRole } from "@/features/auth/types/auth.types";
+import { AuthProfile, CURRENT_TERMS_VERSION, Session, SignUpFormData, User, isAdminRole } from "@/features/auth/types/auth.types";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 
 // Bridges the real signed-in identity into the app's existing (still
@@ -125,11 +125,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     return { ok: true };
   },
 
-  signUp: async ({ fullName, email, password }) => {
+  signUp: async ({ fullName, email, password, termsAccepted }) => {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: { data: { full_name: fullName.trim() } },
+      options: { data: { full_name: fullName.trim(), terms_accepted: termsAccepted, terms_version: CURRENT_TERMS_VERSION } },
     });
 
     if (error) return { ok: false, error: error.message };
