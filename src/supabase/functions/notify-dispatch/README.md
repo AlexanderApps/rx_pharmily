@@ -15,8 +15,18 @@ of this file for why.
 ## 1. Deploy the function
 
 ```bash
-supabase functions deploy notify-dispatch
+supabase functions deploy notify-dispatch --no-verify-jwt
 ```
+
+**`--no-verify-jwt` is required, not optional** — this function is
+called the same way `send-push` is (a database trigger via `pg_net`,
+authenticated by its own `x-webhook-secret` check, not a Supabase JWT).
+Without this flag, every trigger-fired call is rejected by Supabase's
+Edge Function gateway before this function's own code ever runs — `401
+UNAUTHORIZED_NO_AUTH_HEADER` in `net._http_response`, not in this
+function's own logs. See `send-push/README.md`'s identical note for the
+full explanation. Already deployed without it? Re-run the command above
+to update the existing function's settings.
 
 This uploads `index.ts`, `handlers.ts`, `helpers.ts`, and `types.ts` as a
 single function. `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are

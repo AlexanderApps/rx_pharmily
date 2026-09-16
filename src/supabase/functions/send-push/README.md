@@ -91,9 +91,26 @@ code but has zero Node-specific dependencies.
 ## 3. Deploy and configure
 
 ```bash
-supabase functions deploy send-push
+supabase functions deploy send-push --no-verify-jwt
 supabase secrets set PUSH_WEBHOOK_SECRET=$(openssl rand -hex 32)
 ```
+
+**`--no-verify-jwt` is required, not optional.** Supabase's Edge
+Function gateway checks for a valid `Authorization` header on every
+invocation by default, before the function's own code — including its
+`x-webhook-secret` check above — ever runs. `pg_net`'s `http_post` (what
+the database trigger uses to call this function) doesn't send one. Without
+this flag, every trigger-fired call is rejected at the gateway with
+`401 UNAUTHORIZED_NO_AUTH_HEADER` / `"Missing authorization header"` —
+visible in `net._http_response`, not in this function's own logs, since
+it never actually runs. This function's `x-webhook-secret` check is the
+real authorization for this endpoint; the platform-level JWT check is
+redundant with it and actively blocks the one caller (the DB trigger)
+this function is meant to be reachable by.
+
+Already deployed without the flag? Just re-run the command above — a
+redeploy updates the existing function's settings, no need to delete
+anything first.
 
 Then either:
 
