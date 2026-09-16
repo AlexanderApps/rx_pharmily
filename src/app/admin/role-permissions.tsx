@@ -48,7 +48,18 @@ export default function RolePermissionsScreen() {
   // the Features toggle row — derived from the same permissions
   // catalog rather than a separate fetch, since a feature is just a
   // permissions.category value.
-  const allFeatures = useMemo(() => Array.from(new Set(catalog.map((entry) => entry.category))).sort(), [catalog]);
+  // Union of permissions.category (features with their own fine-grained
+  // actions, like RxRFQ) and role_features' own feature values directly
+  // (standalone features with no corresponding permissions catalog
+  // entry, like home_feed) — deriving from the catalog alone would
+  // silently exclude the second kind from ever showing up here.
+  const allFeatures = useMemo(
+    () =>
+      Array.from(
+        new Set([...catalog.map((entry) => entry.category), ...Object.values(roleFeatures).flatMap((f) => Object.keys(f))]),
+      ).sort(),
+    [catalog, roleFeatures],
+  );
 
   if (!isSuperadmin) return <Redirect href="/(tabs)" />;
 

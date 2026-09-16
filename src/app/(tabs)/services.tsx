@@ -8,25 +8,12 @@ import { useTheme } from "@/shared/hooks/use-theme";
 
 import { router } from "expo-router";
 import ActionButton from "@/shared/components/action-button";
-import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 
 export default function ServiceScreen() {
   const { colors } = useTheme();
-  // A true regular user — never submitted KYC, so there's no reason to
-  // think they're pursuing professional verification — only sees the 3
-  // base features here too, same reasoning as the web sidebar and the
-  // home feed's own shortcut screen.
-  // Distinguishes "still might become a professional" (pending/
-  // rejected — keep showing everything) from "confirmed not one" —
-  // unverified (never tried) and verified-but-not-a-pharmacist/PSS
-  // both mean the 7 professional features stay hidden. Verification
-  // alone doesn't unlock them — being verified with profession 'Other'
-  // confirms identity, not professional status.
-  const user = useProfileStore((state) => state.user);
-  const kycStatus = user.kyc.status;
-  const hasProfessionalAccess = user.roles.some((r) => r !== "public");
-  const isPursuingVerification = kycStatus === "pending" || kycStatus === "rejected";
-  const isRegularUser = !hasProfessionalAccess && !isPursuingVerification;
+  const hasFeature = usePermissionsStore((state) => state.hasFeature);
+  const hasFetchedFeatures = usePermissionsStore((state) => state.hasFetchedFeatures);
 
   return (
     <ThemedView className="flex-1 items-center justify-center">
@@ -57,7 +44,7 @@ export default function ServiceScreen() {
                 Quick Actions
               </Text>
               <View className="flex-row flex-wrap gap-3">
-                {!isRegularUser && (
+                {hasFetchedFeatures && hasFeature("Jobs") && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -74,7 +61,7 @@ export default function ServiceScreen() {
                   }}
                 />
                 )}
-                {!isRegularUser && (
+                {hasFetchedFeatures && hasFeature("RxRFQ") && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -91,7 +78,7 @@ export default function ServiceScreen() {
                   }}
                 />
                 )}
-                {!isRegularUser && (
+                {hasFetchedFeatures && hasFeature("Donations") && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -108,7 +95,7 @@ export default function ServiceScreen() {
                   }}
                 />
                 )}
-                {!isRegularUser && (
+                {hasFetchedFeatures && hasFeature("MediScope") && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -125,6 +112,7 @@ export default function ServiceScreen() {
                   }}
                 />
                 )}
+                {hasFetchedFeatures && hasFeature("RxLink") && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -140,7 +128,8 @@ export default function ServiceScreen() {
                     router.push("/rxlink");
                   }}
                 />
-                {!isRegularUser && (
+                )}
+                {hasFetchedFeatures && hasFeature("RxChat") && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -157,7 +146,7 @@ export default function ServiceScreen() {
                   }}
                 />
                 )}
-                {!isRegularUser && (
+                {hasFetchedFeatures && hasFeature("Ads") && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -174,6 +163,7 @@ export default function ServiceScreen() {
                   }}
                 />
                 )}
+                {hasFetchedFeatures && hasFeature("RxHelp") && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -189,7 +179,8 @@ export default function ServiceScreen() {
                     router.push("/help");
                   }}
                 />
-                {!isRegularUser && (
+                )}
+                {hasFetchedFeatures && hasFeature("Formulary") && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -206,6 +197,7 @@ export default function ServiceScreen() {
                   }}
                 />
                 )}
+                {hasFetchedFeatures && hasFeature("RxVital") && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
@@ -221,6 +213,7 @@ export default function ServiceScreen() {
                     router.push("/vitals");
                   }}
                 />
+                )}
               </View>
             </View>
           </ThemedView>

@@ -5,6 +5,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import LogoMark from "@/shared/components/logo-mark";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { isAdminRole } from "@/features/auth/types/auth.types";
 import { noSelectStyle } from "@/shared/constants/text-selection";
@@ -83,6 +84,8 @@ const WebSidebar: React.FC = () => {
   const { colors } = useTheme();
   const pathname = usePathname();
   const user = useProfileStore((state) => state.user);
+  const hasFeature = usePermissionsStore((state) => state.hasFeature);
+  const hasFetchedFeatures = usePermissionsStore((state) => state.hasFetchedFeatures);
   const isAdmin = useAuthStore((state) => isAdminRole(state.profile?.accountRole));
   const kycStatus = user.kyc.status;
   // Distinguishes "still might become a professional" (pending/
@@ -91,8 +94,14 @@ const WebSidebar: React.FC = () => {
   // verified-but-not-a-pharmacist/PSS both mean the 7 professional
   // features stay hidden, same reasoning as the home feed's own split.
   const isPursuingVerification = kycStatus === "pending" || kycStatus === "rejected";
-  const hasProfessionalAccess = user.roles.some((r) => r !== "public");
-  const showFullNav = hasProfessionalAccess || isPursuingVerification;
+  // Whether the 7 professional nav items show is now an explicit,
+  // admin-editable grant (role_features' home_feed entry) — see
+  // index.tsx's own comment on this and role-permissions.tsx for where
+  // a superadmin edits it. Guarded by hasFetchedFeatures for the same
+  // reason index.tsx's own hasProfileLoaded guard exists — myFeatures
+  // starts empty until fetchMyFeatures resolves.
+  const hasProfessionalAccess = hasFeature("home_feed");
+  const showFullNav = (hasFetchedFeatures && hasProfessionalAccess) || isPursuingVerification;
   const visiblePrimaryNav = showFullNav
     ? PRIMARY_NAV
     : PRIMARY_NAV.filter((item) => item.href === "/(tabs)");

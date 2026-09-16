@@ -157,7 +157,22 @@ export default function HomeScreen() {
   // professional — the features stay hidden for them too, same as
   // someone who's never verified at all.
   const user = useProfileStore((state) => state.user);
-  const hasProfessionalAccess = user.roles.some((r) => r !== "public");
+  const hasFeature = usePermissionsStore((state) => state.hasFeature);
+  const hasFetchedFeatures = usePermissionsStore((state) => state.hasFetchedFeatures);
+  // Whether the advanced home feed shows is now an explicit,
+  // admin-editable grant (role_features' home_feed entry) rather than
+  // a hardcoded "any role beyond public" rule — see role-permissions.tsx
+  // for where a superadmin edits this.
+  const hasProfessionalAccess = hasFeature("home_feed");
+  // myFeatures starts empty until fetchMyFeatures resolves — without
+  // this guard, hasProfessionalAccess reads as false for that entire
+  // window regardless of the person's actual roles, so a pharmacist
+  // would briefly see the minimal shortcut screen flash before the
+  // real feed loads, not just a regular user correctly seeing it. Same
+  // fix as app/_layout.tsx's own needsTermsAcceptance guard, for the
+  // same underlying reason — just guarding a different async fetch now
+  // that this reads from myFeatures instead of user.roles directly.
+  const hasProfileLoaded = hasFetchedFeatures;
   const kycStatus = user.kyc.status;
   // Distinguishes "still might become a professional" (keep the
   // verification-focused message) from "confirmed not one" —
@@ -423,6 +438,16 @@ export default function HomeScreen() {
     }
     return <View className="h-6" />;
   };
+
+  if (!hasProfileLoaded) {
+    return (
+      <ThemedView className="flex-1">
+        <SafeAreaView className="flex-1 items-center justify-center" edges={["top", "left", "right"]}>
+          <ActivityIndicator color={colors.primary} />
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
 
   // Non-verified users don't get the feed at all — a simple, modern
   // shortcut screen to the 3 features that don't require verification

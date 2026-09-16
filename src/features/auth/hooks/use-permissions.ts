@@ -38,6 +38,14 @@ type PermissionsStore = {
   // closed, not throw or silently pass.
   hasPermission: (key: string) => boolean;
 
+  // Same shape and same reasoning, one level coarser — whether the
+  // signed-in user's roles grant a given feature (nav/screen
+  // visibility) at all, not a fine-grained action within one.
+  myFeatures: Record<string, boolean>;
+  hasFetchedFeatures: boolean;
+  fetchMyFeatures: () => Promise<void>;
+  hasFeature: (feature: string) => boolean;
+
   // ---- Admin-facing: managing OTHER users' permissions ----------------
   catalog: PermissionCatalogEntry[];
   fetchCatalog: () => Promise<void>;
@@ -99,6 +107,8 @@ export const usePermissionsStore = create<PermissionsStore>((set, get) => ({
   permissions: {},
   isLoading: false,
   hasFetched: false,
+  myFeatures: {},
+  hasFetchedFeatures: false,
   catalog: [],
   rolesCatalog: [],
   targetUserEffective: {},
@@ -135,6 +145,31 @@ export const usePermissionsStore = create<PermissionsStore>((set, get) => ({
   },
 
   hasPermission: (key) => get().permissions[key] ?? false,
+
+  fetchMyFeatures: async () => {
+    let userId: string;
+    try {
+      userId = await requireUserId();
+    } catch {
+      console.warn("[permissions] fetchMyFeatures skipped: not signed in (yet)");
+      return;
+    }
+
+    const { data, error } = await supabase.rpc("get_user_features", { p_user_id: userId });
+    if (error) {
+      console.warn("[permissions] fetchMyFeatures failed:", error.message);
+      set({ hasFetchedFeatures: true });
+      return;
+    }
+
+    const myFeatures: Record<string, boolean> = {};
+    for (const row of data ?? []) {
+      myFeatures[row.feature] = row.granted;
+    }
+    set({ myFeatures, hasFetchedFeatures: true });
+  },
+
+  hasFeature: (feature) => get().myFeatures[feature] ?? false,
 
   fetchCatalog: async () => {
     const { data, error } = await supabase

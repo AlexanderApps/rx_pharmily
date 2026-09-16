@@ -47,6 +47,7 @@ export default function RootLayout() {
   const unsubscribeFromNotifications = useNotificationStore((state) => state.unsubscribeFromNotifications);
   const registerForPush = usePushRegistrationStore((state) => state.registerForPush);
   const fetchPermissions = usePermissionsStore((state) => state.fetchPermissions);
+  const fetchMyFeatures = usePermissionsStore((state) => state.fetchMyFeatures);
   const fetchBookmarks = useBookmarksStore((state) => state.fetchBookmarks);
   const fetchMyProfile = useProfileStore((state) => state.fetchMyProfile);
   const currentUser = useProfileStore((state) => state.user);
@@ -103,6 +104,7 @@ export default function RootLayout() {
       // placeholder still sitting there.
       fetchNotificationSettings().then(() => fetchNotifications());
       fetchPermissions();
+      fetchMyFeatures();
       fetchBookmarks();
       subscribeToNotifications(session.user.id);
       // Native and web use genuinely different push mechanisms — see

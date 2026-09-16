@@ -139,7 +139,18 @@ export default function HomeScreen() {
   const fetchRxRfqs = useRxRfqsStore((state) => state.fetchRxRfqs);
   const userRegion = useProfileStore((state) => state.user.region);
   const user = useProfileStore((state) => state.user);
-  const hasProfessionalAccess = user.roles.some((r) => r !== "public");
+  const hasFeature = usePermissionsStore((state) => state.hasFeature);
+  const hasFetchedFeatures = usePermissionsStore((state) => state.hasFetchedFeatures);
+  // Whether the advanced home feed shows is now an explicit,
+  // admin-editable grant (role_features' home_feed entry) — see
+  // index.tsx's own comment on this and role-permissions.tsx for where
+  // a superadmin edits it.
+  const hasProfessionalAccess = hasFeature("home_feed");
+  // Same reasoning as index.tsx's own comment on this — myFeatures
+  // starts empty until fetchMyFeatures resolves, so without this guard
+  // hasProfessionalAccess reads false for everyone briefly, regardless
+  // of their actual roles.
+  const hasProfileLoaded = hasFetchedFeatures;
   const kycStatus = user.kyc.status;
   const isPursuingVerification = kycStatus === "pending" || kycStatus === "rejected";
   const hasPermission = usePermissionsStore((state) => state.hasPermission);
@@ -378,6 +389,16 @@ export default function HomeScreen() {
     }
     return <View className="h-6" />;
   };
+
+  if (!hasProfileLoaded) {
+    return (
+      <ThemedView className="flex-1">
+        <SafeAreaView className="flex-1 items-center justify-center" edges={["top", "left", "right"]}>
+          <ActivityIndicator color={colors.primary} />
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
 
   // Non-verified users don't get the feed at all — see the native
   // index.tsx's identical block for the full rationale.

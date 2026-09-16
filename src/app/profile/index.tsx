@@ -1,11 +1,12 @@
 import React, { useMemo } from "react";
-import { View, Text, ScrollView, Pressable, Platform} from "react-native";
+import { View, Text, ScrollView, Pressable, Platform, ActivityIndicator} from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { router, Redirect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { ThemedView } from "@/shared/components/themed-view";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { isAdminRole } from "@/features/auth/types/auth.types";
 import KycStatusBadge from "@/features/profile/components/kyc-status-badge";
@@ -17,6 +18,8 @@ export default function ProfileHubScreen() {
   const facilities = useProfileStore((state) => state.facilities);
   const facilityMemberships = useProfileStore((state) => state.facilityMemberships);
   const organizations = useProfileStore((state) => state.organizations);
+  const hasFeature = usePermissionsStore((state) => state.hasFeature);
+  const hasFetchedFeatures = usePermissionsStore((state) => state.hasFetchedFeatures);
 
   // Derived here (not inside the Zustand selector) — a selector returning a
   // freshly-filtered array every call makes useSyncExternalStore think the
@@ -49,8 +52,23 @@ export default function ProfileHubScreen() {
   // useMemo would call a different number of hooks depending on kyc
   // status, which breaks React's rule that hooks run in the same order
   // every render.
-  const hasProfessionalAccess = user.roles.some((r) => r !== "public");
+  //
+  // Whether this counts as "professional access" is now the home_feed
+  // feature grant (role_features), not a hardcoded roles check — see
+  // index.tsx's own comment and role-permissions.tsx for where a
+  // superadmin edits it. hasFetchedFeatures guards the window before
+  // myFeatures loads — worse here than a visual flash, since an
+  // incorrect redirect is real navigation the person would then have
+  // to navigate back from, not just a screen that briefly looked wrong.
+  const hasProfessionalAccess = hasFeature("home_feed");
   const isPursuingVerification = user.kyc.status === "pending" || user.kyc.status === "rejected";
+  if (!hasFetchedFeatures) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center" style={{ backgroundColor: colors.background }}>
+        <ActivityIndicator color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
   if (!hasProfessionalAccess && !isPursuingVerification) {
     return <Redirect href="/profile/user-profile" />;
   }
