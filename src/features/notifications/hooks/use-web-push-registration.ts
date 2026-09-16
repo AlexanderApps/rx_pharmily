@@ -61,19 +61,14 @@ export async function registerForWebPush(): Promise<void> {
     }
 
     const json = subscription.toJSON();
-    const userId = await requireUserId();
+    await requireUserId(); // ensures a session exists before the RPC call below relies on auth.uid()
 
-    const { error } = await supabase.from("push_subscriptions").upsert(
-      {
-        user_id: userId,
-        platform: "web",
-        web_endpoint: json.endpoint,
-        web_p256dh: json.keys?.p256dh,
-        web_auth: json.keys?.auth,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "web_endpoint" },
-    );
+    const { error } = await supabase.rpc("register_push_subscription", {
+      p_platform: "web",
+      p_web_endpoint: json.endpoint,
+      p_web_p256dh: json.keys?.p256dh,
+      p_web_auth: json.keys?.auth,
+    });
     if (error) {
       console.warn("[push] failed to save web push subscription:", error.message);
     } else {

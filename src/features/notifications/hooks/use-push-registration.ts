@@ -89,17 +89,12 @@ export const usePushRegistrationStore = create<PushRegistrationStore>((set) => (
       }
 
       const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
-      const userId = await requireUserId();
+      await requireUserId(); // ensures a session exists before the RPC call below relies on auth.uid()
 
-      const { error } = await supabase.from("push_subscriptions").upsert(
-        {
-          user_id: userId,
-          platform: Platform.OS as "ios" | "android",
-          expo_push_token: token,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "expo_push_token" },
-      );
+      const { error } = await supabase.rpc("register_push_subscription", {
+        p_platform: Platform.OS as "ios" | "android",
+        p_expo_push_token: token,
+      });
       if (error) {
         console.warn("[push] failed to save push token:", error.message);
       } else {
