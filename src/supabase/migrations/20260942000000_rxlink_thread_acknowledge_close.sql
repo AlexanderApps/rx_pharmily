@@ -38,7 +38,7 @@ alter table public.rxlink_requests
 update public.rxlink_requests
 set
   requester_closed_at = coalesce(responded_at, created_at),
-  status = case when responded_at is not null then 'responded' else 'pending' end
+  status = (case when responded_at is not null then 'responded' else 'pending' end)::rxlink_status
 where status = 'closed';
 
 -- ----------------------------------------------------------------------
