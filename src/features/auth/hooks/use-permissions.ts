@@ -8,6 +8,12 @@ export interface PermissionCatalogEntry {
   category: string;
 }
 
+export interface RoleCatalogEntry {
+  key: string;
+  label: string;
+  description: string;
+}
+
 export interface UserPermissionOverride {
   permissionKey: string;
   granted: boolean;
@@ -36,6 +42,13 @@ type PermissionsStore = {
   catalog: PermissionCatalogEntry[];
   fetchCatalog: () => Promise<void>;
 
+  // The single source of truth for "what roles exist" — see the
+  // roles catalog table's own migration comment. Populates the tabs on
+  // role-permissions.tsx and the toggleable role chips on
+  // permission-overrides.tsx, so neither screen hardcodes a role list.
+  rolesCatalog: RoleCatalogEntry[];
+  fetchRolesCatalog: () => Promise<void>;
+
   // The user currently being managed on the admin screen — both the
   // fully-resolved effective set (role + overrides already combined,
   // via the same get_user_permissions RPC fetchPermissions uses, just
@@ -44,7 +57,10 @@ type PermissionsStore = {
   // different states, not just a single granted/denied bit.
   targetUserEffective: Record<string, boolean>;
   targetUserOverrides: UserPermissionOverride[];
-  targetUserBaseRole: string | null;
+  // The actual, stored roles array — replaces the old single
+  // targetUserBaseRole (get_user_base_role() is now a deprecated,
+  // display-only shim; this reads profiles.roles directly instead).
+  targetUserRoles: string[];
   fetchTargetUser: (userId: string) => Promise<void>;
 
   setOverride: (
@@ -55,13 +71,28 @@ type PermissionsStore = {
   ) => Promise<{ ok: boolean; error?: string }>;
   clearOverride: (userId: string, permissionKey: string) => Promise<{ ok: boolean; error?: string }>;
 
-  // ---- Superadmin-facing: editing what each TIER gets by default -----
+  // Replaces the target user's full roles array. admin/superadmin are
+  // deliberately never included in what this writes — those stay
+  // synced from account_role by the DB's own trigger, and this method
+  // doesn't manage account_role at all, so including them here would
+  // let roles silently drift out of sync with the thing RLS actually
+  // checks.
+  setUserRoles: (userId: string, roles: string[]) => Promise<{ ok: boolean; error?: string }>;
+
+  // ---- Superadmin-facing: editing what each ROLE gets by default -----
   // Keyed by role, then permission_key — the full role_permissions
   // table, not just one role/one user, since the editor screen shows
-  // every tier at once.
+  // every role at once.
   roleDefaults: Record<string, Record<string, boolean>>;
   fetchRoleDefaults: () => Promise<void>;
   setRoleDefault: (role: string, permissionKey: string, granted: boolean) => Promise<{ ok: boolean; error?: string }>;
+
+  // Same shape as roleDefaults/fetchRoleDefaults/setRoleDefault, one
+  // level coarser — which features (categories) a role sees at all,
+  // not the fine-grained actions within them.
+  roleFeatures: Record<string, Record<string, boolean>>;
+  fetchRoleFeatures: () => Promise<void>;
+  setRoleFeature: (role: string, feature: string, granted: boolean) => Promise<{ ok: boolean; error?: string }>;
 };
 
 export const usePermissionsStore = create<PermissionsStore>((set, get) => ({
@@ -69,10 +100,12 @@ export const usePermissionsStore = create<PermissionsStore>((set, get) => ({
   isLoading: false,
   hasFetched: false,
   catalog: [],
+  rolesCatalog: [],
   targetUserEffective: {},
   targetUserOverrides: [],
-  targetUserBaseRole: null,
+  targetUserRoles: [],
   roleDefaults: {},
+  roleFeatures: {},
 
   fetchPermissions: async () => {
     let userId: string;
@@ -122,14 +155,23 @@ export const usePermissionsStore = create<PermissionsStore>((set, get) => ({
     });
   },
 
+  fetchRolesCatalog: async () => {
+    const { data, error } = await supabase.from("roles").select("key, label, description").order("key");
+    if (error) {
+      console.warn("[permissions] fetchRolesCatalog failed:", error.message);
+      return;
+    }
+    set({ rolesCatalog: data ?? [] });
+  },
+
   fetchTargetUser: async (userId) => {
-    const [effectiveResult, overridesResult, roleResult] = await Promise.all([
+    const [effectiveResult, overridesResult, rolesResult] = await Promise.all([
       supabase.rpc("get_user_permissions", { p_user_id: userId }),
       supabase
         .from("user_permission_overrides")
         .select("permission_key, granted, reason, created_at")
         .eq("user_id", userId),
-      supabase.rpc("get_user_base_role", { p_user_id: userId }),
+      supabase.from("profiles").select("roles").eq("id", userId).single(),
     ]);
 
     if (effectiveResult.error) {
@@ -138,8 +180,8 @@ export const usePermissionsStore = create<PermissionsStore>((set, get) => ({
     if (overridesResult.error) {
       console.warn("[permissions] fetchTargetUser (overrides) failed:", overridesResult.error.message);
     }
-    if (roleResult.error) {
-      console.warn("[permissions] fetchTargetUser (base role) failed:", roleResult.error.message);
+    if (rolesResult.error) {
+      console.warn("[permissions] fetchTargetUser (roles) failed:", rolesResult.error.message);
     }
 
     const effective: Record<string, boolean> = {};
@@ -157,7 +199,7 @@ export const usePermissionsStore = create<PermissionsStore>((set, get) => ({
     set({
       targetUserEffective: effective,
       targetUserOverrides: overrides,
-      targetUserBaseRole: roleResult.data ?? null,
+      targetUserRoles: rolesResult.data?.roles ?? ["public"],
     });
   },
 
@@ -195,6 +237,24 @@ export const usePermissionsStore = create<PermissionsStore>((set, get) => ({
     return { ok: true };
   },
 
+  setUserRoles: async (userId, roles) => {
+    // 'public' is never removable here — every user has it,
+    // unconditionally, regardless of what else they hold. admin/
+    // superadmin are deliberately stripped even if somehow passed in —
+    // this method never writes account_role, so letting either through
+    // would create a roles[] entry the DB's own sync trigger didn't
+    // put there and won't remove either, a real drift from what
+    // is_admin()/is_superadmin() actually check.
+    const next = Array.from(new Set(["public", ...roles.filter((r) => r !== "admin" && r !== "superadmin")]));
+    const { error } = await supabase.from("profiles").update({ roles: next }).eq("id", userId);
+    if (error) {
+      console.warn("[permissions] setUserRoles failed:", error.message);
+      return { ok: false, error: error.message };
+    }
+    set({ targetUserRoles: next });
+    return { ok: true };
+  },
+
   fetchRoleDefaults: async () => {
     const { data, error } = await supabase
       .from("role_permissions")
@@ -227,6 +287,38 @@ export const usePermissionsStore = create<PermissionsStore>((set, get) => ({
       roleDefaults: {
         ...state.roleDefaults,
         [role]: { ...state.roleDefaults[role], [permissionKey]: granted },
+      },
+    }));
+    return { ok: true };
+  },
+
+  fetchRoleFeatures: async () => {
+    const { data, error } = await supabase.from("role_features").select("role, feature, granted");
+    if (error) {
+      console.warn("[permissions] fetchRoleFeatures failed:", error.message);
+      return;
+    }
+    const roleFeatures: Record<string, Record<string, boolean>> = {};
+    for (const row of data ?? []) {
+      if (!roleFeatures[row.role]) roleFeatures[row.role] = {};
+      roleFeatures[row.role][row.feature] = row.granted;
+    }
+    set({ roleFeatures });
+  },
+
+  setRoleFeature: async (role, feature, granted) => {
+    const { error } = await supabase.from("role_features").upsert(
+      { role, feature, granted },
+      { onConflict: "role,feature" },
+    );
+    if (error) {
+      console.warn("[permissions] setRoleFeature failed:", error.message);
+      return { ok: false, error: error.message };
+    }
+    set((state) => ({
+      roleFeatures: {
+        ...state.roleFeatures,
+        [role]: { ...state.roleFeatures[role], [feature]: granted },
       },
     }));
     return { ok: true };

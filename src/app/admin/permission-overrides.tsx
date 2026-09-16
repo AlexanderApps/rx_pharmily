@@ -10,14 +10,19 @@ import { isAdminRole } from "@/features/auth/types/auth.types";
 import { useProfileStore, AdminUserSummary } from "@/features/profile/hooks/use-profile-data";
 import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 
-const BASE_ROLE_META: Record<string, { label: string; color: string }> = {
-  public: { label: "Public", color: "#64748b" },
-  verified_unclassified: { label: "Verified (unclassified)", color: "#0891b2" },
-  verified_pss: { label: "Verified (PSS)", color: "#0d9488" },
-  verified_pharmacist: { label: "Verified (Pharmacist)", color: "#16a34a" },
-  admin: { label: "Admin", color: "#2563eb" },
-  superadmin: { label: "Superadmin", color: "#9333ea" },
+// Colors are the only thing not in the roles catalog (key/label/
+// description) — purely a UI concern, not worth a DB column for.
+// Falls back to a neutral color for any role added later without an
+// entry here.
+const ROLE_COLORS: Record<string, string> = {
+  public: "#64748b",
+  pharmacist: "#16a34a",
+  pss: "#0d9488",
+  auditor: "#0891b2",
+  admin: "#2563eb",
+  superadmin: "#9333ea",
 };
+const roleColor = (role: string) => ROLE_COLORS[role] ?? "#64748b";
 
 export default function PermissionOverridesScreen() {
   const { colors } = useTheme();
@@ -28,10 +33,13 @@ export default function PermissionOverridesScreen() {
 
   const catalog = usePermissionsStore((state) => state.catalog);
   const fetchCatalog = usePermissionsStore((state) => state.fetchCatalog);
+  const rolesCatalog = usePermissionsStore((state) => state.rolesCatalog);
+  const fetchRolesCatalog = usePermissionsStore((state) => state.fetchRolesCatalog);
   const targetUserEffective = usePermissionsStore((state) => state.targetUserEffective);
   const targetUserOverrides = usePermissionsStore((state) => state.targetUserOverrides);
-  const targetUserBaseRole = usePermissionsStore((state) => state.targetUserBaseRole);
+  const targetUserRoles = usePermissionsStore((state) => state.targetUserRoles);
   const fetchTargetUser = usePermissionsStore((state) => state.fetchTargetUser);
+  const setUserRoles = usePermissionsStore((state) => state.setUserRoles);
   const setOverride = usePermissionsStore((state) => state.setOverride);
   const clearOverride = usePermissionsStore((state) => state.clearOverride);
 
@@ -39,6 +47,7 @@ export default function PermissionOverridesScreen() {
   const [selectedUser, setSelectedUser] = useState<AdminUserSummary | null>(null);
   const [isLoadingTarget, setIsLoadingTarget] = useState(false);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [pendingRole, setPendingRole] = useState<string | null>(null);
   const [reasonModalKey, setReasonModalKey] = useState<string | null>(null);
   const [reasonModalGranted, setReasonModalGranted] = useState(true);
   const [reasonText, setReasonText] = useState("");
@@ -46,6 +55,7 @@ export default function PermissionOverridesScreen() {
   useEffect(() => {
     fetchAllUsers();
     fetchCatalog();
+    fetchRolesCatalog();
   }, []);
 
   const results = useMemo(() => {
@@ -115,6 +125,26 @@ export default function PermissionOverridesScreen() {
     }
   };
 
+  const handleToggleRole = async (role: string) => {
+    if (!selectedUser) return;
+    setPendingRole(role);
+    const next = targetUserRoles.includes(role)
+      ? targetUserRoles.filter((r) => r !== role)
+      : [...targetUserRoles, role];
+    const result = await setUserRoles(selectedUser.id, next);
+    setPendingRole(null);
+    if (result.ok) {
+      // Re-fetch rather than patch allUsers in place — mutating an
+      // array's items directly wouldn't be seen as a state change by
+      // Zustand/React (no new reference), and this is an infrequent
+      // admin action, not a hot path worth an optimistic patch for.
+      await fetchAllUsers();
+      toast.success(`Roles updated for ${selectedUser.fullName}.`);
+    } else {
+      toast.error(result.error ?? "Couldn't update roles.");
+    }
+  };
+
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       <View
@@ -133,8 +163,9 @@ export default function PermissionOverridesScreen() {
 
       <View className="flex-1 p-4">
         <Text className="text-xs mb-3" style={{ color: colors.textSecondary }}>
-          Everyone gets permissions from their role by default (public / verified / admin /
-          superadmin). Use this only for a genuine exception for one specific person.
+          Everyone gets the union of permissions granted to every role they hold — use overrides
+          below only for a genuine exception for one specific person. Manage what a role grants by
+          default on the Role & Feature Permissions screen.
         </Text>
 
         <View
@@ -154,22 +185,6 @@ export default function PermissionOverridesScreen() {
 
         <ScrollView contentContainerClassName="pb-6">
           {results.map((u) => {
-            // Mirrors get_user_base_role()'s SQL exactly — kept in sync
-            // by hand since this is a client-side preview of what the
-            // DB function would resolve to, not a call to it.
-            const derivedRole =
-              u.accountRole === "superadmin"
-                ? "superadmin"
-                : u.accountRole === "admin"
-                  ? "admin"
-                  : u.kycStatus === "verified" && u.profession === "Pharmacist"
-                    ? "verified_pharmacist"
-                    : u.kycStatus === "verified" && (u.profession === "Technician" || u.profession === "MCA")
-                      ? "verified_pss"
-                      : u.kycStatus === "verified"
-                        ? "verified_unclassified"
-                        : "public";
-            const meta = BASE_ROLE_META[derivedRole];
             const initials = u.fullName
               .split(" ")
               .map((p) => p[0])
@@ -177,6 +192,8 @@ export default function PermissionOverridesScreen() {
               .slice(0, 2)
               .join("")
               .toUpperCase();
+            const visibleRoles = u.roles.slice(0, 2);
+            const extraCount = u.roles.length - visibleRoles.length;
             return (
               <Pressable
                 key={u.id}
@@ -198,10 +215,19 @@ export default function PermissionOverridesScreen() {
                     {u.email}
                   </Text>
                 </View>
-                <View className="px-2 py-0.5 rounded-full mr-1" style={{ backgroundColor: meta.color + "18" }}>
-                  <Text className="text-[10px] font-bold" style={{ color: meta.color }}>
-                    {meta.label}
-                  </Text>
+                <View className="flex-row items-center gap-1 mr-1">
+                  {visibleRoles.map((role) => (
+                    <View key={role} className="px-2 py-0.5 rounded-full" style={{ backgroundColor: roleColor(role) + "18" }}>
+                      <Text className="text-[10px] font-bold" style={{ color: roleColor(role) }}>
+                        {rolesCatalog.find((r) => r.key === role)?.label ?? role}
+                      </Text>
+                    </View>
+                  ))}
+                  {extraCount > 0 && (
+                    <Text className="text-[10px] font-bold" style={{ color: colors.textSecondary }}>
+                      +{extraCount}
+                    </Text>
+                  )}
                 </View>
                 <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textSecondary} />
               </Pressable>
@@ -229,22 +255,64 @@ export default function PermissionOverridesScreen() {
               <Text className="text-[15px] font-bold" style={{ color: colors.text }} numberOfLines={1}>
                 {selectedUser?.fullName}
               </Text>
-              {targetUserBaseRole && (
-                <View className="flex-row items-center gap-1.5 mt-0.5">
-                  <View
-                    className="px-1.5 py-0.5 rounded"
-                    style={{ backgroundColor: (BASE_ROLE_META[targetUserBaseRole]?.color ?? colors.textSecondary) + "18" }}
-                  >
-                    <Text
-                      className="text-[10px] font-bold"
-                      style={{ color: BASE_ROLE_META[targetUserBaseRole]?.color ?? colors.textSecondary }}
+            </View>
+          </View>
+
+          <View className="px-4 py-3 border-b" style={{ borderBottomColor: colors.border }}>
+            <Text className="text-[11px] font-bold uppercase tracking-[0.5px] mb-2" style={{ color: colors.textSecondary }}>
+              Roles
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {rolesCatalog
+                .filter((r) => r.key !== "admin" && r.key !== "superadmin")
+                .map((r) => {
+                  const active = targetUserRoles.includes(r.key);
+                  const locked = r.key === "public";
+                  return (
+                    <Pressable
+                      key={r.key}
+                      disabled={locked || pendingRole === r.key}
+                      onPress={() => handleToggleRole(r.key)}
+                      className="flex-row items-center gap-1.5 px-2.5 py-1.5 rounded-full border"
+                      style={{
+                        backgroundColor: active ? roleColor(r.key) + "18" : colors.backgroundElement,
+                        borderColor: active ? roleColor(r.key) + "40" : colors.border,
+                        opacity: locked ? 0.6 : 1,
+                      }}
                     >
-                      {BASE_ROLE_META[targetUserBaseRole]?.label ?? targetUserBaseRole} (role default)
-                    </Text>
-                  </View>
+                      {pendingRole === r.key ? (
+                        <ActivityIndicator size="small" color={colors.textSecondary} />
+                      ) : (
+                        <MaterialCommunityIcons
+                          name={active ? "check-circle" : "circle-outline"}
+                          size={14}
+                          color={active ? roleColor(r.key) : colors.textSecondary}
+                        />
+                      )}
+                      <Text className="text-[12px] font-semibold" style={{ color: active ? roleColor(r.key) : colors.textSecondary }}>
+                        {r.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              {(targetUserRoles.includes("admin") || targetUserRoles.includes("superadmin")) && (
+                <View className="flex-row items-center gap-2">
+                  {targetUserRoles.includes("admin") && (
+                    <View className="px-2.5 py-1.5 rounded-full" style={{ backgroundColor: roleColor("admin") + "18" }}>
+                      <Text className="text-[12px] font-semibold" style={{ color: roleColor("admin") }}>Admin</Text>
+                    </View>
+                  )}
+                  {targetUserRoles.includes("superadmin") && (
+                    <View className="px-2.5 py-1.5 rounded-full" style={{ backgroundColor: roleColor("superadmin") + "18" }}>
+                      <Text className="text-[12px] font-semibold" style={{ color: roleColor("superadmin") }}>Superadmin</Text>
+                    </View>
+                  )}
                 </View>
               )}
             </View>
+            <Text className="text-[11px] mt-2" style={{ color: colors.textSecondary }}>
+              Admin/Superadmin are managed via account role, not here — shown above only if held.
+            </Text>
           </View>
 
           {isLoadingTarget ? (

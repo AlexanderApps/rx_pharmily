@@ -49,6 +49,7 @@ export interface AdminUserSummary {
   accountRole: AccountRole;
   kycStatus: string;
   profession?: string;
+  roles: string[];
   avatarColor: string;
   createdAt: Date;
   isBanned: boolean;
@@ -65,6 +66,7 @@ function mapUserSummaryRow(row: any): AdminUserSummary {
     accountRole: row.account_role,
     kycStatus: row.kyc_status,
     profession: row.profession ?? undefined,
+    roles: row.roles ?? ["public"],
     avatarColor: row.avatar_color,
     createdAt: new Date(row.created_at),
     isBanned: row.is_banned ?? false,
@@ -561,7 +563,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   fetchAllUsers: async () => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, email, account_role, kyc_status, profession, avatar_color, created_at, is_banned, is_suspended, suspended_until, moderation_reason")
+      .select("id, full_name, email, account_role, kyc_status, profession, roles, avatar_color, created_at, is_banned, is_suspended, suspended_until, moderation_reason")
       .order("created_at", { ascending: false });
     if (error) {
       console.warn("[profile] fetchAllUsers failed:", error.message);
