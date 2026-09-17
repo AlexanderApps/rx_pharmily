@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { format } from "timeago.js";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { RxRfqCardData, RxRfqStatusType } from "@/features/rxrfqs/types/rxrfqs.types";
+import FeedFeatureBadge from "@/shared/components/feed-feature-badge";
 
 interface RxRfqCardProps {
   rfq: RxRfqCardData;
@@ -23,6 +24,13 @@ interface RxRfqCardProps {
   // whether to respond. Explicitly opted into by RxRfqListContainer's
   // isCreatorView, not left to each caller to remember.
   showResponseCount?: boolean;
+  // Opt-in, defaulting to false — this card is reused on screens
+  // already scoped to RxRFQs specifically (the owner's own list), where
+  // a badge naming the content type would be redundant. Only the FYP's
+  // mixed feed, where cards of several kinds sit next to each other,
+  // opts in.
+  showFeatureBadge?: boolean;
+  badgePosition?: "left" | "right";
 }
 
 const STATUS_META: Record<
@@ -45,6 +53,8 @@ const RxRfqCard: React.FC<RxRfqCardProps> = ({
   showActions = true,
   showStatus = true,
   showResponseCount = false,
+  showFeatureBadge = false,
+  badgePosition = "left",
 }) => {
   const { colors } = useTheme();
   const statusMeta = STATUS_META[rfq.status];
@@ -73,8 +83,11 @@ const RxRfqCard: React.FC<RxRfqCardProps> = ({
         shadowOpacity: 0.06,
         shadowRadius: 10,
         elevation: 2,
+        position: "relative",
       }}
     >
+      {showFeatureBadge && <FeedFeatureBadge kind="rxrfq" position={badgePosition} />}
+
       <View className="flex-row items-center">
         <View className="w-10 h-10 rounded-xl justify-center items-center" style={{ backgroundColor: colors.primary + "18" }}>
           <MaterialCommunityIcons name="hospital-building" size={20} color={colors.primary} />

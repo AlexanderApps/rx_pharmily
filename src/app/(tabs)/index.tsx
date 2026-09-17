@@ -39,14 +39,15 @@ const SHORTCUTS: {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
   color: string;
   route: string;
+  category: string;
 }[] = [
-  { label: "RxRFQs", icon: "file-document-outline", color: "#2563eb", route: "/rfqs" },
-  { label: "Jobs", icon: "briefcase-outline", color: "#16a34a", route: "/jobs" },
-  { label: "Donations", icon: "hand-heart-outline", color: "#dc2626", route: "/donations" },
-  { label: "MediScope", icon: "heart-pulse", color: "#9333ea", route: "/mediscope" },
-  { label: "RxLink", icon: "pill", color: "#0d9488", route: "/rxlink" },
-  { label: "RxChat", icon: "chat-outline", color: "#0891b2", route: "/chat" },
-  { label: "RxAds", icon: "bullhorn-outline", color: "#d97706", route: "/ads" },
+  { label: "RxRFQs", icon: "file-document-outline", color: "#2563eb", route: "/rfqs", category: "RxRFQ" },
+  { label: "Jobs", icon: "briefcase-outline", color: "#16a34a", route: "/jobs", category: "Jobs" },
+  { label: "Donations", icon: "hand-heart-outline", color: "#dc2626", route: "/donations", category: "Donations" },
+  { label: "MediScope", icon: "heart-pulse", color: "#9333ea", route: "/mediscope", category: "MediScope" },
+  { label: "RxLink", icon: "pill", color: "#0d9488", route: "/rxlink", category: "RxLink" },
+  { label: "RxChat", icon: "chat-outline", color: "#0891b2", route: "/chat", category: "RxChat" },
+  { label: "RxAds", icon: "bullhorn-outline", color: "#d97706", route: "/ads", category: "Ads" },
 ];
 
 // Defined once at module scope, not recreated on every HomeScreen
@@ -94,38 +95,38 @@ const FeedItemRow = React.memo(function FeedItemRow({ item }: { item: FeedItem }
   switch (item.kind) {
     case "post":
       return (
-        <View className="px-4 mt-3">
+        <View className="px-4 mt-4">
           <PostCard post={item.post} onPress={handlePostPress} />
         </View>
       );
     case "ad":
       return (
-        <View className="px-4 mt-3">
+        <View className="px-4 mt-4">
           <AdCard ad={item.ad} onPress={handleAdPress} />
         </View>
       );
     case "mediscope":
       return (
-        <View className="px-4 mt-3">
-          <MediscopeListCard item={item.request} onPress={handleMediscopePress} showStatus={false} />
+        <View className="px-4 mt-4">
+          <MediscopeListCard item={item.request} onPress={handleMediscopePress} showStatus={false} showFeatureBadge />
         </View>
       );
     case "donation":
       return (
-        <View className="px-4 mt-3">
-          <DonationListCard donation={item.donation} onPress={handleDonationPress} showStatus={false} />
+        <View className="px-4 mt-4">
+          <DonationListCard donation={item.donation} onPress={handleDonationPress} showStatus={false} showFeatureBadge />
         </View>
       );
     case "job":
       return (
-        <View className="px-4 mt-3">
-          <JobListCard item={item.job} onPress={handleJobPress} />
+        <View className="px-4 mt-4">
+          <JobListCard item={item.job} onPress={handleJobPress} showFeatureBadge />
         </View>
       );
     case "rfq":
       return (
-        <View className="px-4 mt-3">
-          <RxRfqCard rfq={item.rfq} onPress={handleRfqPress} showStatus={false} />
+        <View className="px-4 mt-4">
+          <RxRfqCard rfq={item.rfq} onPress={handleRfqPress} showStatus={false} showFeatureBadge />
         </View>
       );
   }
@@ -383,7 +384,7 @@ export default function HomeScreen() {
         className="flex-grow-0 max-h-[100px]"
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, gap: 16 }}
       >
-        {SHORTCUTS.map((shortcut) => (
+        {SHORTCUTS.filter((shortcut) => !hasFetchedFeatures || hasFeature(shortcut.category)).map((shortcut) => (
           <Pressable
             key={shortcut.label}
             onPress={() => router.push(shortcut.route as any)}
@@ -415,7 +416,7 @@ export default function HomeScreen() {
       <View className="h-[6px] mt-[18px]" style={{ backgroundColor: colors.border }} />
     </View>
     ),
-    [colors],
+    [colors, hasFeature, hasFetchedFeatures],
   );
 
   const ListFooter = () => {

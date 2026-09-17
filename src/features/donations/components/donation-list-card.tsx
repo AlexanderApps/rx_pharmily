@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { format } from "timeago.js";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { DonationCardData } from "@/features/donations/types/donation.types";
+import FeedFeatureBadge from "@/shared/components/feed-feature-badge";
 
 interface DonationListCardProps {
   donation: DonationCardData;
@@ -17,6 +18,10 @@ interface DonationListCardProps {
   // only actually informative on screens that can show a mix of
   // statuses (the owner's own list, etc).
   showStatus?: boolean;
+  // Opt-in, defaulting to false — see rxrfq-card.tsx's identical prop
+  // for the full reasoning.
+  showFeatureBadge?: boolean;
+  badgePosition?: "left" | "right";
 }
 
 const STATUS_META: Record<
@@ -35,6 +40,8 @@ const DonationListCard: React.FC<DonationListCardProps> = ({
   onDelete,
   showActions = true,
   showStatus = true,
+  showFeatureBadge = false,
+  badgePosition = "left",
 }) => {
   const { colors } = useTheme();
   const statusMeta = STATUS_META[donation.status];
@@ -54,8 +61,11 @@ const DonationListCard: React.FC<DonationListCardProps> = ({
         shadowOpacity: 0.06,
         shadowRadius: 10,
         elevation: 2,
+        position: "relative",
       }}
     >
+      {showFeatureBadge && <FeedFeatureBadge kind="donation" position={badgePosition} />}
+
       <View className="flex-row items-center">
         <View className="w-10 h-10 rounded-xl justify-center items-center" style={{ backgroundColor: colors.secondary + "18" }}>
           <MaterialCommunityIcons name="hand-heart-outline" size={20} color={colors.secondary} />

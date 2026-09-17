@@ -5,6 +5,7 @@ import { format } from "timeago.js";
 import { useTheme } from "@/shared/hooks/use-theme";
 import LoadingImage from "@/shared/components/loading-image";
 import { MediscopeCardData } from "@/features/mediscope/types/mediscope.types";
+import FeedFeatureBadge from "@/shared/components/feed-feature-badge";
 
 interface MediscopeListCardProps {
   item: MediscopeCardData;
@@ -20,6 +21,10 @@ interface MediscopeListCardProps {
   // to the request's own creator, not to other facilities deciding
   // whether to respond.
   showResponseCount?: boolean;
+  // Opt-in, defaulting to false — see rxrfq-card.tsx's identical prop
+  // for the full reasoning.
+  showFeatureBadge?: boolean;
+  badgePosition?: "left" | "right";
 }
 
 const STATUS_META: Record<
@@ -34,7 +39,14 @@ const STATUS_META: Record<
   expired: { label: "Expired", icon: "clock-alert-outline", tone: "error" },
 };
 
-const MediscopeListCard: React.FC<MediscopeListCardProps> = ({ item, onPress, showStatus = true, showResponseCount = false }) => {
+const MediscopeListCard: React.FC<MediscopeListCardProps> = ({
+  item,
+  onPress,
+  showStatus = true,
+  showResponseCount = false,
+  showFeatureBadge = false,
+  badgePosition = "left",
+}) => {
   const { colors } = useTheme();
   const statusMeta = STATUS_META[item.status];
   const statusColor = colors[statusMeta.tone];
@@ -53,8 +65,11 @@ const MediscopeListCard: React.FC<MediscopeListCardProps> = ({ item, onPress, sh
         shadowOpacity: 0.06,
         shadowRadius: 10,
         elevation: 2,
+        position: "relative",
       }}
     >
+      {showFeatureBadge && <FeedFeatureBadge kind="mediscope" position={badgePosition} />}
+
       <View className="flex-row items-center">
         {item.imageUrl ? (
           <LoadingImage source={{ uri: item.imageUrl }} style={{ width: 44, height: 44, borderRadius: 12 }} />

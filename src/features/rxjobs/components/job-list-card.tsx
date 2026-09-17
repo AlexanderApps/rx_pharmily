@@ -5,13 +5,18 @@ import { format } from "timeago.js";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { Job } from "@/features/rxjobs/types/rxjobs.types";
+import FeedFeatureBadge from "@/shared/components/feed-feature-badge";
 
 interface JobListCardProps {
   item: Job;
   onPress?: (item: Job) => void;
+  // Opt-in, defaulting to false — see rxrfq-card.tsx's identical prop
+  // for the full reasoning.
+  showFeatureBadge?: boolean;
+  badgePosition?: "left" | "right";
 }
 
-const JobListCard: React.FC<JobListCardProps> = ({ item, onPress }) => {
+const JobListCard: React.FC<JobListCardProps> = ({ item, onPress, showFeatureBadge = false, badgePosition = "left" }) => {
   const { colors } = useTheme();
   const currentUserId = useAuthStore((state) => state.user?.id);
   const isImmediate = item.urgency === "Immediate";
@@ -31,8 +36,11 @@ const JobListCard: React.FC<JobListCardProps> = ({ item, onPress }) => {
         shadowOpacity: 0.06,
         shadowRadius: 10,
         elevation: 2,
+        position: "relative",
       }}
     >
+      {showFeatureBadge && <FeedFeatureBadge kind="job" position={badgePosition} />}
+
       <View className="flex-row items-center">
         <View className="w-10 h-10 rounded-xl justify-center items-center" style={{ backgroundColor: colors.primary + "18" }}>
           <Text className="text-xs font-extrabold" style={{ color: colors.primary }}>{item.companyLogo}</Text>

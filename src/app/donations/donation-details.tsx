@@ -20,6 +20,7 @@ import {
 } from "@/features/donations/types/donation.types";
 import DonationResponseCard from "@/features/donations/components/donation-response-card";
 import PrintButton from "@/shared/components/print-button";
+import NotFoundScreen from "@/shared/components/not-found-screen";
 import ShareToChatSheet, { ShareToChatSheetRef } from "@/features/chat/components/share-to-chat-sheet";
 import { buildDonationItemListHtml } from "@/features/donations/utils/donation-pdf";
 
@@ -190,14 +191,11 @@ export default function DonationDetailsScreen() {
       );
     }
     return (
-      <SafeAreaView
-        className="flex-1"
-        style={{ backgroundColor: colors.background }}
-      >
-        <Text className="p-4" style={{ color: colors.text }}>
-          No donation found for id: {id}
-        </Text>
-      </SafeAreaView>
+      <NotFoundScreen
+        icon="hand-heart-outline"
+        title="Donation not found"
+        message="This donation may have been removed, or the link you followed is no longer valid."
+      />
     );
   }
 
