@@ -56,6 +56,7 @@ const RxMarketplaceDetailScreen: React.FC = () => {
     return incotermList.find((option) => option.code === item?.incoterms);
   }, [incotermList, item?.incoterms]);
   const hasPermission = usePermissionsStore((state) => state.hasPermission);
+  const hasFetchedPermissions = usePermissionsStore((state) => state.hasFetched);
 
   if (!item) {
     if (isLoadingRfqs) {
@@ -310,6 +311,7 @@ const RxMarketplaceDetailScreen: React.FC = () => {
       {/* FAB group */}
       <FabGroup
         isBookmarked={isBookmarked}
+        showSubmit={!hasFetchedPermissions || hasPermission("rxrfq.respond")}
         onSubmit={() => {
           if (item.isRemoved) {
             toast.error("This RFQ has been removed and can no longer be responded to.");

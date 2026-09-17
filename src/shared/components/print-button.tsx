@@ -15,6 +15,12 @@ interface PrintButtonProps {
   // "icon" renders a bare icon button (for a header), "full" renders a
   // labeled pill button (for inline placement in a screen body).
   variant?: "icon" | "full";
+  // Defaults to true (the print.export gate applies) so every existing
+  // caller — donations, MediScope, RxRFQ — is unaffected. RxVitals is
+  // the one exception: printing your own vitals is expected to be
+  // available to everyone, not just verified professionals, so that
+  // screen alone passes false.
+  requiresPermission?: boolean;
 }
 
 const PrintButton: React.FC<PrintButtonProps> = ({
@@ -22,6 +28,7 @@ const PrintButton: React.FC<PrintButtonProps> = ({
   fileName,
   label = "Print / Export PDF",
   variant = "full",
+  requiresPermission = true,
 }) => {
   const { colors } = useTheme();
   const [loading, setLoading] = useState(false);
@@ -30,8 +37,9 @@ const PrintButton: React.FC<PrintButtonProps> = ({
   const handlePress = async () => {
     if (loading) return;
     // Gated here, once, rather than in each of this button's callers —
-    // every screen that renders PrintButton gets the check for free.
-    if (!hasPermission("print.export")) {
+    // every screen that renders PrintButton gets the check for free,
+    // unless it opts out via requiresPermission={false}.
+    if (requiresPermission && !hasPermission("print.export")) {
       toast.error("Printing and exporting requires a verified professional account.");
       return;
     }

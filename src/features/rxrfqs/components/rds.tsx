@@ -119,6 +119,10 @@ interface FabGroupProps {
   onContact: () => void;
   onShare: () => void;
   onBookmark: () => void;
+  // Defaults to true so every existing caller keeps showing the button
+  // unchanged — only rxrfq-market-details.tsx passes false, when the
+  // viewer lacks rxrfq.respond.
+  showSubmit?: boolean;
 }
 
 export const FabGroup = ({
@@ -127,6 +131,7 @@ export const FabGroup = ({
   onContact,
   onShare,
   onBookmark,
+  showSubmit = true,
 }: FabGroupProps) => {
   const { colors } = useTheme();
 
@@ -184,20 +189,22 @@ export const FabGroup = ({
         </Pressable>
       </View>
 
-      <Pressable
-        onPress={onSubmit}
-        className="h-11 flex-1 flex-row items-center justify-center gap-2 rounded-[14px] active:opacity-85"
-        style={{ backgroundColor: colors.primary }}
-      >
-        <MaterialCommunityIcons
-          name="file-send-outline"
-          size={18}
-          color={colors.text}
-        />
-        <Text className="text-[15px] font-medium" style={{ color: colors.text }}>
-          Submit a quote
-        </Text>
-      </Pressable>
+      {showSubmit && (
+        <Pressable
+          onPress={onSubmit}
+          className="h-11 flex-1 flex-row items-center justify-center gap-2 rounded-[14px] active:opacity-85"
+          style={{ backgroundColor: colors.primary }}
+        >
+          <MaterialCommunityIcons
+            name="file-send-outline"
+            size={18}
+            color={colors.text}
+          />
+          <Text className="text-[15px] font-medium" style={{ color: colors.text }}>
+            Submit a quote
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 };

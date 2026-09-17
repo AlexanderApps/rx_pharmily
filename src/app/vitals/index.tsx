@@ -107,6 +107,7 @@ export default function VitalsScreen() {
               variant="icon"
               fileName="RxVitals-Record"
               getHtml={() => buildVitalsPdf(filtered, patientName, filterSummary)}
+              requiresPermission={false}
             />
             <Pressable
               onPress={() => router.push("/vitals/add-reading")}
