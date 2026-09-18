@@ -3,7 +3,7 @@ import { View, Text, Pressable, FlatList, ScrollView, ActivityIndicator, Platfor
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import MaxWidthLayout from "@/shared/components/max-width-layout";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ThemedView } from "@/shared/components/themed-view";
 import { toast } from "@/shared/hooks/use-toast";
@@ -134,6 +134,7 @@ const FeedItemRow = React.memo(function FeedItemRow({ item }: { item: FeedItem }
 
 export default function HomeScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const posts = usePostsStore((state) => state.posts);
   const ads = useAdsStore((state) => state.ads);
   const mediscopeRequests = useMediscopeStore((state) => state.requests);
@@ -290,31 +291,13 @@ export default function HomeScreen() {
     // lets a genuinely successful "you're already caught up" refresh
     // tell itself apart from that, confirmed by a debugging pass that
     // traced an earlier "pull-to-refresh isn't working" report to
-    // exactly this: the refetch was succeeding the whole time.
+    // exactly this: the refetch was succeeding the whole time. Read via
+    // getState() here too, not the posts/ads/etc. variables from the
+    // outer closure — this callback's own dependency array below never
+    // included them, so referencing them directly here was a stale
+    // snapshot from whenever the callback was first created, not the
+    // actual count right before this refresh.
     const countBefore =
-      posts.length + ads.length + mediscopeRequests.length + donations.length + jobs.length + rxrfqs.length;
-
-    // Promise.allSettled rather than Promise.all — one source failing
-    // to refresh shouldn't prevent the other 5 from actually updating,
-    // which Promise.all's reject-on-first-failure behavior would do.
-    const results = await Promise.allSettled([
-      fetchPosts(),
-      fetchAds(),
-      fetchMediscopeRequests(),
-      fetchDonations(),
-      fetchJobs(),
-      fetchRxRfqs(),
-    ]);
-    const failedCount = results.filter((r) => r.status === "rejected").length;
-    if (failedCount > 0) {
-      console.warn(`[home-feed] ${failedCount} of 6 refresh sources failed`);
-    }
-
-    // Read via getState(), not the posts/ads/etc. variables above —
-    // those are fixed at the time this callback was created and would
-    // still show the pre-refresh values here regardless of what the
-    // stores actually did.
-    const countAfter =
       usePostsStore.getState().posts.length +
       useAdsStore.getState().ads.length +
       useMediscopeStore.getState().requests.length +
@@ -322,8 +305,48 @@ export default function HomeScreen() {
       useRxJobsStore.getState().jobs.length +
       useRxRfqsStore.getState().rxrfqs.length;
 
-    if (failedCount === 0 && countAfter <= countBefore) {
-      toast.info("You're all caught up");
+    // Raced against a hard timeout — this app's tab bar
+    // (shared/components/app-tabs.tsx) uses expo-router's still-"unstable"
+    // native tabs API, which can pause a backgrounded tab's JS execution;
+    // if that happens mid-refresh, one of the 6 fetches below can stall
+    // indefinitely without ever resolving or rejecting. Promise.allSettled
+    // alone would then never settle either, leaving refreshing stuck at
+    // true forever — exactly the "pull-to-refresh runs infinite after
+    // switching tabs and back" symptom this was built to fix. The timeout
+    // guarantees this function always reaches its own end, regardless of
+    // whether the underlying fetches ever actually finish.
+    const timedOut = Symbol("refresh-timeout");
+    const outcome = await Promise.race([
+      Promise.allSettled([
+        fetchPosts(),
+        fetchAds(),
+        fetchMediscopeRequests(),
+        fetchDonations(),
+        fetchJobs(),
+        fetchRxRfqs(),
+      ]),
+      new Promise<typeof timedOut>((resolve) => setTimeout(() => resolve(timedOut), 15000)),
+    ]);
+
+    if (outcome === timedOut) {
+      console.warn("[home-feed] refresh timed out after 15s — resetting so pull-to-refresh doesn't stay stuck");
+    } else {
+      const failedCount = outcome.filter((r) => r.status === "rejected").length;
+      if (failedCount > 0) {
+        console.warn(`[home-feed] ${failedCount} of 6 refresh sources failed`);
+      }
+
+      const countAfter =
+        usePostsStore.getState().posts.length +
+        useAdsStore.getState().ads.length +
+        useMediscopeStore.getState().requests.length +
+        useDonationStore.getState().donations.length +
+        useRxJobsStore.getState().jobs.length +
+        useRxRfqsStore.getState().rxrfqs.length;
+
+      if (failedCount === 0 && countAfter <= countBefore) {
+        toast.info("You're all caught up");
+      }
     }
 
     setVisibleCount(PAGE_SIZE);
@@ -345,30 +368,13 @@ export default function HomeScreen() {
     <View>
       {/* Header section */}
       <View className="px-5 pt-4">
-        <View className="flex-row justify-between items-start">
-          <View>
-            <Text className="text-2xl font-bold" style={{ color: colors.text }}>
-              RxPharmily
-            </Text>
-            <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>
-              What's happening in your network
-            </Text>
-          </View>
-          <View className="flex-row gap-2">
-            <View
-              className="w-10 h-10 rounded-xl items-center justify-center"
-              style={{ backgroundColor: colors.backgroundSecondary }}
-            >
-              <NotificationBell size={20} />
-            </View>
-            <Pressable
-              onPress={() => router.push("/chat")}
-              className="w-10 h-10 rounded-xl items-center justify-center"
-              style={{ backgroundColor: colors.backgroundSecondary }}
-            >
-              <Ionicons name="chatbubble-outline" size={20} color={colors.text} />
-            </Pressable>
-          </View>
+        <View>
+          <Text className="text-2xl font-bold" style={{ color: colors.text }}>
+            RxPharmily
+          </Text>
+          <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>
+            What's happening in your network
+          </Text>
         </View>
       </View>
 
@@ -520,6 +526,29 @@ export default function HomeScreen() {
   return (
     <ThemedView className="flex-1">
       <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
+        {/* Fixed, not part of the scrollable header — these two stay in
+            place while the feed scrolls underneath them, at the same
+            spot (px-5 pt-4) they occupied when they were still part of
+            ListHeader. */}
+        <View
+          className="absolute right-5 z-10 flex-row gap-2"
+          style={{ top: insets.top + 16 }}
+        >
+          <View
+            className="w-10 h-10 rounded-xl items-center justify-center"
+            style={{ backgroundColor: colors.backgroundSecondary }}
+          >
+            <NotificationBell size={20} />
+          </View>
+          <Pressable
+            onPress={() => router.push("/chat")}
+            className="w-10 h-10 rounded-xl items-center justify-center"
+            style={{ backgroundColor: colors.backgroundSecondary }}
+          >
+            <Ionicons name="chatbubble-outline" size={20} color={colors.text} />
+          </Pressable>
+        </View>
+
         {/* Deliberately NOT a numColumns grid, unlike the 4 marketplace
             list containers — this feed mixes posts (unbounded text
             length, genuinely variable height) with fixed-structure

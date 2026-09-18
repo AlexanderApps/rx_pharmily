@@ -1,9 +1,10 @@
-import React, { useMemo } from "react";
-import { View, Text, Pressable, TextInput } from "react-native";
+import React from "react";
+import { View, Text, Pressable, TextInput, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
+import NotificationBell from "@/features/notifications/components/notification-bell";
+import { useTopBarRefreshStore } from "@/shared/hooks/use-topbar-refresh";
 import { noSelectStyle } from "@/shared/constants/text-selection";
 import { openGlobalSearch } from "@/shared/hooks/use-global-search";
 import { useBreakpoint } from "@/shared/hooks/use-breakpoint";
@@ -13,8 +14,8 @@ const WebTopBar: React.FC = () => {
   const { colors } = useTheme();
   const breakpoint = useBreakpoint();
   const toggleMobileSidebar = useMobileSidebarStore((state) => state.toggle);
-  const notifications = useNotificationStore((state) => state.notifications);
-  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
+  const onRefresh = useTopBarRefreshStore((state) => state.onRefresh);
+  const isRefreshing = useTopBarRefreshStore((state) => state.isRefreshing);
   const isMac = typeof navigator !== "undefined" && /Mac/.test(navigator.platform ?? "");
 
   return (
@@ -55,19 +56,30 @@ const WebTopBar: React.FC = () => {
       </View>
 
       <View className="flex-row items-center gap-3 ml-4">
+        {onRefresh && (
+          <Pressable
+            onPress={onRefresh}
+            disabled={isRefreshing}
+            className="h-9 w-9 items-center justify-center rounded-full"
+            style={{ backgroundColor: colors.backgroundElement, opacity: isRefreshing ? 0.6 : 1 }}
+          >
+            {isRefreshing ? (
+              <ActivityIndicator size="small" color={colors.text} />
+            ) : (
+              <MaterialCommunityIcons name="refresh" size={17} color={colors.text} />
+            )}
+          </Pressable>
+        )}
         <Pressable
-          onPress={() => router.push("/notifications")}
+          onPress={() => router.push("/chat")}
           className="h-9 w-9 items-center justify-center rounded-full"
           style={{ backgroundColor: colors.backgroundElement }}
         >
-          <MaterialCommunityIcons name="bell-outline" size={17} color={colors.text} />
-          {unreadCount > 0 && (
-            <View
-              className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full"
-              style={{ backgroundColor: colors.error }}
-            />
-          )}
+          <MaterialCommunityIcons name="chat-outline" size={17} color={colors.text} />
         </Pressable>
+        <View className="h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: colors.backgroundElement }}>
+          <NotificationBell size={17} />
+        </View>
       </View>
     </View>
   );

@@ -1,6 +1,6 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, Pressable, FlatList, ScrollView, ActivityIndicator, Platform } from "react-native";
-import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import MaxWidthLayout from "@/shared/components/max-width-layout";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,7 +12,7 @@ import PostCard from "@/features/posts/components/post-card";
 import PostComposerTrigger from "@/features/posts/components/post-composer-trigger";
 import { useAdsStore } from "@/features/ads/hooks/use-ads-data";
 import AdCard from "@/features/ads/components/ad-card";
-import NotificationBell from "@/features/notifications/components/notification-bell";
+import { useTopBarRefreshStore } from "@/shared/hooks/use-topbar-refresh";
 import {
   convertToCardData as convertMediscopeCardData,
   useMediscopeStore,
@@ -158,6 +158,8 @@ export default function HomeScreen() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const setOnRefresh = useTopBarRefreshStore((state) => state.setOnRefresh);
+  const setTopBarRefreshing = useTopBarRefreshStore((state) => state.setIsRefreshing);
   // The last computed feed ORDER (as item keys), separate from the item
   // data itself — see the fullFeed useMemo below for why this needs to
   // exist at all: without it, a single poll vote (or any other in-place
@@ -248,6 +250,7 @@ export default function HomeScreen() {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
+    setTopBarRefreshing(true);
     try {
       // All 6 sources feeding this feed — previously this just showed a
       // spinner for 600ms and reset pagination over whatever was
@@ -269,7 +272,19 @@ export default function HomeScreen() {
     }
     setVisibleCount(PAGE_SIZE);
     setRefreshing(false);
-  }, [fetchPosts, fetchAds, fetchMediscopeRequests, fetchDonations, fetchJobs, fetchRxRfqs]);
+    setTopBarRefreshing(false);
+  }, [fetchPosts, fetchAds, fetchMediscopeRequests, fetchDonations, fetchJobs, fetchRxRfqs, setTopBarRefreshing]);
+
+  // Hands this exact function to the shared WebTopBar (rendered outside
+  // this component's own tree, in the app-wide layout shell) so its
+  // refresh button triggers the real thing — including the local
+  // pagination reset above, not just the underlying store fetches.
+  // Cleared on unmount so the button doesn't linger, calling a stale
+  // handler, once the person navigates away from this screen.
+  useEffect(() => {
+    setOnRefresh(() => handleRefresh);
+    return () => setOnRefresh(null);
+  }, [handleRefresh, setOnRefresh]);
 
   // A trivial, stable wrapper — the actual per-kind rendering and
   // onPress logic now lives in FeedItemRow (module scope, memoized)
@@ -284,42 +299,13 @@ export default function HomeScreen() {
     <View>
       {/* Header Layout */}
       <View className="px-5 pt-4">
-        <View className="flex-row justify-between items-start">
-          <View>
-            <Text className="text-2xl font-bold" style={{ color: colors.text }}>
-              RxPharmily
-            </Text>
-            <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>
-              What's happening in your network
-            </Text>
-          </View>
-          <View className="flex-row gap-2">
-            <Pressable
-              onPress={handleRefresh}
-              disabled={refreshing}
-              className="w-[38px] h-[38px] rounded-xl items-center justify-center"
-              style={{ backgroundColor: colors.backgroundSecondary, opacity: refreshing ? 0.6 : 1 }}
-            >
-              {refreshing ? (
-                <ActivityIndicator size="small" color={colors.text} />
-              ) : (
-                <MaterialCommunityIcons name="refresh" size={20} color={colors.text} />
-              )}
-            </Pressable>
-            <View
-              className="w-[38px] h-[38px] rounded-xl items-center justify-center"
-              style={{ backgroundColor: colors.backgroundSecondary }}
-            >
-              <NotificationBell size={20} />
-            </View>
-            <Pressable
-              onPress={() => router.push("/chat")}
-              className="w-[38px] h-[38px] rounded-xl items-center justify-center"
-              style={{ backgroundColor: colors.backgroundSecondary }}
-            >
-              <Ionicons name="chatbubble-outline" size={20} color={colors.text} />
-            </Pressable>
-          </View>
+        <View>
+          <Text className="text-2xl font-bold" style={{ color: colors.text }}>
+            RxPharmily
+          </Text>
+          <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>
+            What's happening in your network
+          </Text>
         </View>
       </View>
 
