@@ -40,7 +40,7 @@ const WebTopBar: React.FC = () => {
       >
         <MaterialCommunityIcons name="magnify" size={16} color={colors.textSecondary} />
         <TextInput
-          placeholder="Search RxRFQs, donations, jobs..."
+          placeholder="Search"
           placeholderTextColor={colors.textSecondary}
           editable={false}
           pointerEvents="none"

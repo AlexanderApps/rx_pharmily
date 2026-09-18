@@ -356,6 +356,7 @@ export const usePostsStore = create<PostsStore & { pollIdByPost: Record<string, 
           c.id === commentId ? { ...c, status: "suspended" } : c,
         ),
       },
+      posts: state.posts.map((p) => (p.id === postId ? { ...p, commentCount: Math.max(0, p.commentCount - 1) } : p)),
     }));
     return true;
   },
@@ -373,6 +374,7 @@ export const usePostsStore = create<PostsStore & { pollIdByPost: Record<string, 
           c.id === commentId ? { ...c, status: "active" } : c,
         ),
       },
+      posts: state.posts.map((p) => (p.id === postId ? { ...p, commentCount: p.commentCount + 1 } : p)),
     }));
     return true;
   },
@@ -394,6 +396,7 @@ export const usePostsStore = create<PostsStore & { pollIdByPost: Record<string, 
           c.id === commentId ? { ...c, deletedAt: new Date() } : c,
         ),
       },
+      posts: state.posts.map((p) => (p.id === postId ? { ...p, commentCount: Math.max(0, p.commentCount - 1) } : p)),
     }));
     return true;
   },
@@ -414,6 +417,7 @@ export const usePostsStore = create<PostsStore & { pollIdByPost: Record<string, 
           c.id === commentId ? { ...c, deletedAt: undefined } : c,
         ),
       },
+      posts: state.posts.map((p) => (p.id === postId ? { ...p, commentCount: p.commentCount + 1 } : p)),
     }));
     return true;
   },
@@ -494,10 +498,6 @@ export const usePostsStore = create<PostsStore & { pollIdByPost: Record<string, 
     }
 
     const comment = mapCommentRow(row);
-    await supabase
-      .from("posts")
-      .update({ comment_count: (get().posts.find((p) => p.id === postId)?.commentCount ?? 0) + 1 })
-      .eq("id", postId);
 
     set((state) => ({
       commentsByPost: { ...state.commentsByPost, [postId]: [...(state.commentsByPost[postId] ?? []), comment] },
