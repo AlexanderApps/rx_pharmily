@@ -22,6 +22,24 @@ interface KycSectionProps {
   onAddDocument: (type: KycDocumentType, fileName: string, imageUri?: string) => void;
   onRemoveDocument: (documentId: string) => void;
   onSubmit: () => void | Promise<boolean>;
+  // Defaults to true — a user's own KYC section and an organization's
+  // profile (its only other two callers) have no unaffiliated-viewer
+  // problem the way a facility does, since find-facility.tsx lets
+  // anyone browse any facility's profile. Only facility-profile.tsx
+  // passes this explicitly, scoped to the facility's own owner —
+  // document upload and KYC submission are exactly the kind of action
+  // that shouldn't be offered to a stranger just because the facility
+  // happens to be unverified or rejected.
+  canManage?: boolean;
+  // Defaults to true — user's own KYC and organization (this
+  // component's other two callers) have no unaffiliated-viewer
+  // problem. Only facility-profile.tsx passes this, scoped to isMember
+  // — the status badge (verified/pending/rejected) stays visible to a
+  // guest regardless, but the actual uploaded files (a business
+  // registration, a facility permit) are a step beyond "verification
+  // status" and shouldn't be visible to someone with no relationship
+  // to the facility.
+  canView?: boolean;
 }
 
 const KycSection: React.FC<KycSectionProps> = ({
@@ -32,6 +50,8 @@ const KycSection: React.FC<KycSectionProps> = ({
   onAddDocument,
   onRemoveDocument,
   onSubmit,
+  canManage = true,
+  canView = true,
 }) => {
   const { colors } = useTheme();
   const [selectedType, setSelectedType] = useState<KycDocumentType>(documentTypes[0]);
@@ -39,7 +59,7 @@ const KycSection: React.FC<KycSectionProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewingPath, setViewingPath] = useState<string | null>(null);
 
-  const canEdit = kyc.status === "unverified" || kyc.status === "rejected";
+  const canEdit = canManage && (kyc.status === "unverified" || kyc.status === "rejected");
 
   const handleAddDocument = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -117,7 +137,7 @@ const KycSection: React.FC<KycSectionProps> = ({
         </Text>
       )}
 
-      {kyc.documents.length > 0 && (
+      {canView && kyc.documents.length > 0 && (
         <View style={{ gap: 8 }}>
           {kyc.documents.map((doc) => (
             <Pressable

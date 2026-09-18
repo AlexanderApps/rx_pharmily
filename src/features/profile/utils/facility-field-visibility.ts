@@ -11,22 +11,23 @@ import { FacilityProfile } from "@/features/profile/types/profile.types";
 export const facilityFieldVisibility = createFieldVisibility<FacilityProfile>([
   {
     key: "phone",
-    // Below "guest" level, this follows the facility's own opt-in
-    // setting rather than being unconditionally hidden or shown —
-    // matches how PublicProfileCard already treats this field.
-    visibleTo: (facility, role) => role !== "guest" || facility.publicVisibility.showPhone,
+    // Unconditional only for owner/admin — they're the ones who manage
+    // this setting and need to see the actual value to decide whether
+    // to expose it. A plain member follows the same "only if public"
+    // rule as a guest; membership alone isn't the same as owning or
+    // moderating the facility's contact details.
+    visibleTo: (facility, role) => role === "owner" || role === "admin" || facility.publicVisibility.showPhone,
   },
   {
     key: "email",
-    visibleTo: (facility, role) => role !== "guest" || facility.publicVisibility.showEmail,
+    visibleTo: (facility, role) => role === "owner" || role === "admin" || facility.publicVisibility.showEmail,
   },
   {
     key: "registrationNumber",
-    // Not currently covered by publicVisibility at all — treated as
-    // owner/admin-only here since it's a business identifier, not
-    // something a guest browsing to join needs to see. Loosen or
-    // remove this rule if that's not the intent.
-    visibleTo: (_facility, role) => role === "owner" || role === "admin",
+    // A business identifier, not something a guest browsing to join
+    // needs — but a member (not just the owner) reasonably needs this
+    // for facility business, e.g. citing it on a form.
+    visibleTo: (_facility, role) => role === "owner" || role === "admin" || role === "member",
   },
   {
     key: "adminUserId",

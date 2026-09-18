@@ -199,8 +199,14 @@ export default function FacilityProfileScreen() {
   const phoneVerificationRef = useRef<BottomSheetModal>(null);
   const isUserVerified = user.kyc.status === "verified";
   const hasPermission = usePermissionsStore((state) => state.hasPermission);
-  const isOwner = viewerRole === "owner";
-  const isMember = viewerRole === "owner" || viewerRole === "member";
+  // Named isOwner rather than something like isOwnerOrAdmin because
+  // every owner-level check in this file already reads this one
+  // variable — per the spec, admin gets "everything" a facility owner
+  // does, and this is the single place that grants it, rather than
+  // separately adding "|| viewerRole === 'admin'" at each of the ~8
+  // places isOwner is checked below.
+  const isOwner = viewerRole === "owner" || viewerRole === "admin";
+  const isMember = viewerRole === "owner" || viewerRole === "member" || viewerRole === "admin";
   const canManageMembers = viewerRole === "owner" || viewerRole === "admin";
   const myPendingRequest = membershipRequests.find(
     (r) =>
@@ -332,7 +338,7 @@ export default function FacilityProfileScreen() {
             )}
           </View>
 
-          {isVerified && hasPermission("profile.request_update") && (
+          {isMember && isVerified && hasPermission("profile.request_update") && (
             <Pressable
               onPress={() => requestModalRef.current?.present()}
               className="flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl mb-1"
@@ -429,7 +435,7 @@ export default function FacilityProfileScreen() {
                 {/* Current location (GPS coordinates) stays freely
                     updatable even once verified — only the Ghana Post
                     GPS text above is locked. */}
-                {isVerified && (
+                {isVerified && isOwner && (
                   <Pressable
                     onPress={async () => {
                       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -719,78 +725,82 @@ export default function FacilityProfileScreen() {
             </View>
           )}
 
-          <View className="gap-2">
-            {members.map((member) => (
-              <View
-                key={member.id}
-                className="flex-row items-center gap-2.5 rounded-[10px] p-2.5"
-                style={{ backgroundColor: colors.backgroundElement }}
-              >
+          {isMember && (
+            <View className="gap-2">
+              {members.map((member) => (
                 <View
-                  className="w-8 h-8 rounded-full items-center justify-center"
-                  style={{ backgroundColor: member.avatarColor }}
+                  key={member.id}
+                  className="flex-row items-center gap-2.5 rounded-[10px] p-2.5"
+                  style={{ backgroundColor: colors.backgroundElement }}
                 >
-                  <Text className="text-white text-[11px] font-bold">
-                    {member.userName
-                      .split(" ")
-                      .map((p) => p[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase()}
-                  </Text>
+                  <View
+                    className="w-8 h-8 rounded-full items-center justify-center"
+                    style={{ backgroundColor: member.avatarColor }}
+                  >
+                    <Text className="text-white text-[11px] font-bold">
+                      {member.userName
+                        .split(" ")
+                        .map((p) => p[0])
+                        .slice(0, 2)
+                        .join("")
+                        .toUpperCase()}
+                    </Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text
+                      className="text-[13px] font-semibold"
+                      style={{ color: colors.text }}
+                      numberOfLines={1}
+                    >
+                      {member.userName}
+                    </Text>
+                    <Text
+                      className="text-[11px] mt-0.5"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      {member.role}
+                    </Text>
+                  </View>
+                  {member.role !== "Owner" && canManageMembers && (
+                    <Pressable
+                      onPress={() => handleRemoveMember(member.id, member.userName)}
+                      hitSlop={8}
+                    >
+                      <MaterialCommunityIcons
+                        name="close"
+                        size={16}
+                        color={colors.textSecondary}
+                      />
+                    </Pressable>
+                  )}
                 </View>
-                <View className="flex-1">
-                  <Text
-                    className="text-[13px] font-semibold"
-                    style={{ color: colors.text }}
-                    numberOfLines={1}
-                  >
-                    {member.userName}
-                  </Text>
-                  <Text
-                    className="text-[11px] mt-0.5"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    {member.role}
-                  </Text>
-                </View>
-                {member.role !== "Owner" && canManageMembers && (
-                  <Pressable
-                    onPress={() => handleRemoveMember(member.id, member.userName)}
-                    hitSlop={8}
-                  >
-                    <MaterialCommunityIcons
-                      name="close"
-                      size={16}
-                      color={colors.textSecondary}
-                    />
-                  </Pressable>
-                )}
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          )}
 
           {isVerified && (
             <View className="flex-row gap-2 mt-3.5">
-              <Pressable
-                onPress={() =>
-                  router.push({
-                    pathname: "/profile/price-templates",
-                    params: { facilityId: facility.id },
-                  })
-                }
-                className="flex-1 flex-row items-center justify-center gap-1.5 py-2.5 rounded-[10px]"
-                style={{ backgroundColor: colors.backgroundElement }}
-              >
-                <MaterialCommunityIcons
-                  name="file-table-outline"
-                  size={16}
-                  color={colors.text}
-                />
-                <Text className="text-xs font-semibold" style={{ color: colors.text }}>
-                  Price Templates
-                </Text>
-              </Pressable>
+              {isMember && (
+                <Pressable
+                  onPress={() =>
+                    router.push({
+                      pathname: "/profile/price-templates",
+                      params: { facilityId: facility.id },
+                    })
+                  }
+                  className="flex-1 flex-row items-center justify-center gap-1.5 py-2.5 rounded-[10px]"
+                  style={{ backgroundColor: colors.backgroundElement }}
+                >
+                  <MaterialCommunityIcons
+                    name="file-table-outline"
+                    size={16}
+                    color={colors.text}
+                  />
+                  <Text className="text-xs font-semibold" style={{ color: colors.text }}>
+                    Price Templates
+                  </Text>
+                </Pressable>
+              )}
               <Pressable
                 onPress={() => router.push("/chat")}
                 className="flex-1 flex-row items-center justify-center gap-1.5 py-2.5 rounded-[10px]"
@@ -808,43 +818,45 @@ export default function FacilityProfileScreen() {
             </View>
           )}
 
-          <View className="h-px my-[18px]" style={{ backgroundColor: colors.border }} />
+          {isMember && (
+            <>
+              <View className="h-px my-[18px]" style={{ backgroundColor: colors.border }} />
 
-          {/* Public Profile */}
-          <Text className="text-xs font-semibold mb-1" style={{ color: colors.text }}>
-            Public Profile
-          </Text>
-          <Text
-            className="text-xs leading-[17px] mb-2.5"
-            style={{ color: colors.textSecondary }}
-          >
-            Shown to anyone who taps this facility's avatar. Contact details are visible
-            by default for facilities — turn them off if you'd rather keep them private.
-          </Text>
-          <View className="flex-row items-center justify-between py-2">
-            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
-              Show email publicly
-            </Text>
-            <Switch
-              value={facility.publicVisibility.showEmail}
-              onValueChange={(value) =>
-                updateFacilityVisibility(facility.id, { showEmail: value })
-              }
-              trackColor={{ true: colors.primary }}
-            />
-          </View>
-          <View className="flex-row items-center justify-between py-2">
-            <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
-              Show phone publicly
-            </Text>
-            <Switch
-              value={facility.publicVisibility.showPhone}
-              onValueChange={(value) =>
-                updateFacilityVisibility(facility.id, { showPhone: value })
-              }
-              trackColor={{ true: colors.primary }}
-            />
-          </View>
+              {/* Public Profile */}
+              <Text className="text-xs font-semibold mb-1" style={{ color: colors.text }}>
+                Public Profile
+              </Text>
+              <Text
+                className="text-xs leading-[17px] mb-2.5"
+                style={{ color: colors.textSecondary }}
+              >
+                Shown to anyone who taps this facility's avatar. Contact details are visible
+                by default for facilities — turn them off if you'd rather keep them private.
+              </Text>
+              <View className="flex-row items-center justify-between py-2">
+                <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
+                  Show email publicly
+                </Text>
+                <Switch
+                  value={facility.publicVisibility.showEmail}
+                  disabled={!isOwner}
+                  onValueChange={(value) => isOwner && updateFacilityVisibility(facility.id, { showEmail: value })}
+                  trackColor={{ true: colors.primary }}
+                />
+              </View>
+              <View className="flex-row items-center justify-between py-2">
+                <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
+                  Show phone publicly
+                </Text>
+                <Switch
+                  value={facility.publicVisibility.showPhone}
+                  disabled={!isOwner}
+                  onValueChange={(value) => isOwner && updateFacilityVisibility(facility.id, { showPhone: value })}
+                  trackColor={{ true: colors.primary }}
+                />
+              </View>
+            </>
+          )}
 
           <View className="h-px my-[18px]" style={{ backgroundColor: colors.border }} />
 
@@ -946,6 +958,8 @@ export default function FacilityProfileScreen() {
             entityId={facility.id}
             kyc={facility.kyc}
             documentTypes={["Facility Permit", "Business Registration", "Other"]}
+            canManage={isOwner}
+            canView={isMember}
             onAddDocument={(docType, fileName, imageUri) =>
               addKycDocument("facility", facility.id, docType, fileName, imageUri)
             }
