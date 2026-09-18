@@ -216,6 +216,32 @@ export default function ServiceScreen() {
                 )}
               </View>
             </View>
+
+            {/* Utilities */}
+            {hasFetchedFeatures && hasFeature("price_checker") && (
+              <View className="px-[5px] mt-6">
+                <Text className="text-lg font-semibold mb-3" style={{ color: colors.text }}>
+                  Utilities
+                </Text>
+                <View className="flex-row flex-wrap gap-3">
+                  <ActionButton
+                    icon={
+                      <MaterialCommunityIcons
+                        name="cash-check"
+                        size={22}
+                        color="#0d9488"
+                      />
+                    }
+                    label="Price Checker"
+                    tintColor="#0d9488"
+                    colors={colors}
+                    onPress={() => {
+                      router.push("/utilities/price-checker");
+                    }}
+                  />
+                </View>
+              </View>
+            )}
           </ThemedView>
         </ThemedView>
       </SafeAreaView>

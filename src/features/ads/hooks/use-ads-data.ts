@@ -618,43 +618,67 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
   },
 
   toggleReaction: async (adId, reaction) => {
-    const userId = await requireUserId();
+    await requireUserId();
     const previous = get().myReactions[adId] ?? null;
     const isSame = previous === reaction;
+    const currentAd = get().ads.find((a) => a.id === adId);
+    if (!currentAd) return;
 
-    if (isSame) {
-      await supabase.from("ad_reactions").delete().eq("ad_id", adId).eq("user_id", userId);
-    } else {
-      await supabase.from("ad_reactions").upsert({ ad_id: adId, user_id: userId, reaction });
+    // Snapshot for rollback if the server call actually fails.
+    const previousAds = get().ads;
+    const previousReactions = get().myReactions;
+
+    // Apply optimistically — immediate, felt feedback instead of
+    // waiting on 4 separate, sequentially-awaited requests (insert/
+    // delete/upsert the reaction, count likes, count dislikes, update
+    // ads.like_count/dislike_count) before anything changed on screen.
+    // toggle_ad_reaction (see its own migration) now does the whole
+    // thing server-side in one atomic call; this is what the person
+    // sees the instant they tap, rolled back if it actually fails.
+    set((state) => {
+      const myReactions = isSame
+        ? Object.fromEntries(Object.entries(state.myReactions).filter(([k]) => k !== adId))
+        : { ...state.myReactions, [adId]: reaction };
+      return {
+        myReactions,
+        ads: state.ads.map((a) => {
+          if (a.id !== adId) return a;
+          let likeCount = a.likeCount;
+          let dislikeCount = a.dislikeCount;
+          // Undo whatever the previous reaction contributed, then apply
+          // the new one — covers switching directly from like to
+          // dislike (or back), not just adding or clearing one.
+          if (previous === "like") likeCount = Math.max(0, likeCount - 1);
+          if (previous === "dislike") dislikeCount = Math.max(0, dislikeCount - 1);
+          if (!isSame) {
+            if (reaction === "like") likeCount += 1;
+            else dislikeCount += 1;
+          }
+          return { ...a, userReaction: isSame ? null : reaction, likeCount, dislikeCount };
+        }),
+      };
+    });
+
+    const { error } = await supabase.rpc("toggle_ad_reaction", { p_ad_id: adId, p_reaction: reaction });
+    if (error) {
+      console.warn("[ads] toggleReaction failed:", error.message);
+      toast.error("Couldn't update your reaction. Please try again.");
+      set({ ads: previousAds, myReactions: previousReactions });
+      return;
     }
 
-    // Recount from the actual rows rather than incrementing/decrementing a
-    // locally-read value — safe against concurrent reactions from other
-    // users, which a delta-based update on stale client state wouldn't be.
-    const { count: likeCount } = await supabase
-      .from("ad_reactions")
-      .select("*", { count: "exact", head: true })
-      .eq("ad_id", adId)
-      .eq("reaction", "like");
-    const { count: dislikeCount } = await supabase
-      .from("ad_reactions")
-      .select("*", { count: "exact", head: true })
-      .eq("ad_id", adId)
-      .eq("reaction", "dislike");
-
-    await supabase
-      .from("ads")
-      .update({ like_count: likeCount ?? 0, dislike_count: dislikeCount ?? 0 })
-      .eq("id", adId);
+    // Reconcile with the actual server-side counts in the background —
+    // the optimistic adjustment above is a good approximation, but
+    // reactions are inherently multi-user, so someone else's
+    // concurrent reaction could make it drift slightly. This corrects
+    // that without blocking or re-flashing the reaction that already
+    // visibly landed.
+    const { data: adRow } = await supabase.from("ads").select("like_count, dislike_count").eq("id", adId).single();
+    if (!adRow) return;
 
     set((state) => ({
-      myReactions: isSame
-        ? Object.fromEntries(Object.entries(state.myReactions).filter(([k]) => k !== adId))
-        : { ...state.myReactions, [adId]: reaction },
       ads: state.ads.map((a) =>
-        a.id === adId
-          ? { ...a, userReaction: isSame ? null : reaction, likeCount: likeCount ?? 0, dislikeCount: dislikeCount ?? 0 }
-          : a,
+        a.id === adId ? { ...a, likeCount: adRow.like_count, dislikeCount: adRow.dislike_count } : a,
       ),
     }));
   },
