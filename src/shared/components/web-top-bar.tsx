@@ -33,26 +33,41 @@ const WebTopBar: React.FC = () => {
             <MaterialCommunityIcons name="menu" size={19} color={colors.text} />
           </Pressable>
         )}
-        <Pressable
-        onPress={openGlobalSearch}
-        className="h-9 flex-1 max-w-sm flex-row items-center gap-2 rounded-lg px-3"
-        style={{ backgroundColor: colors.backgroundElement }}
-      >
-        <MaterialCommunityIcons name="magnify" size={16} color={colors.textSecondary} />
-        <TextInput
-          placeholder="Search"
-          placeholderTextColor={colors.textSecondary}
-          editable={false}
-          pointerEvents="none"
-          className="flex-1 text-[13px]"
-          style={{ color: colors.text, outline: "none" as any }}
-        />
-        {breakpoint !== "compact" && (
-          <View className="rounded px-1.5 py-0.5" style={{ backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border }}>
-            <Text style={{ color: colors.textSecondary, fontSize: 10, ...noSelectStyle }}>{isMac ? "⌘K" : "Ctrl+K"}</Text>
-          </View>
+        {breakpoint === "compact" ? (
+          // A text input shrinking to fit alongside the menu toggle and
+          // the 3-icon group on the right was the actual problem being
+          // fixed — narrow enough to look cramped or clipped, not just
+          // "a little tight". Collapsing to the same icon-only treatment
+          // already used for refresh/chat/notification is both cleaner
+          // and consistent, rather than trying to make a shrinking text
+          // input look acceptable at every width down to phone-sized.
+          <Pressable
+            onPress={openGlobalSearch}
+            className="h-9 w-9 items-center justify-center rounded-lg"
+            style={{ backgroundColor: colors.backgroundElement }}
+          >
+            <MaterialCommunityIcons name="magnify" size={17} color={colors.text} />
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={openGlobalSearch}
+            className="h-9 flex-1 min-w-[160px] max-w-sm flex-row items-center gap-2 rounded-lg px-3"
+            style={{ backgroundColor: colors.backgroundElement }}
+          >
+            <MaterialCommunityIcons name="magnify" size={16} color={colors.textSecondary} />
+            <TextInput
+              placeholder="Search"
+              placeholderTextColor={colors.textSecondary}
+              editable={false}
+              pointerEvents="none"
+              className="flex-1 text-[13px]"
+              style={{ color: colors.text, outline: "none" as any }}
+            />
+            <View className="rounded px-1.5 py-0.5" style={{ backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 10, ...noSelectStyle }}>{isMac ? "⌘K" : "Ctrl+K"}</Text>
+            </View>
+          </Pressable>
         )}
-        </Pressable>
       </View>
 
       <View className="flex-row items-center gap-3 ml-4">
