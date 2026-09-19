@@ -44,23 +44,6 @@ export default function ServiceScreen() {
                 Quick Actions
               </Text>
               <View className="flex-row flex-wrap gap-3">
-                {hasFetchedFeatures && hasFeature("Jobs") && (
-                <ActionButton
-                  icon={
-                    <MaterialCommunityIcons
-                      name="office-building"
-                      size={22}
-                      color="#2563eb"
-                    />
-                  }
-                  label="Jobs"
-                  tintColor="#2563eb"
-                  colors={colors}
-                  onPress={() => {
-                    router.push("/jobs");
-                  }}
-                />
-                )}
                 {hasFetchedFeatures && hasFeature("RxRFQ") && (
                 <ActionButton
                   icon={
@@ -75,23 +58,6 @@ export default function ServiceScreen() {
                   colors={colors}
                   onPress={() => {
                     router.push("/rfqs");
-                  }}
-                />
-                )}
-                {hasFetchedFeatures && hasFeature("Donations") && (
-                <ActionButton
-                  icon={
-                    <MaterialCommunityIcons
-                      name="heart-outline"
-                      size={22}
-                      color="#9333ea"
-                    />
-                  }
-                  label="Donations"
-                  tintColor="#9333ea"
-                  colors={colors}
-                  onPress={() => {
-                    router.push("/donations");
                   }}
                 />
                 )}
@@ -112,20 +78,37 @@ export default function ServiceScreen() {
                   }}
                 />
                 )}
-                {hasFetchedFeatures && hasFeature("RxLink") && (
+                {hasFetchedFeatures && hasFeature("Donations") && (
                 <ActionButton
                   icon={
                     <MaterialCommunityIcons
-                      name="pill"
+                      name="heart-outline"
                       size={22}
-                      color="#0d9488"
+                      color="#9333ea"
                     />
                   }
-                  label="RxLink"
-                  tintColor="#0d9488"
+                  label="Donations"
+                  tintColor="#9333ea"
                   colors={colors}
                   onPress={() => {
-                    router.push("/rxlink");
+                    router.push("/donations");
+                  }}
+                />
+                )}
+                {hasFetchedFeatures && hasFeature("Jobs") && (
+                <ActionButton
+                  icon={
+                    <MaterialCommunityIcons
+                      name="office-building"
+                      size={22}
+                      color="#2563eb"
+                    />
+                  }
+                  label="Jobs"
+                  tintColor="#2563eb"
+                  colors={colors}
+                  onPress={() => {
+                    router.push("/jobs");
                   }}
                 />
                 )}
@@ -163,6 +146,40 @@ export default function ServiceScreen() {
                   }}
                 />
                 )}
+                {hasFetchedFeatures && hasFeature("RxLink") && (
+                <ActionButton
+                  icon={
+                    <MaterialCommunityIcons
+                      name="pill"
+                      size={22}
+                      color="#0d9488"
+                    />
+                  }
+                  label="RxLink"
+                  tintColor="#0d9488"
+                  colors={colors}
+                  onPress={() => {
+                    router.push("/rxlink");
+                  }}
+                />
+                )}
+                {hasFetchedFeatures && hasFeature("RxVital") && (
+                <ActionButton
+                  icon={
+                    <MaterialCommunityIcons
+                      name="heart-pulse"
+                      size={22}
+                      color="#dc2626"
+                    />
+                  }
+                  label="RxVitals"
+                  tintColor="#dc2626"
+                  colors={colors}
+                  onPress={() => {
+                    router.push("/vitals");
+                  }}
+                />
+                )}
                 {hasFetchedFeatures && hasFeature("RxHelp") && (
                 <ActionButton
                   icon={
@@ -197,23 +214,6 @@ export default function ServiceScreen() {
                   }}
                 />
                 )}
-                {hasFetchedFeatures && hasFeature("RxVital") && (
-                <ActionButton
-                  icon={
-                    <MaterialCommunityIcons
-                      name="heart-pulse"
-                      size={22}
-                      color="#dc2626"
-                    />
-                  }
-                  label="RxVitals"
-                  tintColor="#dc2626"
-                  colors={colors}
-                  onPress={() => {
-                    router.push("/vitals");
-                  }}
-                />
-                )}
               </View>
             </View>
 
@@ -233,7 +233,6 @@ export default function ServiceScreen() {
                       />
                     }
                     label="Price Checker"
-                    widthClassName="flex-1"
                     tintColor="#0d9488"
                     colors={colors}
                     onPress={() => {

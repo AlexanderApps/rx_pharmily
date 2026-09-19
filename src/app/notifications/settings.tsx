@@ -51,7 +51,7 @@ export default function NotificationSettingsScreen() {
         {sections.map(([section, metas]) => {
           const allOn = metas.every((m) => settings[m.category]);
           return (
-            <View key={section} className="mb-4.5">
+            <View key={section} className="mb-8">
               {/* Feature Batch Selection Controls */}
               <View className="flex-row items-center justify-between mb-2">
                 <Text className="text-[13px] font-bold uppercase tracking-wider" style={{ color: colors.text }}>

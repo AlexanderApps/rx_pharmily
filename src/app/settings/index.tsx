@@ -41,12 +41,6 @@ export default function SettingsScreen() {
       title: "Account Settings",
       rows: [
         {
-          id: "personal_info",
-          label: "Personal Information",
-          icon: "account-card-outline",
-          onPress: () => router.push("/settings/personal-info"),
-        },
-        {
           id: "notifications",
           label: "Notification Settings",
           icon: "bell-cog-outline",

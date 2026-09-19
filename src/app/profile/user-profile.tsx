@@ -7,14 +7,15 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Switch,
 } from "react-native";
+import ModernSwitch from "@/shared/components/switch";
 import { router } from "expo-router";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import ScreenHeader from "@/shared/components/screen-header";
+import { ProfileRow, ProfileSection, PROFILE_VALUE_TEXT_CLASS as VALUE_TEXT_CLASS } from "@/shared/components/profile-row";
 import LocationPicker from "@/shared/components/location-picker";
 import { useUserFieldAccess } from "@/features/profile/hooks/use-user-field-access";
 import AvatarUpload from "@/shared/components/avatar-upload";
@@ -190,166 +191,154 @@ export default function UserProfileScreen() {
             </Pressable>
           )}
 
-          <Field label="Full Name" editing={editing && !isVerified} value={fullName} onChange={setFullName} colors={colors} />
-          {canSee("email") && (
-            <Field label="Email" editing={editing} value={email} onChange={setEmail} colors={colors} keyboardType="email-address" />
-          )}
-          {canSee("phone") && (
-            <Field label="Phone" editing={editing && !isVerified} value={phone} onChange={setPhone} colors={colors} keyboardType="phone-pad" />
-          )}
-          {canSee("phone") && Boolean(phone) && user.phoneAdminApproved && (
-            user.phoneVerifiedAt ? (
-              <View className="flex-row items-center gap-1 mt-1.5">
-                <MaterialCommunityIcons name="check-decagram" size={13} color={colors.success} />
-                <Text className="text-xs font-semibold" style={{ color: colors.success }}>
-                  Verified
-                </Text>
-              </View>
-            ) : (
-              <Pressable
-                onPress={() => phoneVerificationRef.current?.present()}
-                className="flex-row items-center gap-1 mt-1.5"
-              >
-                <MaterialCommunityIcons name="phone-alert-outline" size={13} color={colors.primary} />
-                <Text className="text-xs font-semibold" style={{ color: colors.primary }}>
-                  Not verified — Verify Now
-                </Text>
-              </Pressable>
-            )
-          )}
+          <ProfileSection title="Personal Details">
+            <ProfileRow label="Full Name">
+              {editing && !isVerified ? (
+                <TextInput
+                  value={fullName}
+                  onChangeText={setFullName}
+                  className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+                  style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
+                />
+              ) : (
+                <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{fullName || "-"}</Text>
+              )}
+            </ProfileRow>
 
-          <View className="mt-3.5">
-            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Location</Text>
-            {editing ? (
-              <LocationPicker
-                value={location}
-                onChangeText={setLocation}
-                latitude={latitude}
-                longitude={longitude}
-                onLocationCaptured={(lat, lng) => {
-                  setLatitude(lat);
-                  setLongitude(lng);
-                }}
-                onLocationCleared={() => {
-                  setLatitude(undefined);
-                  setLongitude(undefined);
-                }}
-              />
-            ) : (
-              <>
-                <Text className="text-sm mt-1" style={{ color: colors.text }}>{location || "-"}</Text>
-                {latitude !== undefined && longitude !== undefined && (
-                  <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>
-                    GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
-                  </Text>
+            {canSee("email") && (
+              <ProfileRow label="Email">
+                {editing ? (
+                  <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+                    style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
+                  />
+                ) : (
+                  <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{email || "-"}</Text>
                 )}
-              </>
+              </ProfileRow>
             )}
-          </View>
-
-          <View className="mt-3.5">
-            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Region</Text>
-            {editing ? (
-              <ReferencePicker
-                title="Select Region"
-                options={regionOptions}
-                value={region}
-                onChange={setRegion}
-                placeholder="Select a region"
-                emptyMessage="No regions set up yet."
-                searchable={false}
-              />
-            ) : (
-              <Text className="text-sm mt-1" style={{ color: colors.text }}>{region || "-"}</Text>
-            )}
-          </View>
-
-          <View className="mt-3.5">
-            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Role</Text>
-            {editing && !isVerified ? (
-              <View className="flex-row flex-wrap gap-2 mt-1.5">
-                {ROLES.map((option) => {
-                  const active = role === option;
-                  return (
+            {canSee("phone") && (
+              <ProfileRow label="Phone">
+                {editing && !isVerified ? (
+                  <TextInput
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
+                    className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+                    style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
+                  />
+                ) : (
+                  <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{phone || "-"}</Text>
+                )}
+                {Boolean(phone) && user.phoneAdminApproved && (
+                  user.phoneVerifiedAt ? (
+                    <View className="flex-row items-center gap-1 mt-1.5">
+                      <MaterialCommunityIcons name="check-decagram" size={13} color={colors.success} />
+                      <Text className="text-xs font-semibold" style={{ color: colors.success }}>
+                        Verified
+                      </Text>
+                    </View>
+                  ) : (
                     <Pressable
-                      key={option}
-                      onPress={() => setRole(option)}
-                      className="px-3 py-2 rounded-full"
-                      style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
+                      onPress={() => phoneVerificationRef.current?.present()}
+                      className="flex-row items-center gap-1 mt-1.5"
                     >
-                      <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
-                        {option}
+                      <MaterialCommunityIcons name="phone-alert-outline" size={13} color={colors.primary} />
+                      <Text className="text-xs font-semibold" style={{ color: colors.primary }}>
+                        Not verified — Verify Now
                       </Text>
                     </Pressable>
-                  );
-                })}
-              </View>
-            ) : (
-              <Text className="text-sm mt-1" style={{ color: colors.text }}>{user.role}</Text>
+                  )
+                )}
+              </ProfileRow>
             )}
-          </View>
 
-          {/* Always read-only, even in edit mode — profession is
-              admin-only, set during KYC review, never through this
-              self-service form. The DB itself enforces this with a
-              trigger regardless; this is just not offering a control
-              that would only ever fail to save. */}
-          <View className="mt-3.5">
-            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Profession</Text>
-            <Text className="text-sm mt-1" style={{ color: colors.text }}>
-              {user.profession ?? "Not yet set (assigned during KYC review)"}
-            </Text>
-          </View>
+            <ProfileRow label="Ghana Post GPS Location">
+              {editing ? (
+                <LocationPicker
+                  value={location}
+                  onChangeText={setLocation}
+                  latitude={latitude}
+                  longitude={longitude}
+                  onLocationCaptured={(lat, lng) => {
+                    setLatitude(lat);
+                    setLongitude(lng);
+                  }}
+                  onLocationCleared={() => {
+                    setLatitude(undefined);
+                    setLongitude(undefined);
+                  }}
+                />
+              ) : (
+                <>
+                  <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{location || "-"}</Text>
+                  {latitude !== undefined && longitude !== undefined && (
+                    <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>
+                      GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                    </Text>
+                  )}
+                </>
+              )}
+            </ProfileRow>
 
-          <View className="mt-3.5">
-            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Title</Text>
-            {editing && !isVerified ? (
-              <View className="flex-row flex-wrap gap-2 mt-1.5">
-                {TITLES.map((option) => {
-                  const active = title === option;
-                  return (
-                    <Pressable
-                      key={option}
-                      onPress={() => setTitle(option)}
-                      className="px-3 py-2 rounded-full"
-                      style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
-                    >
-                      <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
-                        {option}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : (
-              <Text className="text-sm mt-1" style={{ color: colors.text }}>{user.title ?? "-"}</Text>
-            )}
-          </View>
+            <ProfileRow label="Region">
+              {editing ? (
+                <ReferencePicker
+                  title="Select Region"
+                  options={regionOptions}
+                  value={region}
+                  onChange={setRegion}
+                  placeholder="Select a region"
+                  emptyMessage="No regions set up yet."
+                  searchable={false}
+                />
+              ) : (
+                <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{region || "-"}</Text>
+              )}
+            </ProfileRow>
 
-          <View className="mt-3.5">
-            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Gender</Text>
-            {editing ? (
-              <View className="flex-row flex-wrap gap-2 mt-1.5">
-                {GENDERS.map((option) => {
-                  const active = gender === option;
-                  return (
-                    <Pressable
-                      key={option}
-                      onPress={() => setGender(option)}
-                      className="px-3 py-2 rounded-full"
-                      style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
-                    >
-                      <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
-                        {option}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : (
-              <Text className="text-sm mt-1" style={{ color: colors.text }}>{user.gender ?? "-"}</Text>
-            )}
-          </View>
+
+            <ProfileRow label="Gender">
+              {editing ? (
+                <View className="flex-row flex-wrap gap-2 mt-1.5">
+                  {GENDERS.map((option) => {
+                    const active = gender === option;
+                    return (
+                      <Pressable
+                        key={option}
+                        onPress={() => setGender(option)}
+                        className="px-3 py-2 rounded-full"
+                        style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
+                      >
+                        <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
+                          {option}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : (
+                <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{user.gender ?? "-"}</Text>
+              )}
+            </ProfileRow>
+
+            <ProfileRow label="Bio">
+              {editing ? (
+                <TextInput
+                  value={bio}
+                  onChangeText={setBio}
+                  multiline
+                  className="border rounded-lg px-3 py-2.5 text-sm mt-1.5 min-h-[70px]"
+                  style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
+                />
+              ) : (
+                <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{bio || "-"}</Text>
+              )}
+            </ProfileRow>
+          </ProfileSection>
 
           {/* Only a verified pharmacist can be marked available as
               superintendent — the DB itself enforces this via a
@@ -382,23 +371,81 @@ export default function UserProfileScreen() {
             </View>
           )}
 
-          {canSee("licenseNumber") && (
-            <Field
-              label="License Number"
-              editing={editing && !isVerified}
-              value={licenseNumber}
-              onChange={setLicenseNumber}
-              colors={colors}
-            />
-          )}
-          <Field
-            label="Bio"
-            editing={editing}
-            value={bio}
-            onChange={setBio}
-            colors={colors}
-            multiline
-          />
+          <ProfileSection title="Professional Details">
+            <ProfileRow label="Role">
+              {editing && !isVerified ? (
+                <View className="flex-row flex-wrap gap-2 mt-1.5">
+                  {ROLES.map((option) => {
+                    const active = role === option;
+                    return (
+                      <Pressable
+                        key={option}
+                        onPress={() => setRole(option)}
+                        className="px-3 py-2 rounded-full"
+                        style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
+                      >
+                        <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
+                          {option}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : (
+                <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{user.role}</Text>
+              )}
+            </ProfileRow>
+
+            {/* Always read-only, even in edit mode — profession is
+                admin-only, set during KYC review, never through this
+                self-service form. The DB itself enforces this with a
+                trigger regardless; this is just not offering a control
+                that would only ever fail to save. */}
+            <ProfileRow label="Profession">
+              <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>
+                {user.profession ?? "Not yet set (assigned during KYC review)"}
+              </Text>
+            </ProfileRow>
+
+            <ProfileRow label="Title">
+              {editing && !isVerified ? (
+                <View className="flex-row flex-wrap gap-2 mt-1.5">
+                  {TITLES.map((option) => {
+                    const active = title === option;
+                    return (
+                      <Pressable
+                        key={option}
+                        onPress={() => setTitle(option)}
+                        className="px-3 py-2 rounded-full"
+                        style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
+                      >
+                        <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
+                          {option}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : (
+                <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{user.title ?? "-"}</Text>
+              )}
+            </ProfileRow>
+
+            {canSee("licenseNumber") && (
+              <ProfileRow label="License Number">
+                {editing && !isVerified ? (
+                  <TextInput
+                    value={licenseNumber}
+                    onChangeText={setLicenseNumber}
+                    className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+                    style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
+                  />
+                ) : (
+                  <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{licenseNumber || "-"}</Text>
+                )}
+              </ProfileRow>
+            )}
+          </ProfileSection>
 
           <View className="h-px my-[18px]" style={{ backgroundColor: colors.border }} />
 
@@ -439,18 +486,20 @@ export default function UserProfileScreen() {
           </Text>
           <View className="flex-row items-center justify-between py-2">
             <Text className="text-[13px] font-medium" style={{ color: colors.text }}>Show email publicly</Text>
-            <Switch
+            <ModernSwitch
               value={user.publicVisibility.showEmail}
               onValueChange={(value) => updateUserVisibility({ showEmail: value })}
-              trackColor={{ true: colors.primary }}
+              activeColor={colors.primary}
+              size="small"
             />
           </View>
           <View className="flex-row items-center justify-between py-2">
             <Text className="text-[13px] font-medium" style={{ color: colors.text }}>Show phone publicly</Text>
-            <Switch
+            <ModernSwitch
               value={user.publicVisibility.showPhone}
               onValueChange={(value) => updateUserVisibility({ showPhone: value })}
-              trackColor={{ true: colors.primary }}
+              activeColor={colors.primary}
+              size="small"
             />
           </View>
 
@@ -495,41 +544,5 @@ export default function UserProfileScreen() {
         onVerified={() => phoneVerificationRef.current?.dismiss()}
       />
     </SafeAreaView>
-  );
-}
-
-function Field({
-  label,
-  editing,
-  value,
-  onChange,
-  colors,
-  keyboardType,
-  multiline,
-}: {
-  label: string;
-  editing: boolean;
-  value: string;
-  onChange: (v: string) => void;
-  colors: any;
-  keyboardType?: "email-address" | "phone-pad";
-  multiline?: boolean;
-}) {
-  return (
-    <View className="mt-3.5">
-      <Text className="text-xs font-semibold" style={{ color: colors.text }}>{label}</Text>
-      {editing ? (
-        <TextInput
-          value={value}
-          onChangeText={onChange}
-          keyboardType={keyboardType}
-          multiline={multiline}
-          className={`border rounded-lg px-3 py-2.5 text-sm mt-1.5${multiline ? " min-h-[70px]" : ""}`}
-          style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
-        />
-      ) : (
-        <Text className="text-sm mt-1" style={{ color: colors.text }}>{value || "-"}</Text>
-      )}
-    </View>
   );
 }

@@ -7,8 +7,8 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Switch,
 } from "react-native";
+import ModernSwitch from "@/shared/components/switch";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Location from "expo-location";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import ScreenHeader from "@/shared/components/screen-header";
+import { ProfileRow, ProfileSection, PROFILE_VALUE_TEXT_CLASS as VALUE_TEXT_CLASS } from "@/shared/components/profile-row";
 import { confirm } from "@/shared/hooks/use-confirm";
 import LocationPicker from "@/shared/components/location-picker";
 import DetailSkeleton from "@/shared/components/detail-skeleton";
@@ -246,136 +247,186 @@ export default function OrganizationProfileScreen() {
             </Pressable>
           )}
 
-          <Field label="Organization Name" editing={editing && !isVerified} value={name} onChange={setName} colors={colors} />
+          <ProfileSection title="Organization Details">
+            <ProfileRow label="Organization Name">
+              {editing && !isVerified ? (
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+                  style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
+                />
+              ) : (
+                <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{name || "-"}</Text>
+              )}
+            </ProfileRow>
 
-          <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>Type</Text>
-          {editing && !isVerified ? (
-            <View className="flex-row flex-wrap gap-2 mt-1.5">
-              {ORG_TYPES.map((option) => {
-                const active = type === option;
-                return (
-                  <Pressable
-                    key={option}
-                    onPress={() => setType(option)}
-                    className="px-3 py-2 rounded-full"
-                    style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
-                  >
-                    <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
-                      {option}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : (
-            <Text className="text-sm mt-1" style={{ color: colors.text }}>{organization.type}</Text>
-          )}
+            <ProfileRow label="Type">
+              {editing && !isVerified ? (
+                <View className="flex-row flex-wrap gap-2 mt-1.5">
+                  {ORG_TYPES.map((option) => {
+                    const active = type === option;
+                    return (
+                      <Pressable
+                        key={option}
+                        onPress={() => setType(option)}
+                        className="px-3 py-2 rounded-full"
+                        style={{ backgroundColor: active ? colors.primary : colors.backgroundElement }}
+                      >
+                        <Text className="text-xs font-semibold" style={{ color: active ? "#fff" : colors.textSecondary }}>
+                          {option}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : (
+                <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{organization.type}</Text>
+              )}
+            </ProfileRow>
 
-          {canSee("registrationNumber") && (
-            <Field
-              label="Registration Number"
-              editing={editing && !isVerified}
-              value={registrationNumber}
-              onChange={setRegistrationNumber}
-              colors={colors}
-            />
-          )}
-          <View style={{ marginTop: 14 }}>
-            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Ghana Post GPS (Headquarters)</Text>
-            {editing && !isVerified ? (
-              <LocationPicker
-                value={headquartersLocation}
-                onChangeText={setHeadquartersLocation}
-                latitude={latitude}
-                longitude={longitude}
-                onLocationCaptured={(lat, lng) => {
-                  setLatitude(lat);
-                  setLongitude(lng);
-                }}
-                onLocationCleared={() => {
-                  setLatitude(undefined);
-                  setLongitude(undefined);
-                }}
-              />
-            ) : (
-              <>
-                <Text className="text-sm mt-1" style={{ color: colors.text }}>
-                  {headquartersLocation || "-"}
-                </Text>
-                {latitude !== undefined && longitude !== undefined && (
-                  <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
-                    Current location: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+            {canSee("registrationNumber") && (
+              <ProfileRow label="Registration Number">
+                {editing && !isVerified ? (
+                  <TextInput
+                    value={registrationNumber}
+                    onChangeText={setRegistrationNumber}
+                    className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+                    style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
+                  />
+                ) : (
+                  <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{registrationNumber || "-"}</Text>
+                )}
+              </ProfileRow>
+            )}
+            <ProfileRow label="Ghana Post GPS (Headquarters)">
+              {editing && !isVerified ? (
+                <LocationPicker
+                  value={headquartersLocation}
+                  onChangeText={setHeadquartersLocation}
+                  latitude={latitude}
+                  longitude={longitude}
+                  onLocationCaptured={(lat, lng) => {
+                    setLatitude(lat);
+                    setLongitude(lng);
+                  }}
+                  onLocationCleared={() => {
+                    setLatitude(undefined);
+                    setLongitude(undefined);
+                  }}
+                />
+              ) : (
+                <>
+                  <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>
+                    {headquartersLocation || "-"}
                   </Text>
-                )}
-                {isVerified && (
-                  <Pressable
-                    onPress={async () => {
-                      const { status } = await Location.requestForegroundPermissionsAsync();
-                      if (status !== "granted") {
-                        toast.error("Location permission denied.");
-                        return;
-                      }
-                      const position = await Location.getCurrentPositionAsync({
-                        accuracy: Location.Accuracy.Balanced,
-                      });
-                      setLatitude(position.coords.latitude);
-                      setLongitude(position.coords.longitude);
-                      toast.success("Current location updated.");
-                    }}
-                    className="flex-row items-center gap-1 mt-1.5"
-                  >
-                    <MaterialCommunityIcons name="crosshairs-gps" size={13} color={colors.primary} />
-                    <Text className="text-xs font-semibold" style={{ color: colors.primary }}>
-                      Update Current Location
+                  {latitude !== undefined && longitude !== undefined && (
+                    <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+                      Current location: {latitude.toFixed(4)}, {longitude.toFixed(4)}
                     </Text>
-                  </Pressable>
+                  )}
+                  {isVerified && (
+                    <Pressable
+                      onPress={async () => {
+                        const { status } = await Location.requestForegroundPermissionsAsync();
+                        if (status !== "granted") {
+                          toast.error("Location permission denied.");
+                          return;
+                        }
+                        const position = await Location.getCurrentPositionAsync({
+                          accuracy: Location.Accuracy.Balanced,
+                        });
+                        setLatitude(position.coords.latitude);
+                        setLongitude(position.coords.longitude);
+                        toast.success("Current location updated.");
+                      }}
+                      className="flex-row items-center gap-1 mt-1.5"
+                    >
+                      <MaterialCommunityIcons name="crosshairs-gps" size={13} color={colors.primary} />
+                      <Text className="text-xs font-semibold" style={{ color: colors.primary }}>
+                        Update Current Location
+                      </Text>
+                    </Pressable>
+                  )}
+                </>
+              )}
+            </ProfileRow>
+            <ProfileRow label="Address">
+              {editing && !isVerified ? (
+                <TextInput
+                  value={address}
+                  onChangeText={setAddress}
+                  className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+                  style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
+                />
+              ) : (
+                <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{address || "-"}</Text>
+              )}
+            </ProfileRow>
+            <ProfileRow label="Region">
+              {editing && !isVerified ? (
+                <ReferencePicker
+                  title="Select Region"
+                  options={regionOptions}
+                  value={region}
+                  onChange={setRegion}
+                  placeholder="Select a region"
+                  emptyMessage="No regions set up yet."
+                  searchable={false}
+                />
+              ) : (
+                <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{region || "-"}</Text>
+              )}
+            </ProfileRow>
+            {canSee("email") && (
+              <ProfileRow label="Email">
+                {editing && !isVerified ? (
+                  <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+                    style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
+                  />
+                ) : (
+                  <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{email || "-"}</Text>
                 )}
-              </>
+              </ProfileRow>
             )}
-          </View>
-          <Field label="Address" editing={editing && !isVerified} value={address} onChange={setAddress} colors={colors} />
-          <View style={{ marginTop: 14 }}>
-            <Text className="text-xs font-semibold" style={{ color: colors.text }}>Region</Text>
-            {editing && !isVerified ? (
-              <ReferencePicker
-                title="Select Region"
-                options={regionOptions}
-                value={region}
-                onChange={setRegion}
-                placeholder="Select a region"
-                emptyMessage="No regions set up yet."
-                searchable={false}
-              />
-            ) : (
-              <Text className="text-sm mt-1" style={{ color: colors.text }}>{region || "-"}</Text>
+            {canSee("phone") && (
+              <ProfileRow label="Phone">
+                {editing && !isVerified ? (
+                  <TextInput
+                    value={phone}
+                    onChangeText={setPhone}
+                    className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
+                    style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
+                  />
+                ) : (
+                  <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>{phone || "-"}</Text>
+                )}
+                {Boolean(phone) && organization.phoneAdminApproved && (
+                  organization.phoneVerifiedAt ? (
+                    <View className="flex-row items-center gap-1 mt-1.5">
+                      <MaterialCommunityIcons name="check-decagram" size={13} color={colors.success} />
+                      <Text className="text-xs font-semibold" style={{ color: colors.success }}>
+                        Verified
+                      </Text>
+                    </View>
+                  ) : (
+                    <Pressable
+                      onPress={() => phoneVerificationRef.current?.present()}
+                      className="flex-row items-center gap-1 mt-1.5"
+                    >
+                      <MaterialCommunityIcons name="phone-alert-outline" size={13} color={colors.primary} />
+                      <Text className="text-xs font-semibold" style={{ color: colors.primary }}>
+                        Not verified — Verify Now
+                      </Text>
+                    </Pressable>
+                  )
+                )}
+              </ProfileRow>
             )}
-          </View>
-          {canSee("email") && (
-            <Field label="Email" editing={editing && !isVerified} value={email} onChange={setEmail} colors={colors} />
-          )}
-          {canSee("phone") && (
-            <Field label="Phone" editing={editing && !isVerified} value={phone} onChange={setPhone} colors={colors} />
-          )}
-          {canSee("phone") && Boolean(phone) && organization.phoneAdminApproved && (
-            organization.phoneVerifiedAt ? (
-              <View className="flex-row items-center gap-1 mt-1.5">
-                <MaterialCommunityIcons name="check-decagram" size={13} color={colors.success} />
-                <Text className="text-xs font-semibold" style={{ color: colors.success }}>
-                  Verified
-                </Text>
-              </View>
-            ) : (
-              <Pressable
-                onPress={() => phoneVerificationRef.current?.present()}
-                className="flex-row items-center gap-1 mt-1.5"
-              >
-                <MaterialCommunityIcons name="phone-alert-outline" size={13} color={colors.primary} />
-                <Text className="text-xs font-semibold" style={{ color: colors.primary }}>
-                  Not verified — Verify Now
-                </Text>
-              </Pressable>
-            )
-          )}
+          </ProfileSection>
 
           <View className="h-px my-[18px]" style={{ backgroundColor: colors.border }} />
 
@@ -450,18 +501,20 @@ export default function OrganizationProfileScreen() {
           </Text>
           <View className="flex-row items-center justify-between py-2">
             <Text className="text-[13px] font-medium" style={{ color: colors.text }}>Show email publicly</Text>
-            <Switch
+            <ModernSwitch
               value={organization.publicVisibility.showEmail}
               onValueChange={(value) => updateOrganizationVisibility(organization.id, { showEmail: value })}
-              trackColor={{ true: colors.primary }}
+              activeColor={colors.primary}
+              size="small"
             />
           </View>
           <View className="flex-row items-center justify-between py-2">
             <Text className="text-[13px] font-medium" style={{ color: colors.text }}>Show phone publicly</Text>
-            <Switch
+            <ModernSwitch
               value={organization.publicVisibility.showPhone}
               onValueChange={(value) => updateOrganizationVisibility(organization.id, { showPhone: value })}
-              trackColor={{ true: colors.primary }}
+              activeColor={colors.primary}
+              size="small"
             />
           </View>
 
@@ -515,35 +568,5 @@ export default function OrganizationProfileScreen() {
         onVerified={() => phoneVerificationRef.current?.dismiss()}
       />
     </SafeAreaView>
-  );
-}
-
-function Field({
-  label,
-  editing,
-  value,
-  onChange,
-  colors,
-}: {
-  label: string;
-  editing: boolean;
-  value: string;
-  onChange: (v: string) => void;
-  colors: any;
-}) {
-  return (
-    <View style={{ marginTop: 14 }}>
-      <Text className="text-xs font-semibold" style={{ color: colors.text }}>{label}</Text>
-      {editing ? (
-        <TextInput
-          value={value}
-          onChangeText={onChange}
-          className="border rounded-lg px-3 py-2.5 text-sm mt-1.5"
-          style={{ backgroundColor: colors.backgroundElement, borderColor: colors.border, color: colors.text }}
-        />
-      ) : (
-        <Text className="text-sm mt-1" style={{ color: colors.text }}>{value || "-"}</Text>
-      )}
-    </View>
   );
 }

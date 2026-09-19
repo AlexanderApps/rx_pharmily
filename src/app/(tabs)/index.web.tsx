@@ -13,6 +13,7 @@ import PostComposerTrigger from "@/features/posts/components/post-composer-trigg
 import { useAdsStore } from "@/features/ads/hooks/use-ads-data";
 import AdCard from "@/features/ads/components/ad-card";
 import { useTopBarRefreshStore } from "@/shared/hooks/use-topbar-refresh";
+import { toast } from "@/shared/hooks/use-toast";
 import {
   convertToCardData as convertMediscopeCardData,
   useMediscopeStore,
@@ -251,25 +252,63 @@ export default function HomeScreen() {
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     setTopBarRefreshing(true);
-    try {
-      // All 6 sources feeding this feed — previously this just showed a
-      // spinner for 600ms and reset pagination over whatever was
-      // already sitting in these stores (fetched once, at app launch,
-      // in app/_layout.tsx), so pulling to refresh never actually
-      // fetched anything new. Run concurrently rather than sequentially
-      // since these are 6 independent reads with no ordering
-      // dependency between them.
-      await Promise.all([
+    // A successful refresh that happens to find no new content looks
+    // identical, on screen, to one that silently failed — nothing
+    // changes either way. This exact symptom was already traced and
+    // fixed on the native home screen (app/(tabs)/index.tsx) — the
+    // refetch was succeeding the whole time, there was just no way to
+    // tell. Comparing total counts before/after, plus surfacing failed
+    // sources, is what lets a genuinely successful "you're already
+    // caught up" refresh tell itself apart from a failed one — this
+    // mirrors that fix for the web refresh button, which never
+    // received it.
+    const countBefore =
+      usePostsStore.getState().posts.length +
+      useAdsStore.getState().ads.length +
+      useMediscopeStore.getState().requests.length +
+      useDonationStore.getState().donations.length +
+      useRxJobsStore.getState().jobs.length +
+      useRxRfqsStore.getState().rxrfqs.length;
+
+    // Raced against a hard timeout — even on web, a backgrounded or
+    // throttled tab could leave one of the 6 fetches below stalled
+    // indefinitely, which would leave refreshing stuck at true forever
+    // with no way to trigger another refresh. The timeout guarantees
+    // this function always reaches its own end regardless.
+    const timedOut = Symbol("refresh-timeout");
+    const outcome = await Promise.race([
+      Promise.allSettled([
         fetchPosts(),
         fetchAds(),
         fetchMediscopeRequests(),
         fetchDonations(),
         fetchJobs(),
         fetchRxRfqs(),
-      ]);
-    } catch (err) {
-      console.warn("[home-feed] refresh failed:", err);
+      ]),
+      new Promise<typeof timedOut>((resolve) => setTimeout(() => resolve(timedOut), 15000)),
+    ]);
+
+    if (outcome === timedOut) {
+      console.warn("[home-feed-web] refresh timed out after 15s — resetting so the refresh button doesn't stay stuck");
+    } else {
+      const failedCount = outcome.filter((r) => r.status === "rejected").length;
+      if (failedCount > 0) {
+        console.warn(`[home-feed-web] ${failedCount} of 6 refresh sources failed`);
+      }
+
+      const countAfter =
+        usePostsStore.getState().posts.length +
+        useAdsStore.getState().ads.length +
+        useMediscopeStore.getState().requests.length +
+        useDonationStore.getState().donations.length +
+        useRxJobsStore.getState().jobs.length +
+        useRxRfqsStore.getState().rxrfqs.length;
+
+      if (failedCount === 0 && countAfter <= countBefore) {
+        toast.info("You're all caught up");
+      }
     }
+
     setVisibleCount(PAGE_SIZE);
     setRefreshing(false);
     setTopBarRefreshing(false);
@@ -282,7 +321,7 @@ export default function HomeScreen() {
   // Cleared on unmount so the button doesn't linger, calling a stale
   // handler, once the person navigates away from this screen.
   useEffect(() => {
-    setOnRefresh(() => handleRefresh);
+    setOnRefresh(handleRefresh);
     return () => setOnRefresh(null);
   }, [handleRefresh, setOnRefresh]);
 
