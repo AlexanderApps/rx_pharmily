@@ -1,0 +1,11 @@
+-- ============================================================================
+-- verification_revoked — new moderation_action_type value.
+-- ============================================================================
+-- The new "Revoke Verification" admin action (moderation-detail.tsx)
+-- sets a previously-verified entity's kyc_status back to 'rejected'.
+-- Logging that to account_moderation_actions, the same audit table
+-- ban/suspend already write to, means an admin reviewing an entity's
+-- full moderation history sees revocations alongside bans and
+-- suspensions in one timeline, instead of KYC status changes being
+-- invisible to this screen entirely.
+alter type moderation_action_type add value 'verification_revoked';

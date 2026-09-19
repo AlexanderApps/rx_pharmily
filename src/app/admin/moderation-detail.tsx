@@ -21,6 +21,7 @@ const ACTION_LABELS: Record<ModerationActionType, string> = {
   suspended: "Suspended",
   unsuspended: "Suspension lifted",
   suspension_expired: "Suspension expired",
+  verification_revoked: "Verification revoked",
 };
 
 // Which of this screen's action cards is currently expanded, if any —
@@ -29,7 +30,7 @@ const ACTION_LABELS: Record<ModerationActionType, string> = {
 // deliberately the one piece of state a future action (e.g. ownership
 // transfer) would extend, not restructure — add a new value here, a
 // new card below, and the rest of the screen's layout is untouched.
-type ExpandedAction = "suspend" | "ban" | null;
+type ExpandedAction = "suspend" | "ban" | "revoke" | null;
 
 export default function AdminModerationDetailScreen() {
   const { colors } = useTheme();
@@ -57,6 +58,7 @@ export default function AdminModerationDetailScreen() {
   const banEntity = useModerationStore((state) => state.banEntity);
   const suspendEntity = useModerationStore((state) => state.suspendEntity);
   const liftRestriction = useModerationStore((state) => state.liftRestriction);
+  const revokeVerification = useModerationStore((state) => state.revokeVerification);
   const fetchHistory = useModerationStore((state) => state.fetchHistory);
   const history = useModerationStore((state) => state.history[`${entityType}:${entityId}`]);
   const fetchEntityDetails = useModerationStore((state) => state.fetchEntityDetails);
@@ -83,14 +85,14 @@ export default function AdminModerationDetailScreen() {
     if (!entityType || !entityId) return null;
     if (entityType === "user") {
       const u = allUsers.find((u) => u.id === entityId);
-      return u ? { name: u.fullName || u.email, isBanned: u.isBanned, isSuspended: u.isSuspended } : null;
+      return u ? { name: u.fullName || u.email, isBanned: u.isBanned, isSuspended: u.isSuspended, kycStatus: u.kycStatus } : null;
     }
     if (entityType === "facility") {
       const f = facilities.find((f) => f.id === entityId);
-      return f ? { name: f.name, isBanned: f.isBanned, isSuspended: f.isSuspended } : null;
+      return f ? { name: f.name, isBanned: f.isBanned, isSuspended: f.isSuspended, kycStatus: f.kyc.status } : null;
     }
     const o = organizations.find((o) => o.id === entityId);
-    return o ? { name: o.name, isBanned: o.isBanned, isSuspended: o.isSuspended } : null;
+    return o ? { name: o.name, isBanned: o.isBanned, isSuspended: o.isSuspended, kycStatus: o.kyc.status } : null;
   }, [entityType, entityId, allUsers, facilities, organizations]);
 
   if (!isAdmin) return <Redirect href="/(tabs)" />;
@@ -173,6 +175,31 @@ export default function AdminModerationDetailScreen() {
       toast.success(`Access restored for ${entity.name}.`);
     } else {
       toast.error("Couldn't restore access. Please try again.");
+    }
+  };
+
+  const handleRevoke = async () => {
+    if (!entity) return;
+    if (!reason.trim()) {
+      toast.error("A reason is required.");
+      return;
+    }
+    const confirmed = await confirm({
+      title: `Revoke verification for ${entity.name}?`,
+      message: "This reverses their verified status back to rejected. They'll need to re-submit documents to become verified again.",
+      confirmLabel: "Revoke",
+      destructive: true,
+    });
+    if (!confirmed) return;
+
+    setSubmitting(true);
+    const ok = await revokeVerification(entityType, entityId, reason.trim());
+    setSubmitting(false);
+    if (ok) {
+      toast.success(`Verification revoked for ${entity.name}.`);
+      resetForm();
+    } else {
+      toast.error("Couldn't revoke verification. Please try again.");
     }
   };
 
@@ -427,6 +454,51 @@ export default function AdminModerationDetailScreen() {
                 )}
               </View>
             </>
+          )}
+
+          {entity.kycStatus === "verified" && (
+            <View className="rounded-xl overflow-hidden" style={{ backgroundColor: colors.backgroundElement }}>
+              <Pressable
+                onPress={() => setExpandedAction(expandedAction === "revoke" ? null : "revoke")}
+                className="flex-row items-center gap-3 p-4"
+              >
+                <MaterialCommunityIcons name="shield-off-outline" size={20} color={colors.error} />
+                <View className="flex-1">
+                  <Text className="text-sm font-semibold" style={{ color: colors.text }}>Revoke Verification</Text>
+                  <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>
+                    Reverses verified status — they'll need to re-submit documents
+                  </Text>
+                </View>
+                <MaterialCommunityIcons
+                  name={expandedAction === "revoke" ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color={colors.textSecondary}
+                />
+              </Pressable>
+              {expandedAction === "revoke" && (
+                <View className="gap-2.5 px-4 pb-4">
+                  <TextInput
+                    value={reason}
+                    onChangeText={setReason}
+                    placeholder="Reason for revoking verification"
+                    placeholderTextColor={colors.textSecondary}
+                    multiline
+                    className="rounded-xl p-3.5 text-sm min-h-[90px]"
+                    style={{ backgroundColor: colors.background, color: colors.text, textAlignVertical: "top" }}
+                  />
+                  <Pressable
+                    onPress={handleRevoke}
+                    disabled={submitting}
+                    className="py-3.5 rounded-xl items-center"
+                    style={{ backgroundColor: colors.error, opacity: submitting ? 0.6 : 1 }}
+                  >
+                    {submitting ? <ActivityIndicator color="#fff" /> : (
+                      <Text className="text-white text-[15px] font-semibold">Confirm Revoke</Text>
+                    )}
+                  </Pressable>
+                </View>
+              )}
+            </View>
           )}
         </View>
 

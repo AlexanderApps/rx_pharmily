@@ -1,6 +1,12 @@
 import { ProfileUpdateEntityType } from "@/features/profile-updates/types/profile-update.types";
 
-export type ModerationActionType = "banned" | "unbanned" | "suspended" | "unsuspended" | "suspension_expired";
+export type ModerationActionType =
+  | "banned"
+  | "unbanned"
+  | "suspended"
+  | "unsuspended"
+  | "suspension_expired"
+  | "verification_revoked";
 
 export interface ModerationAction {
   id: string;

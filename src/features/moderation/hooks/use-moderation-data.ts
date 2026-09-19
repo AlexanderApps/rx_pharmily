@@ -3,6 +3,8 @@ import { supabase } from "@/lib/supabase";
 import { requireUserId } from "@/lib/supabase-store-helpers";
 import { ProfileUpdateEntityType } from "@/features/profile-updates/types/profile-update.types";
 import { ModerationAction } from "@/features/moderation/types/moderation.types";
+import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { useNotificationStore } from "@/features/notifications/hooks/use-notifications-data";
 
 const ENTITY_TABLE: Record<ProfileUpdateEntityType, string> = {
   user: "profiles",
@@ -98,6 +100,16 @@ interface ModerationState {
   // mutual-exclusivity check constraint already guarantees at most one
   // is ever true at a time.
   liftRestriction: (entityType: ProfileUpdateEntityType, entityId: string) => Promise<boolean>;
+  // Distinct from banEntity/suspendEntity — those restrict platform
+  // access; this un-does an existing KYC approval (sets kyc_status
+  // back to 'rejected' with a reason) without touching is_banned/
+  // is_suspended at all. An entity can be revoked and still be able to
+  // sign in and use the platform as an unverified one.
+  revokeVerification: (
+    entityType: ProfileUpdateEntityType,
+    entityId: string,
+    reason: string,
+  ) => Promise<boolean>;
 }
 
 export const useModerationStore = create<ModerationState>((set, get) => ({
@@ -356,6 +368,92 @@ export const useModerationStore = create<ModerationState>((set, get) => ({
     });
     if (logError) console.warn("[moderation] liftRestriction audit log failed:", logError.message);
     await get().fetchHistory(entityType, entityId);
+    return true;
+  },
+
+  revokeVerification: async (entityType, entityId, reason) => {
+    const adminId = await requireUserId();
+    const nowIso = new Date().toISOString();
+
+    const { error: updateError } = await supabase
+      .from(ENTITY_TABLE[entityType])
+      .update({
+        kyc_status: "rejected",
+        kyc_reviewed_at: nowIso,
+        kyc_reviewed_by: adminId,
+        kyc_rejection_reason: reason,
+      })
+      .eq("id", entityId);
+    if (updateError) {
+      console.warn("[moderation] revokeVerification failed:", updateError.message);
+      return false;
+    }
+
+    // Cross-store update, not just the audit log below — this screen's
+    // own "Currently verified" state and facility-profile.tsx's own
+    // KYC section both read from useProfileStore, not from anything
+    // local to this store. Targets allUsers specifically for the user
+    // case (not usersForKycReview, which is what rejectKyc's own local
+    // update touches) — allUsers is what moderation-detail.tsx and
+    // moderation.tsx actually read from.
+    const profileState = useProfileStore.getState();
+    const kycPatch = {
+      status: "rejected" as const,
+      reviewedAt: new Date(nowIso),
+      reviewedBy: adminId,
+      rejectionReason: reason,
+    };
+    if (entityType === "user") {
+      useProfileStore.setState({
+        allUsers: profileState.allUsers.map((u) => (u.id === entityId ? { ...u, kycStatus: "rejected" } : u)),
+      });
+    } else if (entityType === "facility") {
+      useProfileStore.setState({
+        facilities: profileState.facilities.map((f) =>
+          f.id === entityId ? { ...f, kyc: { ...f.kyc, ...kycPatch } } : f,
+        ),
+      });
+    } else {
+      useProfileStore.setState({
+        organizations: profileState.organizations.map((o) =>
+          o.id === entityId ? { ...o, kyc: { ...o.kyc, ...kycPatch } } : o,
+        ),
+      });
+    }
+
+    const { error: logError } = await supabase.from("account_moderation_actions").insert({
+      entity_type: entityType,
+      entity_id: entityId,
+      action_type: "verification_revoked",
+      reason,
+      performed_by: adminId,
+    });
+    if (logError) console.warn("[moderation] revokeVerification audit log failed:", logError.message);
+    await get().fetchHistory(entityType, entityId);
+
+    const recipientId =
+      entityType === "user"
+        ? entityId
+        : entityType === "facility"
+          ? profileState.facilities.find((f) => f.id === entityId)?.adminUserId
+          : profileState.organizations.find((o) => o.id === entityId)?.adminUserId;
+    if (recipientId) {
+      useNotificationStore.getState().addNotification(
+        recipientId,
+        "kyc_decision",
+        "Verification revoked",
+        `Your verification has been revoked: ${reason}`,
+        {
+          pathname:
+            entityType === "user"
+              ? "/profile/user-profile"
+              : entityType === "facility"
+                ? "/profile/facility-profile"
+                : "/profile/organization-profile",
+        },
+      );
+    }
+
     return true;
   },
 }));
