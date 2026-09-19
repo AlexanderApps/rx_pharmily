@@ -226,6 +226,25 @@ export const CATEGORY_META: NotificationCategoryMeta[] = [
   },
 ];
 
+// Which role_features grant each settings section is gated behind —
+// same category strings already established in services.tsx and the
+// home feed's shortcut row, reused here rather than a second,
+// possibly-drifting list. A section with no entry (only "Account")
+// applies to literally everyone regardless of role — KYC decisions,
+// facility membership, and ownership transfer aren't tied to any
+// gated feature, so it's never filtered.
+export const SECTION_FEATURE_MAP: Record<string, string> = {
+  RxRFQs: "RxRFQ",
+  Donations: "Donations",
+  MediScope: "MediScope",
+  RxJobs: "Jobs",
+  RxAds: "Ads",
+  RxHelp: "RxHelp",
+  RxLink: "RxLink",
+  Chat: "RxChat",
+  Catalog: "Formulary",
+};
+
 function buildDefaultSettings(): NotificationSettings {
   const settings = {} as NotificationSettings;
   for (const meta of CATEGORY_META) {

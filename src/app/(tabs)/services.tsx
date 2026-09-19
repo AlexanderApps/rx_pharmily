@@ -233,6 +233,7 @@ export default function ServiceScreen() {
                       />
                     }
                     label="Price Checker"
+                    widthClassName="flex-1"
                     tintColor="#0d9488"
                     colors={colors}
                     onPress={() => {

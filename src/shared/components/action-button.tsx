@@ -8,6 +8,11 @@ interface ActionButtonProps {
   iconColor?: string;
   onPress?: () => void;
   colors: any;
+  // Defaults to the 3-column grid width Quick Actions' 10 buttons all
+  // rely on. A section with fewer items — Utilities currently has just
+  // one — passes a different value so a lone button fills the row
+  // deliberately instead of sitting isolated in a third of it.
+  widthClassName?: string;
 }
 
 export default function ActionButton({
@@ -16,12 +21,13 @@ export default function ActionButton({
   tintColor,
   onPress,
   colors,
+  widthClassName = "w-[31%]",
 }: ActionButtonProps) {
   return (
     <Pressable
       onPress={onPress}
       // Uses uniform NativeWind press state modifier and elevation shadow utilities
-      className="w-[31%] rounded-[16px] border-[0.5px] p-3 items-center justify-center shadow-sm elevation-[1] active:opacity-80"
+      className={`${widthClassName} rounded-[16px] border-[0.5px] p-3 items-center justify-center shadow-sm elevation-[1] active:opacity-80`}
       style={{
         backgroundColor: colors.backgroundSecondary,
         borderColor: colors.border,

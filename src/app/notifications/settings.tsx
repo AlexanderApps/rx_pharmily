@@ -9,13 +9,17 @@ import ModernSwitch from "@/shared/components/switch";
 import {
   useNotificationStore,
   CATEGORY_META,
+  SECTION_FEATURE_MAP,
 } from "@/features/notifications/hooks/use-notifications-data";
+import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 
 export default function NotificationSettingsScreen() {
   const { colors } = useTheme();
   const settings = useNotificationStore((state) => state.settings);
   const updateSetting = useNotificationStore((state) => state.updateSetting);
   const setAllInSection = useNotificationStore((state) => state.setAllInSection);
+  const hasFeature = usePermissionsStore((state) => state.hasFeature);
+  const hasFetchedFeatures = usePermissionsStore((state) => state.hasFetchedFeatures);
 
   const sections = useMemo(() => {
     const bySection = new Map<string, typeof CATEGORY_META>();
@@ -24,8 +28,16 @@ export default function NotificationSettingsScreen() {
       list.push(meta);
       bySection.set(meta.section, list);
     }
-    return Array.from(bySection.entries());
-  }, []);
+    return Array.from(bySection.entries()).filter(([section]) => {
+      const requiredFeature = SECTION_FEATURE_MAP[section];
+      // No entry (e.g. "Account") means universal, not gated — shown
+      // regardless. Optimistically shown until permissions are
+      // confirmed loaded, same guard used everywhere else this
+      // session, so a section doesn't flash hidden for someone who
+      // actually has the feature.
+      return !requiredFeature || !hasFetchedFeatures || hasFeature(requiredFeature);
+    });
+  }, [hasFeature, hasFetchedFeatures]);
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>

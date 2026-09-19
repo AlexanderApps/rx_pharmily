@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { supabase } from "@/lib/supabase";
 import {
   KycDocumentType,
   KycEntityType,
@@ -40,6 +41,14 @@ interface KycSectionProps {
   // status" and shouldn't be visible to someone with no relationship
   // to the facility.
   canView?: boolean;
+  // Defaults to true — user's own KYC and organization (this
+  // component's other two callers) have no admin-only-visibility
+  // problem the way a facility does. Only facility-profile.tsx passes
+  // this, scoped to admin specifically — narrower than canManage
+  // (owner or admin): the verification date itself is fine for the
+  // owner to see, but who personally reviewed it is not something the
+  // owner needs, and surfacing it to them has no upside.
+  canViewReviewer?: boolean;
 }
 
 const KycSection: React.FC<KycSectionProps> = ({
@@ -52,12 +61,37 @@ const KycSection: React.FC<KycSectionProps> = ({
   onSubmit,
   canManage = true,
   canView = true,
+  canViewReviewer = true,
 }) => {
   const { colors } = useTheme();
   const [selectedType, setSelectedType] = useState<KycDocumentType>(documentTypes[0]);
   const [uploading, setUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewingPath, setViewingPath] = useState<string | null>(null);
+  const [reviewerName, setReviewerName] = useState<string | null>(null);
+
+  // Lazy — only resolves the reviewer's uuid into a display name when
+  // someone who's actually allowed to see it is looking, rather than
+  // joining this on every facility/organization/user fetch whether or
+  // not anyone ever needs it.
+  useEffect(() => {
+    if (!canViewReviewer || !kyc.reviewedBy) {
+      setReviewerName(null);
+      return;
+    }
+    let cancelled = false;
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", kyc.reviewedBy)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setReviewerName(data?.full_name ?? null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [canViewReviewer, kyc.reviewedBy]);
 
   const canEdit = canManage && (kyc.status === "unverified" || kyc.status === "rejected");
 
@@ -124,10 +158,10 @@ const KycSection: React.FC<KycSectionProps> = ({
         </View>
       )}
 
-      {kyc.status === "verified" && kyc.reviewedAt && (
+      {canManage && kyc.status === "verified" && kyc.reviewedAt && (
         <Text className="text-xs" style={{ color: colors.textSecondary }}>
           Verified {new Date(kyc.reviewedAt).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })}
-          {kyc.reviewedBy ? ` by ${kyc.reviewedBy}` : ""}
+          {canViewReviewer && reviewerName ? ` by ${reviewerName}` : ""}
         </Text>
       )}
 

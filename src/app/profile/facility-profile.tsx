@@ -8,8 +8,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Switch,
 } from "react-native";
+import ModernSwitch from "@/shared/components/switch";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Location from "expo-location";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
@@ -837,22 +837,24 @@ export default function FacilityProfileScreen() {
                 <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
                   Show email publicly
                 </Text>
-                <Switch
+                <ModernSwitch
                   value={facility.publicVisibility.showEmail}
                   disabled={!isOwner}
                   onValueChange={(value) => isOwner && updateFacilityVisibility(facility.id, { showEmail: value })}
-                  trackColor={{ true: colors.primary }}
+                  activeColor={colors.primary}
+                  size="small"
                 />
               </View>
               <View className="flex-row items-center justify-between py-2">
                 <Text className="text-[13px] font-medium" style={{ color: colors.text }}>
                   Show phone publicly
                 </Text>
-                <Switch
+                <ModernSwitch
                   value={facility.publicVisibility.showPhone}
                   disabled={!isOwner}
                   onValueChange={(value) => isOwner && updateFacilityVisibility(facility.id, { showPhone: value })}
-                  trackColor={{ true: colors.primary }}
+                  activeColor={colors.primary}
+                  size="small"
                 />
               </View>
             </>
@@ -959,7 +961,8 @@ export default function FacilityProfileScreen() {
             kyc={facility.kyc}
             documentTypes={["Facility Permit", "Business Registration", "Other"]}
             canManage={isOwner}
-            canView={isMember}
+            canView={isOwner}
+            canViewReviewer={viewerRole === "admin"}
             onAddDocument={(docType, fileName, imageUri) =>
               addKycDocument("facility", facility.id, docType, fileName, imageUri)
             }
