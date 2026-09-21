@@ -11,6 +11,8 @@ import {
   convertToCardData,
   useMediscopeStore,
 } from "@/features/mediscope/hooks/use-mediscope-data";
+import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 import { MediscopeStatus } from "@/features/mediscope/types/mediscope.types";
 import MediscopeListContainer from "@/features/mediscope/components/mediscope-list-container";
 import SearchFilterChip from "@/shared/components/search-filter-chip";
@@ -21,8 +23,12 @@ export default function SearchMediscope() {
   const searchInputRef = useRef<TextInput>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<MediscopeStatus | null>(null);
+  const [regionFilter, setRegionFilter] = useState<string | null>(null);
   const { colors } = useTheme();
   const requests = useMediscopeStore((state) => state.requests);
+  const facilities = useProfileStore((state) => state.facilities);
+  const regions = useReferenceDataStore((state) => state.regions);
+  const regionByFacilityId = useMemo(() => new Map(facilities.map((f) => [f.id, f.region])), [facilities]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -37,6 +43,11 @@ export default function SearchMediscope() {
       .filter((r) => {
         if (r.isRemoved) return false;
         if (statusFilter && r.status !== statusFilter) return false;
+        // r.facility is the facility's id — region comes from the
+        // facility's own region field, not facilityLocation (resolved
+        // from facility.location, an address/GPS-style string that
+        // wouldn't match a region name).
+        if (regionFilter && regionByFacilityId.get(r.facility) !== regionFilter) return false;
         if (!q) return true;
         return (
           r.product.toLowerCase().includes(q) ||
@@ -46,7 +57,7 @@ export default function SearchMediscope() {
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .map(convertToCardData);
-  }, [requests, search, statusFilter]);
+  }, [requests, search, statusFilter, regionFilter, regionByFacilityId]);
 
   return (
     <ThemedView style={{ flex: 1 }}>
@@ -119,6 +130,15 @@ export default function SearchMediscope() {
                 label={status.charAt(0).toUpperCase() + status.slice(1)}
                 active={statusFilter === status}
                 onPress={() => setStatusFilter(statusFilter === status ? null : status)}
+              />
+            ))}
+
+            {regions.map((region) => (
+              <SearchFilterChip
+                key={region.id}
+                label={region.name}
+                active={regionFilter === region.name}
+                onPress={() => setRegionFilter(regionFilter === region.name ? null : region.name)}
               />
             ))}
           </ScrollView>

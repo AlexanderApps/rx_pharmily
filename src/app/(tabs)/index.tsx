@@ -485,8 +485,8 @@ export default function HomeScreen() {
 
               <View className="w-full gap-3.5">
                 {[
-                  { label: "RxVital", description: "Track and log vital signs and health metrics.", icon: "heart-pulse" as const, color: "#dc2626", route: "/vitals" },
                   { label: "RxLink", description: "Search and connect to source medications.", icon: "pill" as const, color: "#0d9488", route: "/rxlink" },
+                  { label: "RxVital", description: "Track and log vital signs and health metrics.", icon: "heart-pulse" as const, color: "#dc2626", route: "/vitals" },
                   { label: "RxHelp", description: "FAQ, consults, and asking a pharmacist.", icon: "lifebuoy" as const, color: "#2563eb", route: "/help" },
                 ].map((item) => (
                   <Pressable

@@ -306,35 +306,38 @@ export default function RxRfqScreen() {
               <ActionButton
                 icon={
                   <MaterialCommunityIcons
-                    name="needle"
+                    name="storefront-outline"
                     size={22}
                     color="#2563eb"
                   />
                 }
-                label="Respond"
+                label="Browse"
                 colors={colors}
+                onPress={() => router.push("/rfqs/list-rfqs")}
               />
               <ActionButton
                 icon={
                   <MaterialCommunityIcons
-                    name="message-text-outline"
+                    name="file-send-outline"
                     size={22}
                     color="#16a34a"
                   />
                 }
-                label="Messages"
+                label="My Response"
                 colors={colors}
+                onPress={() => router.push("/rfqs/my-responses")}
               />
               <ActionButton
                 icon={
                   <MaterialCommunityIcons
-                    name="check-circle-outline"
+                    name="plus-circle"
                     size={22}
                     color="#9333ea"
                   />
                 }
-                label="Completed"
+                label="New Request"
                 colors={colors}
+                onPress={() => router.push("/rfqs/add-rfqs")}
               />
             </View>
           </View>

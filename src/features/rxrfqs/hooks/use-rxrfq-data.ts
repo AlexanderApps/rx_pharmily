@@ -145,6 +145,14 @@ type RxRfqsStore = {
   fetchRxRfq: (id: string) => Promise<void>;
   fetchResponsesForRfq: (rfqId: string) => Promise<void>;
   fetchResponse: (id: string) => Promise<void>;
+  // Every response the current user has personally submitted, across
+  // every RFQ — distinct from fetchResponsesForRfq (scoped to one RFQ,
+  // used by that RFQ's own owner to see every vendor's quote) and from
+  // RLS's own broader allowance (any member of the vendor facility can
+  // see the facility's responses, not just the one who wrote it) — this
+  // is scoped specifically to "responses I wrote", matching what the
+  // My Responses screen is actually asking for.
+  fetchMyResponses: () => Promise<void>;
 
   addRxRfq: (data: RxRfqsFormData) => Promise<string | undefined>;
   updateRxRfq: (id: string, data: Partial<RxRfqsFormData>) => Promise<boolean>;
@@ -278,6 +286,25 @@ export const useRxRfqsStore = create<RxRfqsStore>((set, get) => ({
     const response = mapResponseRow(data, (data as any).facilities?.name ?? "Unknown facility");
     set((state) => ({
       rxrfqResponses: [response, ...state.rxrfqResponses.filter((r) => r.id !== id)],
+    }));
+  },
+
+  fetchMyResponses: async () => {
+    const userId = await requireUserId();
+    const { data, error } = await supabase
+      .from("rxrfq_responses")
+      .select(`${RESPONSE_SELECT}, facilities:vendor_facility_id(name)`)
+      .eq("created_by", userId)
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.warn("[rxrfq] fetchMyResponses failed:", error.message);
+      return;
+    }
+    const responses = (data ?? []).map((row: any) =>
+      mapResponseRow(row, row.facilities?.name ?? "Unknown facility"),
+    );
+    set((state) => ({
+      rxrfqResponses: [...responses, ...state.rxrfqResponses.filter((r) => r.createdBy !== userId)],
     }));
   },
 

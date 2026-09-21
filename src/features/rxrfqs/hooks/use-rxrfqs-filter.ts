@@ -2,52 +2,29 @@ import { useMemo, useState } from "react";
 import { Keyboard } from "react-native";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { FilterType } from "@/features/rxrfqs/types/rxrfqs.types";
+import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 
 interface UseRxRfqsFiltersProps {
   filterModalRef: React.RefObject<BottomSheetModal | null>;
 }
-
-const REGION_OPTIONS = [
-  "Greater Accra",
-  "Ashanti",
-  "Central",
-  "Eastern",
-  "Western",
-  "Volta",
-  "Northern",
-  "Upper East",
-  "Upper West",
-];
-
-const CATEGORY_OPTIONS = [
-  "Medications",
-  "Consumables",
-  "Test Kits",
-  "Devices",
-  "Stationery",
-  "Others",
-];
-
-const PRICE_OPTIONS = [
-  "Below GHS 50",
-  "GHS 50 - 100",
-  "GHS 100 - 500",
-  "Above GHS 500",
-];
-
-const AVAILABILITY_OPTIONS = ["Available Only", "Out of Stock"];
 
 export default function useRxRfqsFilters({
   filterModalRef,
 }: UseRxRfqsFiltersProps) {
   const [activeFilter, setActiveFilter] = useState<FilterType | null>(null);
 
+  // Real, admin-managed reference data (same source jobs' own working
+  // filter already uses for jobCategories) — not the hardcoded, stale
+  // option lists this hook used to carry, which had no connection to
+  // what's actually stored anywhere and could silently drift from it.
+  const regions = useReferenceDataStore((state) => state.regions);
+  const rxrfqCategories = useReferenceDataStore((state) => state.rxrfqCategories);
+  const regionOptions = useMemo(() => regions.map((r) => r.name), [regions]);
+  const categoryOptions = useMemo(() => rxrfqCategories.map((c) => c.name), [rxrfqCategories]);
+
   const [filters, setFilters] = useState({
     regions: [] as string[],
     categories: [] as string[],
-    facilityTypes: [] as string[],
-    // prices: [] as string[],
-    // availability: [] as string[],
   });
 
   const toggleFilterValue = (key: keyof typeof filters, value: string) => {
@@ -76,10 +53,6 @@ export default function useRxRfqsFilters({
         return ["75%"];
       case "category":
         return ["55%"];
-      // case "price":
-      //   return ["40%"];
-      // case "availability":
-      //   return ["35%"];
       default:
         return ["50%"];
     }
@@ -91,46 +64,29 @@ export default function useRxRfqsFilters({
         return "Select Region";
       case "category":
         return "Select Category";
-      // case "price":
-      //   return "Select Price";
-      // case "availability":
-      //   return "Availability";
       default:
         return "Filters";
     }
   }, [activeFilter]);
 
-  // Replaced renderFilterContent with a configuration object getter
   const activeFilterConfig = useMemo(() => {
     switch (activeFilter) {
       case "region":
         return {
-          options: REGION_OPTIONS,
+          options: regionOptions,
           selectedOptions: filters.regions,
           onToggle: (val: string) => toggleFilterValue("regions", val),
         };
       case "category":
         return {
-          options: CATEGORY_OPTIONS,
+          options: categoryOptions,
           selectedOptions: filters.categories,
           onToggle: (val: string) => toggleFilterValue("categories", val),
         };
-      // case "price":
-      //   return {
-      //     options: PRICE_OPTIONS,
-      //     selectedOptions: filters.prices,
-      //     onToggle: (val: string) => toggleFilterValue("prices", val),
-      //   };
-      // case "availability":
-      //   return {
-      //     options: AVAILABILITY_OPTIONS,
-      //     selectedOptions: filters.availability,
-      //     onToggle: (val: string) => toggleFilterValue("availability", val),
-      //   };
       default:
         return null;
     }
-  }, [activeFilter, filters]);
+  }, [activeFilter, filters, regionOptions, categoryOptions]);
 
   const clearActiveFilter = () => {
     setActiveFilter(null);

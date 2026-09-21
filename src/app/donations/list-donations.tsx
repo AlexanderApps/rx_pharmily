@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, Platform} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -11,6 +11,7 @@ import { toast } from "@/shared/hooks/use-toast";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { ThemedView } from "@/shared/components/themed-view";
 import SearchButton from "@/shared/components/search-button";
+import SearchFilterChip from "@/shared/components/search-filter-chip";
 import DonationList from "@/features/donations/components/donation-list";
 import MoreMenu from "@/shared/components/more-menu";
 import {
@@ -18,31 +19,42 @@ import {
   useDonationStore,
 } from "@/features/donations/hooks/use-donation-data";
 
+// Matches "Expiring Soon" on the full Search screen's own filter set —
+// same threshold, kept as the one quick filter inline here.
+const EXPIRING_SOON_DAYS = 30;
+
 export default function Donations() {
   const { colors } = useTheme();
   const currentUserId = useAuthStore((state) => state.user?.id);
   const donations = useDonationStore((state) => state.donations);
   const deleteDonation = useDonationStore((state) => state.deleteDonation);
   const { mine } = useLocalSearchParams<{ mine?: string }>();
+  const [expiringSoonOnly, setExpiringSoonOnly] = useState(false);
 
   // "View All" from the index page's "My Active Donations" section links
   // here with ?mine=true, scoping the list to donations this user created
   // — otherwise this is the public marketplace view, which (like every
   // other browse screen) only shows what's actually open to claim; hidden
   // and closed donations aren't available regardless of who created them.
-  const donationCards = useMemo(
-    () =>
-      [...donations]
-        .filter((d) =>
-          mine === "true" ? d.createdBy === currentUserId : d.status === "opened" && !d.isRemoved,
-        )
-        .sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        )
-        .map(convertToCardData),
-    [donations, mine, currentUserId],
-  );
+  const donationCards = useMemo(() => {
+    const now = Date.now();
+    const soonCutoff = now + EXPIRING_SOON_DAYS * 24 * 60 * 60 * 1000;
+    return [...donations]
+      .filter((d) => {
+        const matchesBaseline = mine === "true" ? d.createdBy === currentUserId : d.status === "opened" && !d.isRemoved;
+        if (!matchesBaseline) return false;
+        if (expiringSoonOnly) {
+          const hasExpiringSoonItem = d.donatedItems.some((item) => {
+            const expiry = new Date(item.expiryDate).getTime();
+            return expiry >= now && expiry <= soonCutoff;
+          });
+          if (!hasExpiringSoonItem) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map(convertToCardData);
+  }, [donations, mine, currentUserId, expiringSoonOnly]);
 
   const handleDelete = async (id: string) => {
     const donation = donations.find((d) => d.id === id);
@@ -118,6 +130,17 @@ export default function Donations() {
               ]}
             />
           </ThemedView>
+        </ThemedView>
+
+        {/* Quick Filters */}
+        <ThemedView style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
+          <SearchFilterChip
+            label="Expiring Soon"
+            icon="clock-alert-outline"
+            active={expiringSoonOnly}
+            activeColor={colors.error}
+            onPress={() => setExpiringSoonOnly((v) => !v)}
+          />
         </ThemedView>
 
         {/* Screen Content Feed */}

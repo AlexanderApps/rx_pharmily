@@ -40,6 +40,16 @@ const WORKSPACE_NAV: NavItem[] = [
   { label: "RxHelp", href: "/help", icon: "lifebuoy", matchPrefixes: ["/help"] },
 ];
 
+// Its own section (mirroring services.tsx's separate "Utilities"
+// heading) rather than folded into WORKSPACE_NAV — gated on its own
+// price_checker grant specifically, not showFullNav/home_feed. They
+// happen to be granted to the same roles today, but an admin could
+// edit either independently later via role-permissions.tsx, and a
+// dedicated check stays correct if that ever diverges.
+const UTILITIES_NAV: NavItem[] = [
+  { label: "Price Checker", href: "/utilities/price-checker", icon: "cash-check", matchPrefixes: ["/utilities/price-checker"] },
+];
+
 function isActive(pathname: string, item: NavItem): boolean {
   return item.matchPrefixes.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
@@ -108,6 +118,7 @@ const WebSidebar: React.FC = () => {
   const visibleWorkspaceNav = showFullNav
     ? WORKSPACE_NAV
     : WORKSPACE_NAV.filter((item) => ["/rxlink", "/vitals", "/help"].includes(item.href));
+  const visibleUtilitiesNav = (!hasFetchedFeatures || hasFeature("price_checker")) ? UTILITIES_NAV : [];
   const [desktopCollapsed, setDesktopCollapsedState] = useState(readPersistedCollapsed);
   const breakpoint = useBreakpoint();
   const isCompact = breakpoint === "compact";
@@ -297,6 +308,22 @@ const WebSidebar: React.FC = () => {
         {collapsed && <View className="mx-4 my-3 h-px" style={{ backgroundColor: colors.border }} />}
 
         <View>{visibleWorkspaceNav.map(renderItem)}</View>
+
+        {visibleUtilitiesNav.length > 0 && (
+          <>
+            {!collapsed ? (
+              <Text
+                className="mb-1.5 ml-5 mt-5 text-[10px] font-bold uppercase tracking-widest"
+                style={{ color: colors.textSecondary, ...noSelectStyle }}
+              >
+                Utilities
+              </Text>
+            ) : (
+              <View className="mx-4 my-3 h-px" style={{ backgroundColor: colors.border }} />
+            )}
+            <View>{visibleUtilitiesNav.map(renderItem)}</View>
+          </>
+        )}
 
         {isAdmin && (
           <>

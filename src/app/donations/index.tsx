@@ -299,14 +299,14 @@ export default function DonationsScreen() {
               <ActionButton
                 icon={
                   <MaterialCommunityIcons
-                    name="magnify"
+                    name="file-send-outline"
                     size={22}
                     color="#9333ea"
                   />
                 }
-                label="Search"
+                label="My Response"
                 colors={colors}
-                onPress={() => router.push("/donations/search-donations")}
+                onPress={() => router.push("/donations/my-responses")}
               />
             </View>
           </View>

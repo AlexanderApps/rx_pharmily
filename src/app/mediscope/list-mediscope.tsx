@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, Platform} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -8,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { ThemedView } from "@/shared/components/themed-view";
 import SearchButton from "@/shared/components/search-button";
+import SearchFilterChip from "@/shared/components/search-filter-chip";
 import MoreMenu from "@/shared/components/more-menu";
 import MediscopeListContainer from "@/features/mediscope/components/mediscope-list-container";
 import {
@@ -16,10 +17,14 @@ import {
 } from "@/features/mediscope/hooks/use-mediscope-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 
+// Matches RxRFQ's own "Closing Soon" quick filter, same threshold.
+const CLOSING_SOON_DAYS = 7;
+
 export default function ListMediscope() {
   const { colors } = useTheme();
   const requests = useMediscopeStore((state) => state.requests);
   const { mine } = useLocalSearchParams<{ mine?: string }>();
+  const [closingSoonOnly, setClosingSoonOnly] = useState(false);
 
   // "View All" from the index page's "My MediScope Requests" section
   // links here with ?mine=true, scoping the list to requests this user
@@ -29,13 +34,23 @@ export default function ListMediscope() {
   // available regardless of who created them.
   const cards = useMemo(() => {
     const userId = useProfileStore.getState().user.id;
+    const now = Date.now();
+    const soonCutoff = now + CLOSING_SOON_DAYS * 24 * 60 * 60 * 1000;
     return [...requests]
-      .filter((r) =>
-        mine === "true" ? r.createdBy === userId : r.status === "published" && !r.isRemoved,
-      )
+      .filter((r) => {
+        const matchesBaseline = mine === "true" ? r.createdBy === userId : r.status === "published" && !r.isRemoved;
+        if (!matchesBaseline) return false;
+        if (closingSoonOnly) {
+          // No deadline at all means nothing to be "soon" about.
+          if (!r.submissionDeadline) return false;
+          const deadline = new Date(r.submissionDeadline).getTime();
+          if (deadline < now || deadline > soonCutoff) return false;
+        }
+        return true;
+      })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .map(convertToCardData);
-  }, [requests, mine]);
+  }, [requests, mine, closingSoonOnly]);
 
   return (
     <ThemedView style={{ flex: 1 }}>
@@ -87,6 +102,17 @@ export default function ListMediscope() {
               ]}
             />
           </ThemedView>
+        </ThemedView>
+
+        {/* Quick Filters */}
+        <ThemedView style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
+          <SearchFilterChip
+            label="Closing Soon"
+            icon="clock-alert-outline"
+            active={closingSoonOnly}
+            activeColor={colors.error}
+            onPress={() => setClosingSoonOnly((v) => !v)}
+          />
         </ThemedView>
 
         <ThemedView style={{ flex: 1 }}>

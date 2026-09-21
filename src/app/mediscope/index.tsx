@@ -282,14 +282,14 @@ export default function MediscopeScreen() {
               <ActionButton
                 icon={
                   <MaterialCommunityIcons
-                    name="magnify-scan"
+                    name="file-send-outline"
                     size={22}
                     color="#9333ea"
                   />
                 }
-                label="Search"
+                label="My Response"
                 colors={colors}
-                onPress={() => router.push("/mediscope/search-mediscope")}
+                onPress={() => router.push("/mediscope/my-responses")}
               />
             </View>
           </View>

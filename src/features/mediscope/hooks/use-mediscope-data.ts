@@ -101,11 +101,19 @@ export function convertToCardData(request: MediscopeRequest): MediscopeCardData 
 type MediscopeStore = {
   requests: MediscopeRequest[];
   responsesByRequest: Record<string, MediscopeResponse[]>;
+  // Every response the current user has personally submitted, across
+  // every request — distinct from responsesByRequest (keyed per
+  // request, used by that request's own owner to see every vendor's
+  // response) and from RLS's own broader allowance (any member of the
+  // vendor facility can see the facility's responses, not just the one
+  // who wrote it) — this is scoped specifically to "responses I wrote".
+  myResponses: MediscopeResponse[];
   isLoading: boolean;
 
   fetchRequests: () => Promise<void>;
   fetchRequest: (id: string) => Promise<void>;
   fetchResponses: (requestId: string) => Promise<void>;
+  fetchMyResponses: () => Promise<void>;
 
   getRequest: (id: string) => MediscopeRequest | undefined;
   getResponses: (requestId: string) => MediscopeResponse[];
@@ -123,6 +131,7 @@ type MediscopeStore = {
 export const useMediscopeStore = create<MediscopeStore>((set, get) => ({
   requests: [],
   responsesByRequest: {},
+  myResponses: [],
   isLoading: false,
 
   fetchRequests: async () => {
@@ -173,6 +182,23 @@ export const useMediscopeStore = create<MediscopeStore>((set, get) => ({
     set((state) => ({
       responsesByRequest: { ...state.responsesByRequest, [requestId]: responses },
     }));
+  },
+
+  fetchMyResponses: async () => {
+    const userId = await requireUserId();
+    const { data, error } = await supabase
+      .from("mediscope_responses")
+      .select("*, facilities:vendor_facility_id(name)")
+      .eq("created_by", userId)
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.warn("[mediscope] fetchMyResponses failed:", error.message);
+      return;
+    }
+    const responses = (data ?? []).map((row: any) =>
+      mapResponseRow(row, row.facilities?.name ?? "Unknown facility"),
+    );
+    set({ myResponses: responses });
   },
 
   getRequest: (id) => get().requests.find((r) => r.id === id),

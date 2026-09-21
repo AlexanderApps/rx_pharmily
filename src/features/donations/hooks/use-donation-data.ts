@@ -116,11 +116,19 @@ export function convertToCardData(donation: Donation): DonationCardData {
 type DonationStore = {
   donations: Donation[];
   responsesByDonation: Record<string, DonationResponse[]>;
+  // Every response the current user has personally submitted, across
+  // every donation — distinct from responsesByDonation (keyed per
+  // donation, used by that donation's own owner to see every response)
+  // and from RLS's own broader allowance (any member of the responder
+  // facility can see the facility's responses, not just the one who
+  // wrote it) — this is scoped specifically to "responses I wrote".
+  myResponses: DonationResponse[];
   isLoading: boolean;
 
   fetchDonations: () => Promise<void>;
   fetchDonation: (id: string) => Promise<void>;
   fetchResponses: (donationId: string) => Promise<void>;
+  fetchMyResponses: () => Promise<void>;
 
   getDonation: (id: string) => Donation | undefined;
   getResponses: (donationId: string) => DonationResponse[];
@@ -138,6 +146,7 @@ type DonationStore = {
 export const useDonationStore = create<DonationStore>((set, get) => ({
   donations: [],
   responsesByDonation: {},
+  myResponses: [],
   isLoading: false,
 
   fetchDonations: async () => {
@@ -186,6 +195,23 @@ export const useDonationStore = create<DonationStore>((set, get) => ({
     set((state) => ({
       responsesByDonation: { ...state.responsesByDonation, [donationId]: responses },
     }));
+  },
+
+  fetchMyResponses: async () => {
+    const userId = await requireUserId();
+    const { data, error } = await supabase
+      .from("donation_responses")
+      .select(`${RESPONSE_SELECT}, facilities:responder_facility_id(name)`)
+      .eq("created_by", userId)
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.warn("[donations] fetchMyResponses failed:", error.message);
+      return;
+    }
+    const responses = (data ?? []).map((row: any) =>
+      mapResponseRow(row, row.facilities?.name ?? "Unknown facility"),
+    );
+    set({ myResponses: responses });
   },
 
   getDonation: (id) => get().donations.find((d) => d.id === id),

@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { router } from "expo-router";
 import { Pressable, Platform} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -8,15 +9,27 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { ThemedView } from "@/shared/components/themed-view";
 import SearchButton from "@/shared/components/search-button";
+import SearchFilterChip from "@/shared/components/search-filter-chip";
 import MoreMenu from "@/shared/components/more-menu";
 import JobListContainer from "@/features/rxjobs/components/job-list-container";
 import { useRxJobsStore } from "@/features/rxjobs/hooks/use-rxjobs-data";
+import { JobUrgency } from "@/features/rxjobs/types/rxjobs.types";
 
 export default function ListJobs() {
   const { colors } = useTheme();
   const currentUserId = useAuthStore((state) => state.user?.id);
   const jobs = useRxJobsStore((state) => state.jobs);
-  const visibleJobs = jobs.filter((j) => !j.isRemoved && (j.status === "open" || j.postedBy === currentUserId));
+  const [urgentOnly, setUrgentOnly] = useState(false);
+  const visibleJobs = useMemo(
+    () =>
+      jobs.filter(
+        (j) =>
+          !j.isRemoved &&
+          (j.status === "open" || j.postedBy === currentUserId) &&
+          (!urgentOnly || j.urgency === ("Immediate" as JobUrgency)),
+      ),
+    [jobs, currentUserId, urgentOnly],
+  );
 
   return (
     <ThemedView style={{ flex: 1 }}>
@@ -79,6 +92,17 @@ export default function ListJobs() {
               ]}
             />
           </ThemedView>
+        </ThemedView>
+
+        {/* Quick Filters */}
+        <ThemedView style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
+          <SearchFilterChip
+            label="Hiring Immediately"
+            icon="lightning-bolt-outline"
+            active={urgentOnly}
+            activeColor={colors.error}
+            onPress={() => setUrgentOnly((v) => !v)}
+          />
         </ThemedView>
 
         {/* Screen Content Feed */}

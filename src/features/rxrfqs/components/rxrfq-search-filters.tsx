@@ -32,14 +32,6 @@ const RfqsFilterMenu = ({
         hasSelectedValues={filters.categories.length > 0}
         badge={filters.categories.length || undefined}
       />
-
-      {/*<FilterButton
-        label="Price"
-        onPress={() => openFilterModal("price")}
-        isActive={activeFilter === "price"}
-        hasSelectedValues={filters.prices.length > 0}
-        badge={filters.prices.length || undefined}
-      />*/}
     </FilterMenu>
   );
 };

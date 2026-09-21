@@ -13,6 +13,7 @@ import { JobType, JobUrgency } from "@/features/rxjobs/types/rxjobs.types";
 import JobListContainer from "@/features/rxjobs/components/job-list-container";
 import SearchFilterChip from "@/shared/components/search-filter-chip";
 import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
+import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 
 const JOB_TYPES: JobType[] = [
   "Locum Shift",
@@ -27,11 +28,15 @@ export default function SearchJobs() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<JobType | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [regionFilter, setRegionFilter] = useState<string | null>(null);
   const [urgentOnly, setUrgentOnly] = useState(false);
   const { colors } = useTheme();
   const currentUserId = useAuthStore((state) => state.user?.id);
   const jobs = useRxJobsStore((state) => state.jobs);
   const jobCategories = useReferenceDataStore((state) => state.jobCategories);
+  const regions = useReferenceDataStore((state) => state.regions);
+  const facilities = useProfileStore((state) => state.facilities);
+  const regionByFacilityId = useMemo(() => new Map(facilities.map((f) => [f.id, f.region])), [facilities]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -47,6 +52,18 @@ export default function SearchJobs() {
       if (job.status !== "open" && job.postedBy !== currentUserId) return false;
       if (typeFilter && job.jobType !== typeFilter) return false;
       if (categoryFilter && !job.categories.includes(categoryFilter)) return false;
+      if (regionFilter) {
+        // A job posted by a facility has a real region to check
+        // against; a custom/external listing (isCustom, no
+        // facilityId) has none, so this falls back to a substring
+        // match on its free-text location — the only thing available
+        // for those.
+        const facilityRegion = job.facilityId ? regionByFacilityId.get(job.facilityId) : undefined;
+        const matches = facilityRegion
+          ? facilityRegion === regionFilter
+          : job.location.toLowerCase().includes(regionFilter.toLowerCase());
+        if (!matches) return false;
+      }
       if (urgentOnly && job.urgency !== ("Immediate" as JobUrgency))
         return false;
       if (!q) return true;
@@ -56,7 +73,7 @@ export default function SearchJobs() {
         job.location.toLowerCase().includes(q)
       );
     });
-  }, [jobs, search, typeFilter, categoryFilter, urgentOnly, currentUserId]);
+  }, [jobs, search, typeFilter, categoryFilter, regionFilter, urgentOnly, currentUserId, regionByFacilityId]);
 
   return (
     <ThemedView style={{ flex: 1 }}>
@@ -162,6 +179,15 @@ export default function SearchJobs() {
                 label={category.name}
                 active={categoryFilter === category.name}
                 onPress={() => setCategoryFilter(categoryFilter === category.name ? null : category.name)}
+              />
+            ))}
+
+            {regions.map((region) => (
+              <SearchFilterChip
+                key={region.id}
+                label={region.name}
+                active={regionFilter === region.name}
+                onPress={() => setRegionFilter(regionFilter === region.name ? null : region.name)}
               />
             ))}
           </ScrollView>
