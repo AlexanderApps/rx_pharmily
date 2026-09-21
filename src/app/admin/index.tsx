@@ -327,6 +327,16 @@ export default function AdminHubScreen() {
       countLabel: "manage",
       route: "/admin/role-permissions",
     });
+    cards.push({
+      key: "app-settings",
+      title: "App Settings",
+      description: "Global settings that apply across the whole app.",
+      icon: "cog-outline" as const,
+      color: "#9333ea",
+      count: 0,
+      countLabel: "manage",
+      route: "/admin/app-settings",
+    });
   }
 
   return (

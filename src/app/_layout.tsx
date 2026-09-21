@@ -13,6 +13,7 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
 import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
+import { useAppSettingsStore } from "@/features/app-settings/hooks/use-app-settings";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { isCurrentlyRestricted } from "@/features/moderation/types/moderation.types";
 import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
@@ -41,6 +42,7 @@ export default function RootLayout() {
   const initialize = useAuthStore((state) => state.initialize);
   const fetchProducts = useCatalogStore((state) => state.fetchProducts);
   const fetchReferenceData = useReferenceDataStore((state) => state.fetchAll);
+  const fetchAppSettings = useAppSettingsStore((state) => state.fetchAppSettings);
   const fetchNotificationSettings = useNotificationStore((state) => state.fetchSettings);
   const fetchNotifications = useNotificationStore((state) => state.fetchNotifications);
   const subscribeToNotifications = useNotificationStore((state) => state.subscribeToNotifications);
@@ -84,6 +86,7 @@ export default function RootLayout() {
     if (session) {
       fetchProducts();
       fetchReferenceData();
+      fetchAppSettings();
       fetchMyProfile();
       fetchFacilities();
       fetchOrganizations();

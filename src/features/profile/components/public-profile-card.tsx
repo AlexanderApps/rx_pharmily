@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, Pressable, Modal, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -6,6 +6,7 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { useChatStore } from "@/features/chat/hooks/use-chat-data";
+import { useAppSettingsStore } from "@/features/app-settings/hooks/use-app-settings";
 import { KycEntityType } from "@/features/profile/types/profile.types";
 import KycStatusBadge from "@/features/profile/components/kyc-status-badge";
 
@@ -41,6 +42,9 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
   const facilities = useProfileStore((state) => state.facilities);
   const organizations = useProfileStore((state) => state.organizations);
   const getUserDisplay = useProfileStore((state) => state.getUserDisplay);
+  const publicUserProfiles = useProfileStore((state) => state.publicUserProfiles);
+  const fetchPublicUserProfile = useProfileStore((state) => state.fetchPublicUserProfile);
+  const showUserTitleInBrackets = useAppSettingsStore((state) => state.showUserTitleInBrackets);
   const startConversation = useChatStore((state) => state.startConversation);
   const [isMessaging, setIsMessaging] = useState(false);
   const startFacilityConversation = useChatStore((state) => state.startFacilityConversation);
@@ -54,6 +58,21 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
     [entityType, entityId, organizations],
   );
   const isCurrentUser = entityType === "user" && entityId === currentUserId;
+
+  // getUserDisplay is a purely local lookup — it only knows the
+  // current user and whoever's facility membership happens to already
+  // be loaded elsewhere, so it can't resolve kyc status, profession,
+  // or contact info for an arbitrary other user. This is what actually
+  // fixes "other users don't see the correct verification status" (and
+  // the profession/email/phone fields right alongside it) — without
+  // this fetch, every field below except name/avatar silently stayed
+  // at its default for anyone who wasn't the viewer's own account.
+  const needsPublicFetch = entityType === "user" && !isCurrentUser && !fallbackName;
+  useEffect(() => {
+    if (visible && needsPublicFetch && !publicUserProfiles[entityId]) {
+      fetchPublicUserProfile(entityId);
+    }
+  }, [visible, needsPublicFetch, entityId, publicUserProfiles, fetchPublicUserProfile]);
 
   if (!visible) return null;
 
@@ -69,19 +88,26 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
   let bio: string | undefined;
   let messageTargetUserId: string | undefined;
   let facilityMessageTarget: { id: string; name: string } | undefined;
+  // "user" only — profession replaces the old role display, with a
+  // verified checkmark next to it when this person's kyc is actually
+  // verified. Kept separate from the generic subtitle (still used for
+  // facility/organization) since this is a structured value+badge, not
+  // a plain string.
+  let profession: string | undefined;
+  let title: string | undefined;
 
   if (entityType === "user") {
-    const isMe = entityId === currentUserId;
-    if (isMe) {
+    if (isCurrentUser) {
       name = user.fullName;
       avatarColor = user.avatarColor;
-      subtitle = user.role;
       email = user.email;
       phone = user.phone;
       showEmail = user.publicVisibility.showEmail;
       showPhone = user.publicVisibility.showPhone;
       kycStatus = user.kyc.status;
       bio = user.bio;
+      profession = user.profession;
+      title = user.title;
     } else if (fallbackName) {
       name = fallbackName;
       avatarColor = fallbackAvatarColor ?? avatarColor;
@@ -90,6 +116,23 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
       const target = getUserDisplay(entityId);
       name = target.name;
       avatarColor = target.avatarColor;
+      const publicProfile = publicUserProfiles[entityId];
+      if (publicProfile) {
+        name = publicProfile.fullName;
+        avatarColor = publicProfile.avatarColor;
+        profession = publicProfile.profession;
+        title = publicProfile.title;
+        kycStatus = publicProfile.kycStatus;
+        // The fetch always returns email/phone regardless of this
+        // person's visibility choice — showEmail/showPhone below (from
+        // the same fetch) are what actually gate whether the card
+        // renders them, same enforcement point as the isCurrentUser
+        // branch above.
+        email = publicProfile.email;
+        phone = publicProfile.phone;
+        showEmail = publicProfile.showEmail;
+        showPhone = publicProfile.showPhone;
+      }
     }
     icon = "account-outline";
     messageTargetUserId = entityId;
@@ -135,6 +178,8 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
       avatarColor = fallbackAvatarColor ?? "#9333ea";
     }
   }
+
+  const displayName = entityType === "user" && title && showUserTitleInBrackets ? `[${title}] ${name}` : name;
 
   const initials = (name || "?")
     .split(" ")
@@ -201,9 +246,25 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
           </View>
 
           <Text className="text-[17px] font-bold text-center" style={{ color: colors.text }} numberOfLines={1}>
-            {name}
+            {displayName}
           </Text>
-          {subtitle ? (
+
+          {entityType === "user" ? (
+            profession ? (
+              <View className="flex-row items-center gap-1">
+                <Text className="text-[13px] text-center" style={{ color: colors.textSecondary }} numberOfLines={1}>
+                  {profession}
+                </Text>
+                {kycStatus === "verified" && (
+                  <MaterialCommunityIcons name="check-decagram" size={14} color={colors.success} />
+                )}
+              </View>
+            ) : subtitle ? (
+              <Text className="text-[13px] text-center" style={{ color: colors.textSecondary }} numberOfLines={1}>
+                {subtitle}
+              </Text>
+            ) : null
+          ) : subtitle ? (
             <Text className="text-[13px] text-center" style={{ color: colors.textSecondary }} numberOfLines={1}>
               {subtitle}
             </Text>

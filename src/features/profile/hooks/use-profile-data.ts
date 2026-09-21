@@ -58,6 +58,24 @@ export interface AdminUserSummary {
   moderationReason?: string;
 }
 
+// Lightweight row for PublicProfileCard when viewing someone else's
+// profile — enough to render the card correctly (kyc status,
+// profession/title, and contact info gated by that person's own
+// visibility choice), not the full self-only UserProfile shape.
+export interface PublicUserProfile {
+  id: string;
+  fullName: string;
+  avatarColor: string;
+  profession?: string;
+  title?: string;
+  kycStatus: "unverified" | "pending" | "verified" | "rejected";
+  email?: string;
+  phone?: string;
+  showEmail: boolean;
+  showPhone: boolean;
+}
+
+
 function mapUserSummaryRow(row: any): AdminUserSummary {
   return {
     id: row.id,
@@ -456,6 +474,16 @@ type ProfileStore = {
   // generic placeholder rather than doing a network round-trip on every
   // render, since this is called from render-path components.
   getUserDisplay: (userId: string) => { id: string; name: string; avatarColor: string };
+  publicUserProfiles: Record<string, PublicUserProfile>;
+  // On-demand fetch for PublicProfileCard viewing someone else's
+  // profile — getUserDisplay above is a purely local lookup (only
+  // knows about the current user and whoever's facility membership
+  // happens to already be loaded), not a real fetch, so it can't
+  // resolve kyc status, profession, or contact visibility for an
+  // arbitrary other user. profiles' own SELECT policy already allows
+  // any authenticated user to read any row, so this is a direct,
+  // narrow query for just what the card needs.
+  fetchPublicUserProfile: (userId: string) => Promise<void>;
   getMyFacilities: () => FacilityProfile[];
   getFacilityMembers: (facilityId: string) => FacilityMembership[];
 
@@ -538,6 +566,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   facilityMembershipRequests: [],
   facilityOrganizationRequests: [],
   allUsers: [],
+  publicUserProfiles: {},
   usersForKycReview: [],
   isLoading: false,
 
@@ -872,6 +901,31 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
       return { id: membership.userId, name: membership.userName, avatarColor: membership.avatarColor };
     }
     return { id: userId, name: "Unknown user", avatarColor: "#64748b" };
+  },
+
+  fetchPublicUserProfile: async (userId) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_color, profession, title, kyc_status, email, phone, public_show_email, public_show_phone")
+      .eq("id", userId)
+      .single();
+    if (error || !data) {
+      console.warn("[profile] fetchPublicUserProfile failed:", error?.message);
+      return;
+    }
+    const profile: PublicUserProfile = {
+      id: data.id,
+      fullName: data.full_name,
+      avatarColor: data.avatar_color,
+      profession: data.profession ?? undefined,
+      title: data.title ?? undefined,
+      kycStatus: data.kyc_status,
+      email: data.email ?? undefined,
+      phone: data.phone ?? undefined,
+      showEmail: data.public_show_email,
+      showPhone: data.public_show_phone,
+    };
+    set((state) => ({ publicUserProfiles: { ...state.publicUserProfiles, [userId]: profile } }));
   },
 
   getMyFacilities: () => {
