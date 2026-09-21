@@ -67,9 +67,21 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
   // the profession/email/phone fields right alongside it) — without
   // this fetch, every field below except name/avatar silently stayed
   // at its default for anyone who wasn't the viewer's own account.
-  const needsPublicFetch = entityType === "user" && !isCurrentUser && !fallbackName;
+  //
+  // This does NOT skip just because fallbackName was supplied.
+  // ClickableAvatar — the only real caller of this card anywhere in
+  // the app — always passes the name it already has as fallbackName,
+  // for every avatar, real profile or not. Gating the fetch on its
+  // absence meant this never actually ran for a real user in practice:
+  // fallbackName was effectively always set, so the fetch always
+  // looked skippable even when the person genuinely had a resolvable
+  // profile. fallbackName is only used below if the fetch comes back
+  // with nothing (a real "not found", cached as null — see
+  // fetchPublicUserProfile), which is the actual mock/external-data
+  // case it was meant for.
+  const needsPublicFetch = entityType === "user" && !isCurrentUser;
   useEffect(() => {
-    if (visible && needsPublicFetch && !publicUserProfiles[entityId]) {
+    if (visible && needsPublicFetch && publicUserProfiles[entityId] === undefined) {
       fetchPublicUserProfile(entityId);
     }
   }, [visible, needsPublicFetch, entityId, publicUserProfiles, fetchPublicUserProfile]);
@@ -108,18 +120,29 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
       bio = user.bio;
       profession = user.profession;
       title = user.title;
-    } else if (fallbackName) {
-      name = fallbackName;
-      avatarColor = fallbackAvatarColor ?? avatarColor;
-      subtitle = fallbackSubtitle ?? "";
     } else {
+      // Start from whatever's immediately available — a local lookup
+      // (same-facility member already loaded) or the caller's
+      // fallback — so the card has something to show the instant it
+      // opens, before the fetch below resolves.
       const target = getUserDisplay(entityId);
       name = target.name;
       avatarColor = target.avatarColor;
+      if (fallbackName) {
+        name = fallbackName;
+        avatarColor = fallbackAvatarColor ?? avatarColor;
+        subtitle = fallbackSubtitle ?? "";
+      }
+      // A successful fetch always wins over the above, whether or not
+      // fallbackName was also given — it's the real record for this
+      // person, not a guess. Only when the fetch has genuinely found
+      // no such profile (cached as null) or hasn't resolved yet does
+      // the fallback above stand as the final answer.
       const publicProfile = publicUserProfiles[entityId];
       if (publicProfile) {
         name = publicProfile.fullName;
         avatarColor = publicProfile.avatarColor;
+        subtitle = "";
         profession = publicProfile.profession;
         title = publicProfile.title;
         kycStatus = publicProfile.kycStatus;

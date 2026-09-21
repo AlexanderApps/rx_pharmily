@@ -474,7 +474,7 @@ type ProfileStore = {
   // generic placeholder rather than doing a network round-trip on every
   // render, since this is called from render-path components.
   getUserDisplay: (userId: string) => { id: string; name: string; avatarColor: string };
-  publicUserProfiles: Record<string, PublicUserProfile>;
+  publicUserProfiles: Record<string, PublicUserProfile | null>;
   // On-demand fetch for PublicProfileCard viewing someone else's
   // profile — getUserDisplay above is a purely local lookup (only
   // knows about the current user and whoever's facility membership
@@ -910,7 +910,13 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
       .eq("id", userId)
       .single();
     if (error || !data) {
-      console.warn("[profile] fetchPublicUserProfile failed:", error?.message);
+      // Not found is expected here, not just an error case — e.g. a
+      // post author or chat participant whose id comes from that
+      // feature's own mock data rather than a real profiles row.
+      // Caching null (as opposed to leaving the key entirely absent)
+      // is what lets the card tell "genuinely no such profile" apart
+      // from "haven't tried yet", so it doesn't refetch on every open.
+      set((state) => ({ publicUserProfiles: { ...state.publicUserProfiles, [userId]: null } }));
       return;
     }
     const profile: PublicUserProfile = {
