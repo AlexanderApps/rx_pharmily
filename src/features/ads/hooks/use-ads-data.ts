@@ -699,11 +699,6 @@ export const useAdsStore = create<AdsStore>((set, get) => ({
     }
 
     const comment = mapCommentRow(row);
-    await supabase
-      .from("ads")
-      .update({ comment_count: (get().ads.find((a) => a.id === adId)?.commentCount ?? 0) + 1 })
-      .eq("id", adId);
-
     set((state) => ({
       commentsByAd: { ...state.commentsByAd, [adId]: [...(state.commentsByAd[adId] ?? []), comment] },
       ads: state.ads.map((a) => (a.id === adId ? { ...a, commentCount: a.commentCount + 1 } : a)),
