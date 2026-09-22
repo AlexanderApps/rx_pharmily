@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -45,6 +45,7 @@ export default function AdMarketDetailsScreen() {
   const ads = useAdsStore((state) => state.ads);
   const isLoadingAds = useAdsStore((state) => state.isLoading);
   const commentsByAd = useAdsStore((state) => state.commentsByAd);
+  const fetchComments = useAdsStore((state) => state.fetchComments);
   const toggleReaction = useAdsStore((state) => state.toggleReaction);
   const addComment = useAdsStore((state) => state.addComment);
   const reportAd = useAdsStore((state) => state.reportAd);
@@ -53,6 +54,16 @@ export default function AdMarketDetailsScreen() {
   const [commentText, setCommentText] = useState("");
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
+
+  // commentsByAd only ever held whatever addComment had locally
+  // appended for the current user's own posted comments — nothing
+  // here ever actually fetched the real, full comment list from the
+  // server. Depending on what they'd personally posted, different
+  // viewers of the same ad would see completely different (and
+  // usually empty or incomplete) sets of comments.
+  useEffect(() => {
+    if (id) fetchComments(id);
+  }, [id, fetchComments]);
 
   const ad = useMemo(() => ads.find((a) => a.id === id), [ads, id]);
   const isOwner = ad?.advertiser.id === currentUserId;
