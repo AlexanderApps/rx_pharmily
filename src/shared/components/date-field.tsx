@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, Platform } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import DateTimePicker, { useDefaultStyles } from "react-native-ui-datepicker";
+import dayjs from "dayjs";
 import { useTheme } from "@/shared/hooks/use-theme";
 
 interface DateFieldProps {
@@ -15,19 +16,31 @@ interface DateFieldProps {
 const fmtShortDate = (d: Date) =>
   d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
 
+// Replaces @react-native-community/datetimepicker (native-only — see
+// date-field.web.tsx's former comment on why a separate web stand-in
+// ever existed) with react-native-ui-datepicker, which genuinely
+// supports iOS, Android, and web from the same component — this file
+// is now the only DateField implementation; there's no .web.tsx
+// variant anymore because none is needed.
+//
+// Style key names (today, selected, selected_label, day_label, ...)
+// come from this library's own UI enum (src/ui.ts as of the installed
+// 3.x line) — verified against the actual package source rather than
+// assumed, since several stale forks/mirrors of this library's README
+// document an entirely different, older individual-props styling API
+// (selectedItemColor, calendarTextStyle, etc.) that 3.x no longer uses.
+//
 // Self-contained: manages its own "is the picker open" state internally,
 // so a screen using two of these (a from/to pair) doesn't need to track
 // which one is currently open itself.
 const DateField: React.FC<DateFieldProps> = ({ label, value, onChange, maximumDate, icon }) => {
   const { colors } = useTheme();
+  const defaultStyles = useDefaultStyles();
   const [open, setOpen] = useState(false);
 
-  const handleChange = (event: DateTimePickerEvent, selected?: Date) => {
-    // Android's picker is a dialog that closes itself after a selection
-    // (or cancel) — iOS's stays open until dismissed some other way
-    // (the Done button below), so only Android needs this manual close.
-    if (Platform.OS === "android") setOpen(false);
-    if (selected) onChange(selected);
+  const handleChange = ({ date }: { date: dayjs.ConfigType }) => {
+    onChange(dayjs(date).toDate());
+    setOpen(false);
   };
 
   return (
@@ -44,30 +57,33 @@ const DateField: React.FC<DateFieldProps> = ({ label, value, onChange, maximumDa
       </Pressable>
 
       {open && (
-        // Android's picker is a native modal dialog regardless of where
-        // it sits in the tree, so this positioning only really matters
-        // for iOS's inline calendar — but applying it unconditionally
-        // is harmless either way and keeps this simple.
         <View
           className="absolute top-full left-0 z-20 mt-1.5 rounded-xl border p-2"
-          style={{ backgroundColor: colors.background, borderColor: colors.border }}
+          style={{ backgroundColor: colors.background, borderColor: colors.border, width: 280 }}
         >
           <DateTimePicker
-            value={value ?? new Date()}
-            mode="date"
-            maximumDate={maximumDate}
+            mode="single"
+            date={value ?? new Date()}
+            maxDate={maximumDate}
             onChange={handleChange}
-            {...(Platform.OS === "ios" ? { display: "inline" as const } : {})}
+            styles={{
+              ...defaultStyles,
+              today: { borderColor: colors.primary, borderWidth: 1 },
+              today_label: { color: colors.primary },
+              selected: { backgroundColor: colors.primary, borderColor: colors.primary },
+              selected_label: { color: "#ffffff" },
+              day_label: { color: colors.text },
+              outside_label: { color: colors.textSecondary },
+              disabled_label: { color: colors.textSecondary, opacity: 0.4 },
+              month_label: { color: colors.text },
+              year_label: { color: colors.text },
+              weekday_label: { color: colors.textSecondary },
+              month_selector_label: { color: colors.text },
+              year_selector_label: { color: colors.text },
+              button_next_image: { tintColor: colors.text },
+              button_prev_image: { tintColor: colors.text },
+            }}
           />
-          {Platform.OS === "ios" && (
-            <Pressable
-              onPress={() => setOpen(false)}
-              className="self-center mt-2 px-6 py-2 rounded-[10px]"
-              style={{ backgroundColor: colors.primary }}
-            >
-              <Text className="text-white font-bold text-[13px]">Done</Text>
-            </Pressable>
-          )}
         </View>
       )}
     </View>
@@ -75,4 +91,3 @@ const DateField: React.FC<DateFieldProps> = ({ label, value, onChange, maximumDa
 };
 
 export default DateField;
-
