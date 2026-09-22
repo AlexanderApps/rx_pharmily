@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { StatusBar } from "expo-status-bar";
-import { useColorScheme, View, ActivityIndicator, Platform } from "react-native";
+import { useColorScheme, Platform } from "react-native";
 import {
   SafeAreaProvider,
   initialWindowMetrics,
@@ -27,7 +27,7 @@ import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 import { useBookmarksStore } from "@/features/bookmarks/hooks/use-bookmarks-data";
 import { registerForWebPush } from "@/features/notifications/hooks/use-web-push-registration";
 import { usePostsStore } from "@/features/posts/hooks/use-posts-data";
-import LogoMark from "@/shared/components/logo-mark";
+import SplashScreen from "@/features/splash/components/splash-screen";
 import WebAppShell from "@/shared/components/web-app-shell";
 import Toast from "@/shared/components/toast";
 import ConfirmDialog from "@/shared/components/confirm-dialog";
@@ -172,10 +172,7 @@ export default function RootLayout() {
     return (
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <WebAppShell showChrome={!onAuthScreen}>
-          <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background, gap: 20 }}>
-            <LogoMark size={72} />
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
+          <SplashScreen backgroundColor={colors.background} indicatorColor={colors.primary} />
         </WebAppShell>
       </SafeAreaProvider>
     );
