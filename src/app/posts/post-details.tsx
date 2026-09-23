@@ -19,6 +19,7 @@ import DetailSkeleton from "@/shared/components/detail-skeleton";
 import { usePostsStore } from "@/features/posts/hooks/use-posts-data";
 import PostCard from "@/features/posts/components/post-card";
 import CommentRow from "@/features/posts/components/comment-row";
+import CommentSkeleton from "@/shared/components/comment-skeleton";
 
 export default function PostDetailsScreen() {
   const { colors } = useTheme();
@@ -31,8 +32,9 @@ export default function PostDetailsScreen() {
   const addComment = usePostsStore((state) => state.addComment);
   const fetchComments = usePostsStore((state) => state.fetchComments);
 
+  const [isCommentsLoading, setIsCommentsLoading] = useState(true);
   useEffect(() => {
-    if (id) fetchComments(id);
+    if (id) fetchComments(id).finally(() => setIsCommentsLoading(false));
   }, [id]);
 
   const listRef = useRef<FlatList>(null);
@@ -93,9 +95,13 @@ export default function PostDetailsScreen() {
             </View>
           }
           ListEmptyComponent={
-            <Text className="text-[13px] text-center mt-6" style={{ color: colors.textSecondary }}>
-              No comments yet — be the first to reply.
-            </Text>
+            isCommentsLoading ? (
+              <CommentSkeleton />
+            ) : (
+              <Text className="text-[13px] text-center mt-6" style={{ color: colors.textSecondary }}>
+                No comments yet — be the first to reply.
+              </Text>
+            )
           }
           renderItem={({ item }) => <CommentRow comment={item} />}
         />

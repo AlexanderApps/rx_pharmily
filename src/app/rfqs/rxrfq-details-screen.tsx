@@ -433,7 +433,7 @@ const RxRfqDetailsScreen: React.FC = () => {
                 color={colors.textSecondary}
               />
               <Text className="text-sm font-bold" style={{ color: colors.text }}>
-                {rfq.currency}
+                {rfq.currency || "-"}
               </Text>
               <Text className="text-[10px] text-center" style={{ color: colors.textSecondary }}>
                 Currency
@@ -453,7 +453,7 @@ const RxRfqDetailsScreen: React.FC = () => {
                 color={colors.textSecondary}
               />
               <Text className="text-sm font-bold" style={{ color: colors.text }}>
-                {rfq.incoterms}
+                {rfq.incoterms || "-"}
               </Text>
               <Text className="text-[10px] text-center" style={{ color: colors.textSecondary }}>
                 Incoterms

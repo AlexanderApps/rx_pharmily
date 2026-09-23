@@ -9,32 +9,12 @@ import {
   Platform,
 } from "react-native";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { useBreakpoint } from "@/shared/hooks/use-breakpoint";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import RxRfQItemModal from "@/features/rxrfqs/components/rxrfq-item-modal";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { RxRfqItem } from "@/features/rxrfqs/types/rxrfqs.types";
 import { useCatalogStore } from "@/features/catalog/hooks/use-catalog-data";
-
-// Platform, not a viewport-width breakpoint — this is specifically
-// "mobile app vs web browser" (the native sizing already works well at
-// any native screen size), not "narrow web window vs wide web window".
-// Native values below are exactly what this file already had; only the
-// web branch is new.
-const isWeb = Platform.OS === "web";
-
-const COLS = {
-  product: isWeb ? 320 : 180,
-  qty: isWeb ? 90 : 50,
-  uom: isWeb ? 100 : 60,
-  alt: isWeb ? 130 : 50,
-  comment: isWeb ? 110 : 40,
-  actions: isWeb ? 100 : 70,
-};
-const CELL_TEXT = isWeb ? "text-sm" : "text-xs";
-const CELL_PADDING = isWeb ? "px-3" : "px-1.5";
-const ROW_HEIGHT = isWeb ? "min-h-16" : "min-h-12";
-const ICON_SIZE = isWeb ? 20 : 16;
-const BADGE_ICON_SIZE = isWeb ? 14 : 12;
 
 interface RxRfQItemsTableProps {
   items: RxRfqItem[];
@@ -51,6 +31,30 @@ const RxRfQItemsTable: React.FC<RxRfQItemsTableProps> = ({
   const products = useCatalogStore((state) => state.products);
   const sheetRef = useRef<BottomSheetModal>(null);
   const [editingItem, setEditingItem] = useState<RxRfqItem | null>(null);
+
+  // The wide, desktop-sized columns only apply once there's actually
+  // room for them — a narrow browser window or mobile web view gets the
+  // same compact sizing the native app already uses at any screen size,
+  // rather than the desktop widths regardless of how little space is
+  // actually available. useBreakpoint (not a bare Platform.OS check)
+  // is what makes this reactive to the window actually being resized,
+  // not just which platform the app happens to be running on.
+  const breakpoint = useBreakpoint();
+  const isWideLayout = Platform.OS === "web" && breakpoint !== "compact";
+
+  const COLS = {
+    product: isWideLayout ? 320 : 180,
+    qty: isWideLayout ? 90 : 50,
+    uom: isWideLayout ? 100 : 60,
+    alt: isWideLayout ? 130 : 50,
+    comment: isWideLayout ? 110 : 40,
+    actions: isWideLayout ? 100 : 70,
+  };
+  const CELL_TEXT = isWideLayout ? "text-sm" : "text-xs";
+  const CELL_PADDING = isWideLayout ? "px-3" : "px-1.5";
+  const ROW_HEIGHT = isWideLayout ? "min-h-16" : "min-h-12";
+  const ICON_SIZE = isWideLayout ? 20 : 16;
+  const BADGE_ICON_SIZE = isWideLayout ? 14 : 12;
 
   const getProductName = (productId: string) =>
     products.find((p) => p.id === productId)?.name ?? "Unknown product";
@@ -197,14 +201,14 @@ const RxRfQItemsTable: React.FC<RxRfQItemsTableProps> = ({
                 className={`${CELL_TEXT} ${CELL_PADDING} font-semibold text-center`}
                 style={{ color: colors.text, width: COLS.alt }}
               >
-                {isWeb ? "Alternatives" : "Alt"}
+                {isWideLayout ? "Alternatives" : "Alt"}
               </Text>
 
               <Text
                 className={`${CELL_TEXT} ${CELL_PADDING} font-semibold text-center`}
                 style={{ color: colors.text, width: COLS.comment }}
               >
-                {isWeb ? "Comment" : "Cmt"}
+                {isWideLayout ? "Comment" : "Cmt"}
               </Text>
 
               <Text

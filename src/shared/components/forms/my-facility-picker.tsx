@@ -39,7 +39,16 @@ const MyFacilityPicker: React.FC<MyFacilityPickerProps> = ({
   const sheetRef = useRef<BottomSheetModal>(null);
   const [isOpen, setIsOpen] = useState(false);
   const getMyFacilities = useProfileStore((state) => state.getMyFacilities);
-  const facilities = getMyFacilities();
+  // Every one of this component's callers is a create/respond action
+  // (RxRFQ, MediScope, Donations, Jobs) that an unverified facility
+  // can't actually be used for — showing it here as a selectable option
+  // would just lead to an error surfacing somewhere downstream instead
+  // of not being offered in the first place.
+  const allMyFacilities = getMyFacilities();
+  const facilities = useMemo(
+    () => allMyFacilities.filter((f) => f.kyc.status === "verified"),
+    [allMyFacilities],
+  );
 
   const snapPoints = useMemo(() => ["50%", "75%"], []);
   const selected = useMemo(() => facilities.find((f) => f.id === value), [facilities, value]);
@@ -70,7 +79,9 @@ const MyFacilityPicker: React.FC<MyFacilityPickerProps> = ({
 
       {facilities.length === 0 ? (
         <Text className="text-[13px] text-center py-6" style={{ color: colors.textSecondary }}>
-          You don't belong to any facility yet.
+          {allMyFacilities.length === 0
+            ? "You don't belong to any facility yet."
+            : "None of your facilities are verified yet — verification is required for this."}
         </Text>
       ) : (
         facilities.map((item) => {

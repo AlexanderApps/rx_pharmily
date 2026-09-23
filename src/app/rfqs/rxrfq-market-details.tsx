@@ -279,9 +279,15 @@ const RxMarketplaceDetailScreen: React.FC = () => {
           <InfoRow
             icon="swap-horizontal"
             label="Incoterms"
-            value={<ContextText value={item.incoterms} subtitle={incotermDes?.label} definition={incotermDes?.description || ""} />}
+            value={
+              item.incoterms ? (
+                <ContextText value={item.incoterms} subtitle={incotermDes?.label} definition={incotermDes?.description || ""} />
+              ) : (
+                "-"
+              )
+            }
           />
-          <InfoRow icon="cash" label="Currency" value={item.currency} />
+          <InfoRow icon="cash" label="Currency" value={item.currency || "-"} />
         </Card>
 
         {/* ── Terms & Conditions ── */}

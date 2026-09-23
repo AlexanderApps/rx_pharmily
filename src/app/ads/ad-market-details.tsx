@@ -23,6 +23,7 @@ import { useAdsStore } from "@/features/ads/hooks/use-ads-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import AdMediaCarousel from "@/features/ads/components/ad-media-carousel";
 import AdCommentRow from "@/features/ads/components/ad-comment-row";
+import CommentSkeleton from "@/shared/components/comment-skeleton";
 import { toast } from "@/shared/hooks/use-toast";
 
 const fmtDate = (d?: Date) =>
@@ -61,8 +62,9 @@ export default function AdMarketDetailsScreen() {
   // server. Depending on what they'd personally posted, different
   // viewers of the same ad would see completely different (and
   // usually empty or incomplete) sets of comments.
+  const [isCommentsLoading, setIsCommentsLoading] = useState(true);
   useEffect(() => {
-    if (id) fetchComments(id);
+    if (id) fetchComments(id).finally(() => setIsCommentsLoading(false));
   }, [id, fetchComments]);
 
   const ad = useMemo(() => ads.find((a) => a.id === id), [ads, id]);
@@ -277,12 +279,16 @@ export default function AdMarketDetailsScreen() {
             </View>
           }
           ListEmptyComponent={
-            <Text
-              className="text-[13px] text-center mt-6"
-              style={{ color: colors.textSecondary }}
-            >
-              No comments yet.
-            </Text>
+            isCommentsLoading ? (
+              <CommentSkeleton />
+            ) : (
+              <Text
+                className="text-[13px] text-center mt-6"
+                style={{ color: colors.textSecondary }}
+              >
+                No comments yet.
+              </Text>
+            )
           }
           renderItem={({ item }) => <AdCommentRow comment={item} />}
         />
