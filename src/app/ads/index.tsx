@@ -42,6 +42,14 @@ export default function RxAdsScreen() {
   );
   const pendingCount = myAds.filter((a) => a.status === "pending").length;
   const liveCount = myAds.filter((a) => a.status === "approved").length;
+  // Ads has no "response" concept (no one responds to an ad the way a
+  // vendor responds to an RFQ) — comments are the closest analog to
+  // engagement, summed across live ads only, matching the same
+  // active-only scoping RxRFQ/MediScope/Donations use for their own
+  // "Responses" stat.
+  const totalComments = myAds
+    .filter((a) => a.status === "approved")
+    .reduce((sum, a) => sum + a.commentCount, 0);
 
   const openAdDetails = (id: string, isOwner: boolean) => {
     router.push({
@@ -91,7 +99,7 @@ export default function RxAdsScreen() {
               className="w-10 h-10 rounded-xl items-center justify-center cursor-pointer hover:opacity-90"
               style={{ backgroundColor: colors.primary }}
             >
-              <Ionicons name="add" size={22} color={colors.background} />
+              <Ionicons name="add" size={22} color="#ffffff" />
             </Pressable>
           )}
         </View>
@@ -118,8 +126,8 @@ export default function RxAdsScreen() {
                 onPress={() => router.push("/ads/my-ads")}
               />
               <StatCard
-                number={`${myAds.length}`}
-                label="Total Ads"
+                number={`${totalComments}`}
+                label="Comments"
                 type="info"
                 colors={colors}
                 onPress={() => router.push("/ads/my-ads")}
@@ -191,7 +199,7 @@ export default function RxAdsScreen() {
             elevation: 8,
           }}
         >
-          <Ionicons name="add" size={30} color={colors.background} />
+          <Ionicons name="add" size={30} color="#ffffff" />
         </Pressable>
         )}
       </View>

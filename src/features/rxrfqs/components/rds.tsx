@@ -198,9 +198,9 @@ export const FabGroup = ({
           <MaterialCommunityIcons
             name="file-send-outline"
             size={18}
-            color={colors.text}
+            color="#ffffff"
           />
-          <Text className="text-[15px] font-medium" style={{ color: colors.text }}>
+          <Text className="text-[15px] font-medium" style={{ color: "#ffffff" }}>
             Submit a quote
           </Text>
         </Pressable>

@@ -42,32 +42,42 @@ export default function RxRfqScreen() {
   // the same comparison every isOwner field in this app already uses —
   // not "any RFQ my facility posted", which would also count a
   // colleague's requests.
+  //
+  // Active = published only. draft/closed/awarded/cancelled/expired are
+  // all non-open states (not accepting new responses), so none of them
+  // count toward "active" here.
   const overviewStats = useMemo(() => {
     const userId = useProfileStore.getState().user.id;
-    const myActiveRequests = rxrfqMarketPlace.filter(
-      (rfq) => rfq.createdBy === userId && rfq.status === "published",
-    );
+    const myOwnRequests = rxrfqMarketPlace.filter((rfq) => rfq.createdBy === userId);
+    const myActiveRequests = myOwnRequests.filter((rfq) => rfq.status === "published");
     const totalResponses = myActiveRequests.reduce(
       (sum, rfq) => sum + rfq.responseCount,
       0,
     );
+    // "Awaiting" is active requests with zero responses yet — the ones
+    // that still need something to happen before there's a decision to
+    // make, not the ones that already have responses to review.
     const awaitingDecision = myActiveRequests.filter(
-      (rfq) => rfq.responseCount > 0,
+      (rfq) => rfq.responseCount === 0,
     ).length;
 
     return {
       activeCount: myActiveRequests.length,
       totalResponses,
       awaitingDecision,
+      draftCount: myOwnRequests.filter((rfq) => rfq.status === "draft").length,
+      closedCount: myOwnRequests.filter((rfq) => rfq.status === "closed").length,
+      awardedCount: myOwnRequests.filter((rfq) => rfq.status === "awarded").length,
     };
   }, [rxrfqMarketPlace]);
 
   // "My Active RxRFQs" below: the current user's own most-recently-created
-  // requests, excluding ones that are settled (closed/cancelled) rather
-  // than actually active or still awaiting a decision. Sorted by createdAt
-  // from the raw rxrfqMarketPlace data (a draft RFQ may have no meaningful
-  // publishedAt yet), then displayed via rxrfqs, the already-resolved card
-  // view RequestCardRow expects.
+  // requests, excluding ones that are settled (closed/cancelled) or not
+  // yet published (draft) — a draft hasn't actually been posted, so it
+  // doesn't belong in a list of what's currently active. Sorted by
+  // createdAt from the raw rxrfqMarketPlace data (a draft RFQ may have
+  // no meaningful publishedAt yet), then displayed via rxrfqs, the
+  // already-resolved card view RequestCardRow expects.
   const myRecentRfqs = useMemo(() => {
     const userId = useProfileStore.getState().user.id;
     const myOwnRfqs = rxrfqMarketPlace
@@ -75,7 +85,8 @@ export default function RxRfqScreen() {
         (rfq) =>
           rfq.createdBy === userId &&
           rfq.status !== "closed" &&
-          rfq.status !== "cancelled",
+          rfq.status !== "cancelled" &&
+          rfq.status !== "draft",
       )
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 3);
@@ -146,21 +157,6 @@ export default function RxRfqScreen() {
                 </Pressable>
               </Animated.View>
 
-              {/* Prominent Filter Button Layout */}
-              <Pressable
-                className="w-10 h-10 rounded-xl justify-center items-center border"
-                style={{
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: "rgba(0,0,0,0.05)",
-                }}
-              >
-                <Ionicons
-                  name="options-outline"
-                  size={20}
-                  color={colors.text}
-                />
-              </Pressable>
-
               {/* Create — web only; native keeps the floating action
                   button below instead, which is the mobile-appropriate
                   affordance for this action. */}
@@ -170,7 +166,7 @@ export default function RxRfqScreen() {
                   className="w-10 h-10 rounded-xl justify-center items-center cursor-pointer hover:opacity-90"
                   style={{ backgroundColor: colors.primary }}
                 >
-                  <Ionicons name="add" size={22} color={colors.background || "#ffffff"} />
+                  <Ionicons name="add" size={22} color="#ffffff" />
                 </Pressable>
               )}
             </View>
@@ -252,6 +248,45 @@ export default function RxRfqScreen() {
                   router.push({
                     pathname: "/rfqs/my-rfqs",
                     params: { filter: "published" },
+                  })
+                }
+              />
+            </View>
+
+            <View className="flex-row gap-3 mt-3">
+              <StatCard
+                number={overviewStats.draftCount.toString()}
+                label="Draft"
+                type="info"
+                colors={colors}
+                onPress={() =>
+                  router.push({
+                    pathname: "/rfqs/my-rfqs",
+                    params: { filter: "draft" },
+                  })
+                }
+              />
+              <StatCard
+                number={overviewStats.closedCount.toString()}
+                label="Closed"
+                type="warning"
+                colors={colors}
+                onPress={() =>
+                  router.push({
+                    pathname: "/rfqs/my-rfqs",
+                    params: { filter: "closed" },
+                  })
+                }
+              />
+              <StatCard
+                number={overviewStats.awardedCount.toString()}
+                label="Awarded"
+                type="success"
+                colors={colors}
+                onPress={() =>
+                  router.push({
+                    pathname: "/rfqs/my-rfqs",
+                    params: { filter: "awarded" },
                   })
                 }
               />
@@ -362,7 +397,7 @@ export default function RxRfqScreen() {
           <Ionicons
             name="add"
             size={30}
-            color={colors.background || "#ffffff"}
+            color="#ffffff"
           />
         </Pressable>
         )}

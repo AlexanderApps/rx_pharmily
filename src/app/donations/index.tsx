@@ -15,7 +15,6 @@ import {
   convertToCardData,
   useDonationStore,
 } from "@/features/donations/hooks/use-donation-data";
-import { daysUntilExpiry } from "@/features/donations/types/donation.types";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import PermissionGate from "@/shared/components/permission-gate";
 import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
@@ -54,31 +53,34 @@ export default function DonationsScreen() {
     return donations.filter((d) => d.createdBy === userId);
   }, [donations]);
 
-  const openCount = useMemo(
-    () => myDonations.filter((d) => d.status === "opened").length,
+  // Active = opened only — "hidden" means not visible to others (an
+  // owner-paused state, not currently accepting responses either), and
+  // "closed" means no longer accepting items. Matches the same "active"
+  // definition already used for RxRFQ (published) and MediScope
+  // (published).
+  const myActiveDonations = useMemo(
+    () => myDonations.filter((d) => d.status === "opened"),
     [myDonations]
   );
-
-  const expiringSoonCount = useMemo(
-    () =>
-      myDonations.reduce((count, d) => {
-        const soon = d.donatedItems.filter((item) => {
-          const days = daysUntilExpiry(item.expiryDate);
-          return days >= 0 && days <= 30;
-        }).length;
-        return count + soon;
-      }, 0),
+  const totalResponses = useMemo(
+    () => myActiveDonations.reduce((sum, d) => sum + d.responseCount, 0),
+    [myActiveDonations]
+  );
+  const closedCount = useMemo(
+    () => myDonations.filter((d) => d.status === "closed").length,
     [myDonations]
   );
 
   // "My Active Donations" below: the current user's own most-recently-
-  // created donations, excluding only ones that are settled (closed) —
-  // donationCards is already sorted most-recent-first globally, so
-  // filtering it down preserves that order.
+  // created donations, excluding ones that are settled (closed) or not
+  // publicly visible (hidden) — a hidden donation hasn't actually been
+  // put in front of anyone, so it doesn't belong in a list of what's
+  // currently active. donationCards is already sorted most-recent-first
+  // globally, so filtering it down preserves that order.
   const myRecentDonations = useMemo(() => {
     const myIds = new Set(myDonations.map((d) => d.id));
     return donationCards
-      .filter((d) => myIds.has(d.id) && d.status !== "closed")
+      .filter((d) => myIds.has(d.id) && d.status !== "closed" && d.status !== "hidden")
       .slice(0, 3);
   }, [donationCards, myDonations]);
 
@@ -147,7 +149,7 @@ export default function DonationsScreen() {
                   className="w-10 h-10 rounded-xl justify-center items-center cursor-pointer hover:opacity-90"
                   style={{ backgroundColor: colors.primary }}
                 >
-                  <Ionicons name="add" size={22} color={colors.background} />
+                  <Ionicons name="add" size={22} color="#ffffff" />
                 </Pressable>
               )}
             </View>
@@ -199,25 +201,25 @@ export default function DonationsScreen() {
             </Text>
             <View className="flex-row gap-3">
               <StatCard
-                number={`${myDonations.length}`}
-                label="Total Donations"
-                type="info"
-                colors={colors}
-                onPress={() => router.push("/donations/list-donations")}
-              />
-              <StatCard
-                number={`${openCount}`}
-                label="Open"
+                number={`${myActiveDonations.length}`}
+                label="Active Donations"
                 type="success"
                 colors={colors}
-                onPress={() => router.push("/donations/list-donations")}
+                onPress={() => router.push("/donations/my-donations")}
               />
               <StatCard
-                number={`${expiringSoonCount}`}
-                label="Expiring Soon"
+                number={`${totalResponses}`}
+                label="Responses"
+                type="info"
+                colors={colors}
+                onPress={() => router.push("/donations/my-donations")}
+              />
+              <StatCard
+                number={`${closedCount}`}
+                label="Closed"
                 type="warning"
                 colors={colors}
-                onPress={() => router.push("/donations/list-donations")}
+                onPress={() => router.push("/donations/my-donations")}
               />
             </View>
           </View>
@@ -227,12 +229,7 @@ export default function DonationsScreen() {
             title="My Active Donations"
             backgroundColor={colors.backgroundSecondary}
             textColor={colors.text}
-            onViewAllPress={() =>
-              router.push({
-                pathname: "/donations/list-donations",
-                params: { mine: "true" },
-              })
-            }
+            onViewAllPress={() => router.push("/donations/my-donations")}
             emptyMessage="No active donations yet — list an item to give away surplus stock"
           >
             {myRecentDonations.map((item, index, slicedArray) => (
@@ -328,7 +325,7 @@ export default function DonationsScreen() {
             elevation: 8,
           }}
         >
-          <Ionicons name="add" size={30} color={colors.background} />
+          <Ionicons name="add" size={30} color="#ffffff" />
         </Pressable>
         )}
       </SafeAreaView>

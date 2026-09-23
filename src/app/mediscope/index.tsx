@@ -52,11 +52,17 @@ export default function MediscopeScreen() {
     return requests.filter((r) => r.createdBy === userId);
   }, [requests]);
 
-  const publishedCount = myRequests.filter((r) => r.status === "published").length;
+  // Active = published only, matching RxRFQ's own definition — draft,
+  // fulfilled, closed, cancelled, and expired are all non-open states,
+  // not currently accepting new responses.
+  const myActiveRequests = myRequests.filter((r) => r.status === "published");
+  const totalResponses = myActiveRequests.reduce((sum, r) => sum + r.responseCount, 0);
   const fulfilledCount = myRequests.filter((r) => r.status === "fulfilled").length;
 
   // "My MediScope Requests" below: the current user's own most-recently-
-  // created requests, excluding ones that are settled (closed/cancelled).
+  // created requests, excluding ones that are settled (closed/cancelled)
+  // or not yet published (draft) — a draft hasn't actually been posted,
+  // so it doesn't belong in a list of what's currently active.
   // myRequests is already the raw (unresolved) data; cards is the
   // already-resolved card view MediscopeRow expects — filtering the
   // latter by an id set from the former gets both the right scope and
@@ -64,7 +70,7 @@ export default function MediscopeScreen() {
   const myRecentRequests = useMemo(() => {
     const myIds = new Set(
       myRequests
-        .filter((r) => r.status !== "closed" && r.status !== "cancelled")
+        .filter((r) => r.status !== "closed" && r.status !== "cancelled" && r.status !== "draft")
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 3)
         .map((r) => r.id),
@@ -131,7 +137,7 @@ export default function MediscopeScreen() {
                   className="h-10 w-10 items-center justify-center rounded-xl cursor-pointer hover:opacity-90"
                   style={{ backgroundColor: colors.primary }}
                 >
-                  <Ionicons name="add" size={22} color={colors.background} />
+                  <Ionicons name="add" size={22} color="#ffffff" />
                 </Pressable>
               )}
             </View>
@@ -182,25 +188,25 @@ export default function MediscopeScreen() {
             </Text>
             <View className="flex-row gap-3">
               <StatCard
-                number={`${myRequests.length}`}
-                label="All Requests"
-                type="info"
-                colors={colors}
-                onPress={() => router.push("/mediscope/list-mediscope")}
-              />
-              <StatCard
-                number={`${publishedCount}`}
-                label="Open"
+                number={`${myActiveRequests.length}`}
+                label="Active Requests"
                 type="success"
                 colors={colors}
-                onPress={() => router.push("/mediscope/list-mediscope")}
+                onPress={() => router.push("/mediscope/my-mediscope")}
+              />
+              <StatCard
+                number={`${totalResponses}`}
+                label="Responses"
+                type="info"
+                colors={colors}
+                onPress={() => router.push("/mediscope/my-mediscope")}
               />
               <StatCard
                 number={`${fulfilledCount}`}
                 label="Fulfilled"
                 type="warning"
                 colors={colors}
-                onPress={() => router.push("/mediscope/list-mediscope")}
+                onPress={() => router.push("/mediscope/my-mediscope")}
               />
             </View>
           </View>
@@ -210,12 +216,7 @@ export default function MediscopeScreen() {
             title="My MediScope Requests"
             backgroundColor={colors.backgroundSecondary}
             textColor={colors.text}
-            onViewAllPress={() =>
-              router.push({
-                pathname: "/mediscope/list-mediscope",
-                params: { mine: "true" },
-              })
-            }
+            onViewAllPress={() => router.push("/mediscope/my-mediscope")}
             emptyMessage="No MediScope requests yet — submit one to get responses from facilities"
           >
             {myRecentRequests.map((item, index, slicedArray) => (
@@ -311,7 +312,7 @@ export default function MediscopeScreen() {
             elevation: 8,
           }}
         >
-          <Ionicons name="add" size={30} color={colors.background} />
+          <Ionicons name="add" size={30} color="#ffffff" />
         </Pressable>
         )}
       </SafeAreaView>

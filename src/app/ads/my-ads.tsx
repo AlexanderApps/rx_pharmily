@@ -1,10 +1,11 @@
 import React, { useMemo } from "react";
-import { View, Text, FlatList, Pressable, Platform} from "react-native";
+import { View, Text, FlatList, Pressable, ScrollView, Platform} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { format } from "timeago.js";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { ThemedText } from "@/shared/components/themed-text";
 import EmptyState from "@/shared/components/empty-state";
 import { confirm } from "@/shared/hooks/use-confirm";
 import { toast } from "@/shared/hooks/use-toast";
@@ -14,12 +15,34 @@ import { Ad } from "@/features/ads/types/ads.types";
 import AdStatusPill from "@/features/ads/components/ad-status-pill";
 import { formatAmount } from "@/shared/utils/format";
 
+// Ads has no draft-equivalent state (a submission goes straight to
+// pending review) and no "response" concept — "Has Comments" stands in
+// for the other features' "Responded"/"Has Applicants".
+const AD_FILTERS = ["All", "Approved", "Pending", "Rejected", "Suspended", "Banned", "Has Comments"] as const;
+type FilterType = (typeof AD_FILTERS)[number];
+
 export default function MyAdsScreen() {
+  const { filter } = useLocalSearchParams<{ filter?: string }>();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const currentUserId = useAuthStore((state) => state.user?.id);
   const ads = useAdsStore((state) => state.ads);
   const deleteAd = useAdsStore((state) => state.deleteAd);
+
+  // Mirrors app/rfqs/my-rfqs.tsx, app/mediscope/my-mediscope.tsx,
+  // app/donations/my-donations.tsx, and app/jobs/my-jobs.tsx's own
+  // filter-tab pattern — same query-param-driven active filter.
+  const activeFilter = useMemo<FilterType>(() => {
+    if (!filter) return "All";
+
+    // "Has Comments" doesn't survive the toLowerCase()/single-word
+    // round trip other filters do, so it's matched separately, same as
+    // "Has Applicants" on app/jobs/my-jobs.tsx.
+    if (filter.replace(/-/g, " ").toLowerCase() === "has comments") return "Has Comments";
+
+    const formattedFilter = filter.charAt(0).toUpperCase() + filter.slice(1).toLowerCase();
+    return AD_FILTERS.includes(formattedFilter as FilterType) ? (formattedFilter as FilterType) : "All";
+  }, [filter]);
 
   const myAds = useMemo(
     () =>
@@ -28,6 +51,21 @@ export default function MyAdsScreen() {
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [ads, currentUserId],
   );
+
+  // "Has Comments" isn't a real status value — it's live (approved) ads
+  // that have at least one comment, so it needs its own compound check
+  // rather than the direct status match every other filter uses.
+  const filteredAds = useMemo(() => {
+    return myAds.filter((a) => {
+      if (activeFilter === "All") return true;
+      if (activeFilter === "Has Comments") return a.status === "approved" && a.commentCount > 0;
+      return a.status?.toLowerCase() === activeFilter.toLowerCase();
+    });
+  }, [myAds, activeFilter]);
+
+  const handleFilterPress = (filterItem: string) => {
+    router.setParams({ filter: filterItem.toLowerCase().replace(/ /g, "-") });
+  };
 
   const handleDelete = async (ad: Ad) => {
     const ok = await confirm({
@@ -65,13 +103,53 @@ export default function MyAdsScreen() {
         </Pressable>
       </View>
 
+      <View className="py-[15px]" style={{ backgroundColor: colors.background }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ flexGrow: 0, maxHeight: 56 }}
+          contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
+        >
+          {AD_FILTERS.map((filterItem) => {
+            const isActive = activeFilter === filterItem;
+
+            return (
+              <Pressable
+                key={filterItem}
+                onPress={() => handleFilterPress(filterItem)}
+                className="px-[18px] py-2 rounded-full border-[1.5px] items-center justify-center"
+                style={
+                  isActive
+                    ? { backgroundColor: colors.secondary, borderColor: colors.secondary }
+                    : { backgroundColor: "transparent", borderColor: "rgba(128,128,128,0.2)" }
+                }
+              >
+                <ThemedText
+                  className="text-sm font-semibold"
+                  style={isActive ? { color: "#FFFFFF" } : undefined}
+                >
+                  {filterItem}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+
       <FlatList
-        data={myAds}
+        data={filteredAds}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16, flexGrow: 1 }}
         ItemSeparatorComponent={() => <View className="h-2.5" />}
         ListEmptyComponent={
-          <EmptyState icon="bullhorn-outline" message="You haven't created any ads yet." />
+          <EmptyState
+            icon="bullhorn-outline"
+            message={
+              activeFilter !== "All" && myAds.length > 0
+                ? `No ${activeFilter.toLowerCase()} ads.`
+                : "You haven't created any ads yet."
+            }
+          />
         }
         renderItem={({ item }) => (
           <Pressable

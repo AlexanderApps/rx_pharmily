@@ -7,59 +7,54 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Ionicons } from "@expo/vector-icons";
-import RxRfqListContainer from "@/features/rxrfqs/components/rxrfq-list-container";
-import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
+import MediscopeListContainer from "@/features/mediscope/components/mediscope-list-container";
+import { convertToCardData, useMediscopeStore } from "@/features/mediscope/hooks/use-mediscope-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 
-const RFQ_FILTERS = ["All", "Published", "Draft", "Closed", "Awarded", "Cancelled", "Responded"] as const;
-type FilterType = (typeof RFQ_FILTERS)[number];
+const MEDISCOPE_FILTERS = ["All", "Published", "Draft", "Fulfilled", "Closed", "Cancelled", "Responded"] as const;
+type FilterType = (typeof MEDISCOPE_FILTERS)[number];
 
-export default function MyRxRfqScreen() {
+// Mirrors app/rfqs/my-rfqs.tsx's structure exactly — same filter-tab
+// pattern, same query-param-driven active filter, same createdBy scope.
+export default function MyMediscopeScreen() {
   const { filter } = useLocalSearchParams<{ filter?: string }>();
   const { colors } = useTheme();
-  const rxrfqMarketPlace = useRxRfqsStore((state) => state.rxrfqMarketPlace);
-  const rxrfqs = useRxRfqsStore((state) => state.rxrfqs);
+  const requests = useMediscopeStore((state) => state.requests);
 
-  // 1. Deriving state directly from query params fixes navigation bugs
   const activeFilter = React.useMemo<FilterType>(() => {
     if (!filter) return "All";
 
     const formattedFilter =
       filter.charAt(0).toUpperCase() + filter.slice(1).toLowerCase();
 
-    return RFQ_FILTERS.includes(formattedFilter as FilterType)
+    return MEDISCOPE_FILTERS.includes(formattedFilter as FilterType)
       ? (formattedFilter as FilterType)
       : "All";
   }, [filter]);
 
-  // This screen is "My RxRFQs" — it's meant to show only the current
+  // This screen is "My MediScope" — it's meant to show only the current
   // user's own requests (createdBy === user.id), the same comparison
-  // every isOwner field in the app already uses. rxrfqMarketPlace is the
-  // raw data still carrying createdBy; rxrfqs is the already-resolved
-  // card view (facilityName/facilityLocation joined in) that
-  // RxRfqListContainer expects — filtering the latter by an id set from
-  // the former gets both the right scope and correctly-populated cards.
-  const myRfqs = React.useMemo(() => {
+  // every isOwner field in the app already uses.
+  const myRequests = React.useMemo(() => {
     const userId = useProfileStore.getState().user.id;
-    const myIds = new Set(
-      rxrfqMarketPlace.filter((rfq) => rfq.createdBy === userId).map((rfq) => rfq.id),
-    );
-    return rxrfqs.filter((rfq) => myIds.has(rfq.id));
-  }, [rxrfqMarketPlace, rxrfqs]);
+    return requests.filter((r) => r.createdBy === userId);
+  }, [requests]);
 
   // "Responded" isn't a real status value — it's active requests
   // (published) that have at least one response, so it needs its own
   // compound check rather than the direct status match every other
-  // filter uses.
-  const filteredRfqs = React.useMemo(() => {
-    return myRfqs.filter((rfq) => {
+  // filter uses. Matches RxRFQ's own "Responded" filter exactly.
+  const filteredRequests = React.useMemo(() => {
+    const filtered = myRequests.filter((r) => {
       if (activeFilter === "All") return true;
-      if (activeFilter === "Responded") return rfq.status === "published" && rfq.responseCount > 0;
-      return rfq.status?.toLowerCase() === activeFilter.toLowerCase();
+      if (activeFilter === "Responded") return r.status === "published" && r.responseCount > 0;
+      return r.status?.toLowerCase() === activeFilter.toLowerCase();
     });
-  }, [myRfqs, activeFilter]);
+    return filtered
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map(convertToCardData);
+  }, [myRequests, activeFilter]);
 
-  // 3. Update the route parameters instead of changing local state
   const handleFilterPress = (filterItem: string) => {
     router.setParams({ filter: filterItem.toLowerCase() });
   };
@@ -87,13 +82,13 @@ export default function MyRxRfqScreen() {
                   className="text-2xl font-bold"
                   style={{ color: colors.text }}
                 >
-                  My RxRFQs
+                  My MediScope
                 </ThemedText>
                 <ThemedText
                   className="text-xs mt-0.5"
                   style={{ color: colors.textSecondary }}
                 >
-                  Manage and track your requests for quotations
+                  Manage and track your MediScope requests
                 </ThemedText>
               </View>
             </View>
@@ -107,7 +102,7 @@ export default function MyRxRfqScreen() {
             style={{ flexGrow: 0, maxHeight: 56 }}
             contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
           >
-            {RFQ_FILTERS.map((filterItem) => {
+            {MEDISCOPE_FILTERS.map((filterItem) => {
               const isActive = activeFilter === filterItem;
 
               return (
@@ -134,12 +129,12 @@ export default function MyRxRfqScreen() {
         </ThemedView>
 
         <ThemedView style={{ flex: 1 }}>
-          <RxRfqListContainer
-            rfqs={filteredRfqs}
+          <MediscopeListContainer
+            requests={filteredRequests}
             isCreatorView
             onCardPress={(id) =>
               router.push({
-                pathname: "/rfqs/rxrfq-details-screen",
+                pathname: "/mediscope/mediscope-details",
                 params: { id },
               })
             }
@@ -149,5 +144,3 @@ export default function MyRxRfqScreen() {
     </ThemedView>
   );
 }
-
-

@@ -38,15 +38,12 @@ const DateField: React.FC<DateFieldProps> = ({ label, value, onChange, maximumDa
   const defaultStyles = useDefaultStyles();
   const [open, setOpen] = useState(false);
 
-  // Deliberately doesn't close on date selection — only the trigger
-  // button above does, via its own toggle. Auto-closing on select was
-  // the original behavior, but it meant picking a day made the
-  // calendar vanish immediately, which is especially awkward for a
-  // from/to pair like this screen's: adjusting one date closed the
-  // picker before there was any chance to glance at the other, or to
-  // pick a different day if the first tap was off by one.
+  // Closes on date selection, matching DatePicker's own behavior — the
+  // trigger button above still toggles independently, so it can also
+  // be used to close the picker without picking a date.
   const handleChange = ({ date }: { date: dayjs.ConfigType }) => {
     onChange(dayjs(date).toDate());
+    setOpen(false);
   };
 
   return (

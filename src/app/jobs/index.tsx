@@ -49,8 +49,12 @@ export default function RxJobsScreen() {
       (sum, j) => sum + j.applicantsCount,
       0,
     );
+    // "Awaiting" is active postings with zero applicants yet — the ones
+    // that still need something to happen, not the ones that already
+    // have applicants to review. Matches RxRFQ's and MediScope's own
+    // "Awaiting"/equivalent definition.
     const awaitingReview = myActivePostings.filter(
-      (j) => j.applicantsCount > 0,
+      (j) => j.applicantsCount === 0,
     ).length;
 
     return {
@@ -143,7 +147,7 @@ export default function RxJobsScreen() {
                   className="h-10 w-10 items-center justify-center rounded-xl cursor-pointer hover:opacity-90"
                   style={{ backgroundColor: colors.primary }}
                 >
-                  <Ionicons name="add" size={22} color={colors.background} />
+                  <Ionicons name="add" size={22} color="#ffffff" />
                 </Pressable>
               )}
             </View>
@@ -340,7 +344,7 @@ export default function RxJobsScreen() {
             elevation: 8,
           }}
         >
-          <Ionicons name="add" size={30} color={colors.background} />
+          <Ionicons name="add" size={30} color="#ffffff" />
         </Pressable>
         )}
       </SafeAreaView>

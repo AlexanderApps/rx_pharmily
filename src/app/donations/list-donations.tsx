@@ -195,7 +195,7 @@ export default function Donations() {
             elevation: 8,
           }}
         >
-          <Ionicons name="add" size={32} color={colors.text} />
+          <Ionicons name="add" size={32} color="#ffffff" />
         </Pressable>
       </SafeAreaView>
     </ThemedView>
