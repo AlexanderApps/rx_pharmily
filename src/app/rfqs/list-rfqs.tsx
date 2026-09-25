@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "@/shared/hooks/use-theme";
+import { isRxRfqPastDeadline } from "@/shared/utils/deadline";
 import { ThemedView } from "@/shared/components/themed-view";
 import SearchButton from "@/shared/components/search-button";
 import MoreMenu from "@/shared/components/more-menu";
@@ -33,7 +34,7 @@ export default function ListRFQs() {
     const now = Date.now();
     const soonCutoff = now + CLOSING_SOON_DAYS * 24 * 60 * 60 * 1000;
     return rxRfqData.filter((rfq) => {
-      if (rfq.status !== "published" || rfq.isRemoved) return false;
+      if (rfq.status !== "published" || rfq.isRemoved || isRxRfqPastDeadline(rfq.submissionDeadline)) return false;
       if (closingSoonOnly) {
         const deadline = new Date(rfq.submissionDeadline).getTime();
         if (deadline < now || deadline > soonCutoff) return false;

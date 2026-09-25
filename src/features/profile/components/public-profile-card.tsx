@@ -163,7 +163,7 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
     icon = "hospital-building";
     if (facility) {
       name = facility.name;
-      subtitle = `${facility.type} · ${facility.location}`;
+      subtitle = `${facility.type.join(", ")} · ${facility.location}`;
       avatarColor = "#16a34a";
       email = facility.email;
       phone = facility.phone;

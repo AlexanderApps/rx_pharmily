@@ -20,10 +20,29 @@ import {
   JobCategory,
   RxRfqCategory,
   InsuranceProvider,
+  FacilityTypeOption,
 } from "@/features/reference-data/types/reference-data.types";
 
-type TabKey = "units" | "categories" | "regions" | "incoterms" | "currencies" | "jobCategories" | "rxrfqCategories" | "insuranceProviders";
-type EditingItem = UnitOfMeasurement | MedicationCategory | Region | Incoterm | Currency | JobCategory | RxRfqCategory | InsuranceProvider;
+type TabKey =
+  | "units"
+  | "categories"
+  | "regions"
+  | "incoterms"
+  | "currencies"
+  | "jobCategories"
+  | "rxrfqCategories"
+  | "insuranceProviders"
+  | "facilityTypes";
+type EditingItem =
+  | UnitOfMeasurement
+  | MedicationCategory
+  | Region
+  | Incoterm
+  | Currency
+  | JobCategory
+  | RxRfqCategory
+  | InsuranceProvider
+  | FacilityTypeOption;
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "units", label: "Units" },
@@ -34,6 +53,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "jobCategories", label: "Job Categories" },
   { key: "rxrfqCategories", label: "RFQ Categories" },
   { key: "insuranceProviders", label: "Insurance" },
+  { key: "facilityTypes", label: "Facility Types" },
 ];
 
 export default function AdminReferenceDataScreen() {
@@ -76,6 +96,10 @@ export default function AdminReferenceDataScreen() {
   const addInsuranceProvider = useReferenceDataStore((state) => state.addInsuranceProvider);
   const updateInsuranceProvider = useReferenceDataStore((state) => state.updateInsuranceProvider);
   const deleteInsuranceProvider = useReferenceDataStore((state) => state.deleteInsuranceProvider);
+  const facilityTypes = useReferenceDataStore((state) => state.facilityTypes);
+  const addFacilityType = useReferenceDataStore((state) => state.addFacilityType);
+  const updateFacilityType = useReferenceDataStore((state) => state.updateFacilityType);
+  const deleteFacilityType = useReferenceDataStore((state) => state.deleteFacilityType);
 
   useEffect(() => {
     fetchAll();
@@ -103,7 +127,7 @@ export default function AdminReferenceDataScreen() {
       const currency = item as Currency;
       return `${currency.code} — ${currency.name}`;
     }
-    return (item as UnitOfMeasurement | MedicationCategory | Region | JobCategory | RxRfqCategory | InsuranceProvider).name;
+    return (item as UnitOfMeasurement | MedicationCategory | Region | JobCategory | RxRfqCategory | InsuranceProvider | FacilityTypeOption).name;
   };
 
   const activeList =
@@ -121,11 +145,17 @@ export default function AdminReferenceDataScreen() {
                 ? jobCategories
                 : activeTab === "rxrfqCategories"
                   ? rxrfqCategories
-                  : insuranceProviders;
+                  : activeTab === "insuranceProviders"
+                    ? insuranceProviders
+                    : facilityTypes;
   const secondaryLabel =
     activeTab === "units"
       ? "Abbreviation (optional)"
-      : activeTab === "categories" || activeTab === "jobCategories" || activeTab === "rxrfqCategories" || activeTab === "insuranceProviders"
+      : activeTab === "categories" ||
+          activeTab === "jobCategories" ||
+          activeTab === "rxrfqCategories" ||
+          activeTab === "insuranceProviders" ||
+          activeTab === "facilityTypes"
         ? "Description (optional)"
         : activeTab === "incoterms" || activeTab === "currencies"
           ? activeTab === "incoterms"
@@ -154,12 +184,19 @@ export default function AdminReferenceDataScreen() {
       setSecondaryInput(currency.name);
       setTertiaryInput(currency.symbol ?? "");
     } else {
-      setNameInput((item as UnitOfMeasurement | MedicationCategory | Region | JobCategory | RxRfqCategory | InsuranceProvider).name);
+      setNameInput(
+        (item as UnitOfMeasurement | MedicationCategory | Region | JobCategory | RxRfqCategory | InsuranceProvider | FacilityTypeOption)
+          .name,
+      );
       setSecondaryInput(
         activeTab === "units"
           ? (item as UnitOfMeasurement).abbreviation ?? ""
-          : activeTab === "categories" || activeTab === "jobCategories" || activeTab === "rxrfqCategories" || activeTab === "insuranceProviders"
-            ? (item as MedicationCategory | JobCategory | RxRfqCategory | InsuranceProvider).description ?? ""
+          : activeTab === "categories" ||
+              activeTab === "jobCategories" ||
+              activeTab === "rxrfqCategories" ||
+              activeTab === "insuranceProviders" ||
+              activeTab === "facilityTypes"
+            ? (item as MedicationCategory | JobCategory | RxRfqCategory | InsuranceProvider | FacilityTypeOption).description ?? ""
             : "",
       );
       setTertiaryInput("");
@@ -207,6 +244,10 @@ export default function AdminReferenceDataScreen() {
       success = editing
         ? await updateInsuranceProvider(editing.id, nameInput, secondaryInput)
         : await addInsuranceProvider(nameInput, secondaryInput);
+    } else if (activeTab === "facilityTypes") {
+      success = editing
+        ? await updateFacilityType(editing.id, nameInput, secondaryInput)
+        : await addFacilityType(nameInput, secondaryInput);
     } else {
       success = editing ? await updateRegion(editing.id, nameInput) : await addRegion(nameInput);
     }
@@ -242,7 +283,9 @@ export default function AdminReferenceDataScreen() {
                   ? deleteRxRfqCategory
                   : activeTab === "insuranceProviders"
                     ? deleteInsuranceProvider
-                    : deleteRegion;
+                    : activeTab === "facilityTypes"
+                      ? deleteFacilityType
+                      : deleteRegion;
     const success = await deleteFn(item.id);
     toast[success ? "success" : "error"](success ? "Deleted." : "Couldn't delete this entry.");
   };
@@ -360,7 +403,9 @@ export default function AdminReferenceDataScreen() {
                           ? "RFQ Category"
                           : activeTab === "insuranceProviders"
                             ? "Insurance Provider"
-                            : "Region"}
+                            : activeTab === "facilityTypes"
+                              ? "Facility Type"
+                              : "Region"}
             </Text>
 
             <Text className="text-xs font-semibold mt-1.5" style={{ color: colors.text }}>
@@ -396,12 +441,14 @@ export default function AdminReferenceDataScreen() {
                               ? "e.g. Consumable medical supplies"
                               : activeTab === "insuranceProviders"
                                 ? "e.g. National Health Insurance Scheme"
-                                : "e.g. Used for treating infections"
+                                : activeTab === "facilityTypes"
+                                  ? "e.g. A facility that manufactures medications"
+                                  : "e.g. Used for treating infections"
                   }
                   placeholderTextColor={colors.textSecondary}
                   className="border rounded-[10px] px-3 py-2.5 text-sm"
                   style={{ backgroundColor: colors.backgroundElement, color: colors.text, borderColor: colors.border }}
-                  multiline={activeTab === "categories" || activeTab === "jobCategories" || activeTab === "rxrfqCategories" || activeTab === "insuranceProviders"}
+                  multiline={activeTab === "categories" || activeTab === "jobCategories" || activeTab === "rxrfqCategories" || activeTab === "insuranceProviders" || activeTab === "facilityTypes"}
                 />
               </>
             )}

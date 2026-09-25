@@ -29,6 +29,8 @@ import JobListCard from "@/features/rxjobs/components/job-list-card";
 import { useRxRfqsStore } from "@/features/rxrfqs/hooks/use-rxrfq-data";
 import RxRfqCard from "@/features/rxrfqs/components/rxrfq-card";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { useAppSettingsStore } from "@/features/app-settings/hooks/use-app-settings";
+import { isJobPastDeadline, isMediscopePastDeadline, isRxRfqPastDeadline } from "@/shared/utils/deadline";
 import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
 import { FeedItem, rankFeed } from "@/shared/utils/home-feed-ranking";
 
@@ -130,6 +132,7 @@ export default function HomeScreen() {
   const posts = usePostsStore((state) => state.posts);
   const ads = useAdsStore((state) => state.ads);
   const mediscopeRequests = useMediscopeStore((state) => state.requests);
+  const mediscopeDefaultDeadlineDays = useAppSettingsStore((state) => state.mediscopeDefaultDeadlineDays);
   const donations = useDonationStore((state) => state.donations);
   const jobs = useRxJobsStore((state) => state.jobs);
   const rxrfqs = useRxRfqsStore((state) => state.rxrfqs);
@@ -180,7 +183,12 @@ export default function HomeScreen() {
       .map((ad) => ({ kind: "ad", key: `ad-${ad.id}`, ad }));
 
     const mediscopeItems: FeedItem[] = mediscopeRequests
-      .filter((r) => r.status === "published" && !r.isRemoved)
+      .filter(
+        (r) =>
+          r.status === "published" &&
+          !r.isRemoved &&
+          !isMediscopePastDeadline(r.submissionDeadline, r.createdAt, mediscopeDefaultDeadlineDays),
+      )
       .map((r) => ({
         kind: "mediscope",
         key: `mediscope-${r.id}`,
@@ -196,11 +204,11 @@ export default function HomeScreen() {
       }));
 
     const jobItems: FeedItem[] = jobs
-      .filter((j) => j.status === "open" && !j.isRemoved)
+      .filter((j) => j.status === "open" && !j.isRemoved && !isJobPastDeadline(j.applicationDeadline))
       .map((j) => ({ kind: "job", key: `job-${j.id}`, job: j }));
 
     const rfqItems: FeedItem[] = rxrfqs
-      .filter((r) => r.status === "published" && !r.isRemoved)
+      .filter((r) => r.status === "published" && !r.isRemoved && !isRxRfqPastDeadline(r.submissionDeadline))
       .map((r) => ({ kind: "rfq", key: `rfq-${r.id}`, rfq: r }));
 
     const allItems: FeedItem[] = [
@@ -235,7 +243,7 @@ export default function HomeScreen() {
     const ranked = rankFeed(allItems, { userRegion, hasPermission });
     feedOrderRef.current = ranked.map((item) => item.key);
     return ranked;
-  }, [posts, ads, mediscopeRequests, donations, jobs, rxrfqs, userRegion, hasPermission]);
+  }, [posts, ads, mediscopeRequests, donations, jobs, rxrfqs, userRegion, hasPermission, mediscopeDefaultDeadlineDays]);
 
   const visibleFeed = fullFeed.slice(0, visibleCount);
   const hasMore = visibleCount < fullFeed.length;

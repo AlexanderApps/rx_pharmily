@@ -232,10 +232,20 @@ export const useProfileUpdateStore = create<ProfileUpdateState>((set, get) => ({
     if (!request || request.status !== "approved") return false;
 
     const columnMap = FIELD_TO_COLUMN[request.entityType];
-    const patch: Record<string, string | null> = {};
+    const patch: Record<string, string | string[] | null> = {};
     for (const [fieldKey, value] of Object.entries(request.changes)) {
       const column = columnMap[fieldKey];
-      if (column) patch[column] = value;
+      if (!column) continue;
+      // facility.type is the one field in this whole flow that isn't a
+      // plain string at the DB level — the form only ever deals in
+      // single strings (see ProfileUpdateRequestModal's formValues),
+      // so the requested value arrives here comma-joined and has to be
+      // split back into the text[] the column actually is.
+      if (request.entityType === "facility" && fieldKey === "type") {
+        patch[column] = value ? value.split(",").map((t) => t.trim()).filter(Boolean) : [];
+      } else {
+        patch[column] = value;
+      }
     }
     if (Object.keys(patch).length === 0) return false;
 

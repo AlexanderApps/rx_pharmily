@@ -12,6 +12,7 @@ import BottomSheet from "@/shared/components/bottom-sheet";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { BsScrollView as BottomSheetScrollView } from "@/shared/components/bs/bs-primitives";
 import ReferencePicker from "@/shared/components/forms/reference-picker";
+import MultiSelectPicker from "@/shared/components/forms/multi-select-picker";
 import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 import { toast } from "@/shared/hooks/use-toast";
 import { checkPhoneNumber } from "@/shared/utils/phone-number";
@@ -41,6 +42,11 @@ const ProfileUpdateRequestModal = forwardRef<BottomSheetModal, ProfileUpdateRequ
     const regionOptions = useMemo(
       () => referenceRegions.map((r) => ({ id: r.name, label: r.name })),
       [referenceRegions],
+    );
+    const referenceFacilityTypes = useReferenceDataStore((state) => state.facilityTypes);
+    const facilityTypeOptions = useMemo(
+      () => referenceFacilityTypes.map((t) => ({ id: t.name, label: t.name })),
+      [referenceFacilityTypes],
     );
 
     const fields = LOCKED_FIELDS[entityType];
@@ -215,6 +221,26 @@ const ProfileUpdateRequestModal = forwardRef<BottomSheetModal, ProfileUpdateRequ
                     placeholder="Select a region"
                     emptyMessage="No regions set up yet."
                     searchable={false}
+                  />
+                ) : field.kind === "facilityType" ? (
+                  <MultiSelectPicker
+                    title="Select Facility Type"
+                    options={facilityTypeOptions}
+                    // formValues stores every field as a single string —
+                    // for this one multi-value field, that string is a
+                    // comma-joined list (matching how facility-profile.tsx
+                    // supplies currentValues, and how mergeRequest splits
+                    // it back apart when the request is approved). Only
+                    // this render boundary needs to know that; the rest
+                    // of the flow (formValues/currentValues/changedKeys/
+                    // submitRequest) stays exactly as it is for every
+                    // other field.
+                    value={formValues[field.key] ? formValues[field.key].split(", ").filter(Boolean) : []}
+                    onChange={(value) =>
+                      setFormValues((prev) => ({ ...prev, [field.key]: [...value].sort().join(", ") }))
+                    }
+                    placeholder="Select facility types"
+                    emptyMessage="No facility types set up yet."
                   />
                 ) : (
                   <TextInput

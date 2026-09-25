@@ -6,6 +6,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "@/shared/hooks/use-theme";
+import { useAppSettingsStore } from "@/features/app-settings/hooks/use-app-settings";
+import { isMediscopePastDeadline } from "@/shared/utils/deadline";
 import { ThemedView } from "@/shared/components/themed-view";
 import SearchButton from "@/shared/components/search-button";
 import SearchFilterChip from "@/shared/components/search-filter-chip";
@@ -23,6 +25,7 @@ const CLOSING_SOON_DAYS = 7;
 export default function ListMediscope() {
   const { colors } = useTheme();
   const requests = useMediscopeStore((state) => state.requests);
+  const mediscopeDefaultDeadlineDays = useAppSettingsStore((state) => state.mediscopeDefaultDeadlineDays);
   const { mine } = useLocalSearchParams<{ mine?: string }>();
   const [closingSoonOnly, setClosingSoonOnly] = useState(false);
 
@@ -38,7 +41,12 @@ export default function ListMediscope() {
     const soonCutoff = now + CLOSING_SOON_DAYS * 24 * 60 * 60 * 1000;
     return [...requests]
       .filter((r) => {
-        const matchesBaseline = mine === "true" ? r.createdBy === userId : r.status === "published" && !r.isRemoved;
+        const matchesBaseline =
+          mine === "true"
+            ? r.createdBy === userId
+            : r.status === "published" &&
+              !r.isRemoved &&
+              !isMediscopePastDeadline(r.submissionDeadline, r.createdAt, mediscopeDefaultDeadlineDays);
         if (!matchesBaseline) return false;
         if (closingSoonOnly) {
           // No deadline at all means nothing to be "soon" about.
@@ -50,7 +58,7 @@ export default function ListMediscope() {
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .map(convertToCardData);
-  }, [requests, mine, closingSoonOnly]);
+  }, [requests, mine, closingSoonOnly, mediscopeDefaultDeadlineDays]);
 
   return (
     <ThemedView style={{ flex: 1 }}>

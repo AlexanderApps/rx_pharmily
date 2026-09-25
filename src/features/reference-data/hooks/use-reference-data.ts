@@ -9,6 +9,7 @@ import {
   JobCategory,
   RxRfqCategory,
   InsuranceProvider,
+  FacilityTypeOption,
 } from "@/features/reference-data/types/reference-data.types";
 
 function mapUnitRow(row: any): UnitOfMeasurement {
@@ -30,6 +31,15 @@ function mapCategoryRow(row: any): MedicationCategory {
 }
 
 function mapInsuranceProviderRow(row: any): InsuranceProvider {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description ?? undefined,
+    createdAt: new Date(row.created_at),
+  };
+}
+
+function mapFacilityTypeOptionRow(row: any): FacilityTypeOption {
   return {
     id: row.id,
     name: row.name,
@@ -93,6 +103,7 @@ type ReferenceDataStore = {
   jobCategories: JobCategory[];
   rxrfqCategories: RxRfqCategory[];
   insuranceProviders: InsuranceProvider[];
+  facilityTypes: FacilityTypeOption[];
   isLoading: boolean;
 
   fetchAll: () => Promise<void>;
@@ -130,6 +141,10 @@ type ReferenceDataStore = {
   addInsuranceProvider: (name: string, description?: string) => Promise<boolean>;
   updateInsuranceProvider: (id: string, name: string, description?: string) => Promise<boolean>;
   deleteInsuranceProvider: (id: string) => Promise<boolean>;
+
+  addFacilityType: (name: string, description?: string) => Promise<boolean>;
+  updateFacilityType: (id: string, name: string, description?: string) => Promise<boolean>;
+  deleteFacilityType: (id: string) => Promise<boolean>;
 };
 
 export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
@@ -141,11 +156,12 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
   jobCategories: [],
   rxrfqCategories: [],
   insuranceProviders: [],
+  facilityTypes: [],
   isLoading: false,
 
   fetchAll: async () => {
     set({ isLoading: true });
-    const [unitsRes, categoriesRes, regionsRes, incotermsRes, currenciesRes, jobCategoriesRes, rxrfqCategoriesRes, insuranceProvidersRes] =
+    const [unitsRes, categoriesRes, regionsRes, incotermsRes, currenciesRes, jobCategoriesRes, rxrfqCategoriesRes, insuranceProvidersRes, facilityTypesRes] =
       await Promise.all([
         supabase.from("units_of_measurement").select("*").order("name"),
         supabase.from("medication_categories").select("*").order("name"),
@@ -155,6 +171,7 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
         supabase.from("job_categories").select("*").order("name"),
         supabase.from("rxrfq_categories").select("*").order("name"),
         supabase.from("insurance_providers").select("*").order("name"),
+        supabase.from("facility_types").select("*").order("name"),
       ]);
     if (unitsRes.error) console.warn("[reference-data] fetch units failed:", unitsRes.error.message);
     if (categoriesRes.error) console.warn("[reference-data] fetch categories failed:", categoriesRes.error.message);
@@ -166,6 +183,8 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
       console.warn("[reference-data] fetch rxrfq categories failed:", rxrfqCategoriesRes.error.message);
     if (insuranceProvidersRes.error)
       console.warn("[reference-data] fetch insurance providers failed:", insuranceProvidersRes.error.message);
+    if (facilityTypesRes.error)
+      console.warn("[reference-data] fetch facility types failed:", facilityTypesRes.error.message);
     set({
       units: (unitsRes.data ?? []).map(mapUnitRow),
       categories: (categoriesRes.data ?? []).map(mapCategoryRow),
@@ -175,6 +194,7 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
       jobCategories: (jobCategoriesRes.data ?? []).map(mapJobCategoryRow),
       rxrfqCategories: (rxrfqCategoriesRes.data ?? []).map(mapRxRfqCategoryRow),
       insuranceProviders: (insuranceProvidersRes.data ?? []).map(mapInsuranceProviderRow),
+      facilityTypes: (facilityTypesRes.data ?? []).map(mapFacilityTypeOptionRow),
       isLoading: false,
     });
   },
@@ -525,6 +545,51 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
       return false;
     }
     set((state) => ({ insuranceProviders: state.insuranceProviders.filter((p) => p.id !== id) }));
+    return true;
+  },
+
+  addFacilityType: async (name, description) => {
+    const { data: row, error } = await supabase
+      .from("facility_types")
+      .insert({ name: name.trim(), description: description?.trim() || null })
+      .select()
+      .single();
+    if (error || !row) {
+      console.warn("[reference-data] addFacilityType failed:", error?.message);
+      return false;
+    }
+    set((state) => ({
+      facilityTypes: [...state.facilityTypes, mapFacilityTypeOptionRow(row)].sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ),
+    }));
+    return true;
+  },
+
+  updateFacilityType: async (id, name, description) => {
+    const { error } = await supabase
+      .from("facility_types")
+      .update({ name: name.trim(), description: description?.trim() || null })
+      .eq("id", id);
+    if (error) {
+      console.warn("[reference-data] updateFacilityType failed:", error.message);
+      return false;
+    }
+    set((state) => ({
+      facilityTypes: state.facilityTypes
+        .map((t) => (t.id === id ? { ...t, name: name.trim(), description: description?.trim() || undefined } : t))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    }));
+    return true;
+  },
+
+  deleteFacilityType: async (id) => {
+    const { error } = await supabase.from("facility_types").delete().eq("id", id);
+    if (error) {
+      console.warn("[reference-data] deleteFacilityType failed:", error.message);
+      return false;
+    }
+    set((state) => ({ facilityTypes: state.facilityTypes.filter((t) => t.id !== id) }));
     return true;
   },
 }));

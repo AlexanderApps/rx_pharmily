@@ -54,15 +54,14 @@ export interface ProfileUpdateAuditEvent {
 export interface LockedFieldDef {
   key: string;
   label: string;
-  kind: "text" | "picker" | "region";
-  options?: string[]; // for kind: "picker" only — "region" pulls live from reference data instead
+  kind: "text" | "picker" | "region" | "facilityType";
+  options?: string[]; // for kind: "picker" only — "region"/"facilityType" pull live from reference data instead
   keyboardType?: "email-address" | "phone-pad";
 }
 
 const USER_ROLES = ["Pharmacist", "Pharmacy Technician", "Facility Admin", "Procurement Officer", "Other"];
 const USER_PROFESSIONS = ["Pharmacist", "Technician", "MCA", "Other"];
 const USER_TITLES = ["Mr.", "Mrs.", "Ms.", "Dr. (PharmD)", "Dr. (PhD)", "Dr. (MD)", "Prof.", "Other"];
-const FACILITY_TYPES = ["Retail Pharmacy", "Hospital", "Wholesale Distributor", "Diagnostic Lab", "Clinic", "Other"];
 const ORGANIZATION_TYPES = ["Pharmacy Chain", "Healthcare Group", "Distributor Network", "Other"];
 
 // The exact field sets requested: user (Fullname, Phone, Profession,
@@ -83,7 +82,7 @@ export const LOCKED_FIELDS: Record<ProfileUpdateEntityType, LockedFieldDef[]> = 
   ],
   facility: [
     { key: "name", label: "Name", kind: "text" },
-    { key: "type", label: "Type", kind: "picker", options: FACILITY_TYPES },
+    { key: "type", label: "Type", kind: "facilityType" },
     { key: "location", label: "Ghana Post GPS", kind: "text" },
     { key: "region", label: "Region", kind: "region" },
     { key: "address", label: "Address", kind: "text" },

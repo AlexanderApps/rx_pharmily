@@ -27,7 +27,7 @@ import { toast } from "@/shared/hooks/use-toast";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { usePermissionsStore } from "@/features/auth/hooks/use-permissions";
-import { FacilityType, FacilityDeliveryOption } from "@/features/profile/types/profile.types";
+import { FacilityDeliveryOption } from "@/features/profile/types/profile.types";
 import KycSection from "@/features/profile/components/kyc-section";
 import ProfileUpdateRequestModal from "@/features/profile-updates/components/profile-update-request-modal";
 import OwnershipTransferRequestModal from "@/features/ownership-transfer/components/ownership-transfer-request-modal";
@@ -36,15 +36,6 @@ import { useFacilityFieldAccess } from "@/features/profile/hooks/use-facility-fi
 import ReferencePicker from "@/shared/components/forms/reference-picker";
 import MultiSelectPicker from "@/shared/components/forms/multi-select-picker";
 import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
-
-const FACILITY_TYPES: FacilityType[] = [
-  "Retail Pharmacy",
-  "Hospital",
-  "Wholesale Distributor",
-  "Diagnostic Lab",
-  "Clinic",
-  "Other",
-];
 
 export default function FacilityProfileScreen() {
   const { colors } = useTheme();
@@ -119,7 +110,12 @@ export default function FacilityProfileScreen() {
   const [linkingOrgId, setLinkingOrgId] = useState<string | null>(null);
   const [requesting, setRequesting] = useState(false);
   const [name, setName] = useState(facility?.name ?? "");
-  const [type, setType] = useState<FacilityType>(facility?.type ?? "Retail Pharmacy");
+  const [type, setType] = useState<string[]>(facility?.type ?? []);
+  const referenceFacilityTypes = useReferenceDataStore((state) => state.facilityTypes);
+  const facilityTypeOptions = useMemo(
+    () => referenceFacilityTypes.map((t) => ({ id: t.name, label: t.name })),
+    [referenceFacilityTypes],
+  );
   const [location, setLocation] = useState(facility?.location ?? "");
   const [latitude, setLatitude] = useState<number | undefined>(facility?.latitude);
   const [longitude, setLongitude] = useState<number | undefined>(facility?.longitude);
@@ -389,33 +385,17 @@ export default function FacilityProfileScreen() {
 
             <ProfileRow label="Type">
               {editing && !isVerified ? (
-                <View className="flex-row flex-wrap gap-2 mt-1.5">
-                  {FACILITY_TYPES.map((option) => {
-                    const active = type === option;
-                    return (
-                      <Pressable
-                        key={option}
-                        onPress={() => setType(option)}
-                        className="px-3 py-2 rounded-full"
-                        style={{
-                          backgroundColor: active
-                            ? colors.primary
-                            : colors.backgroundElement,
-                        }}
-                      >
-                        <Text
-                          className="text-xs font-semibold"
-                          style={{ color: active ? "#fff" : colors.textSecondary }}
-                        >
-                          {option}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+                <MultiSelectPicker
+                  title="Select Facility Type"
+                  options={facilityTypeOptions}
+                  value={type}
+                  onChange={setType}
+                  placeholder="Select facility types"
+                  emptyMessage="No facility types set up yet."
+                />
               ) : (
                 <Text className={VALUE_TEXT_CLASS} style={{ color: colors.text }}>
-                  {facility.type}
+                  {facility.type.length > 0 ? facility.type.join(", ") : "-"}
                 </Text>
               )}
             </ProfileRow>
@@ -1026,7 +1006,7 @@ export default function FacilityProfileScreen() {
         entityId={facility.id}
         currentValues={{
           name: facility.name,
-          type: facility.type,
+          type: [...facility.type].sort().join(", "),
           location: facility.location,
           region: facility.region,
           address: facility.address ?? null,

@@ -16,7 +16,6 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { toast } from "@/shared/hooks/use-toast";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
-import { FacilityType, FACILITY_TYPES } from "@/features/profile/types/profile.types";
 import LocationPicker from "@/shared/components/location-picker";
 import ReferencePicker from "@/shared/components/forms/reference-picker";
 import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
@@ -30,7 +29,11 @@ export default function CreateFacilityScreen() {
   const isVerified = user.kyc.status === "verified";
 
   const [name, setName] = useState("");
-  const [type, setType] = useState<FacilityType>("Retail Pharmacy");
+  const [type, setType] = useState<string[]>([]);
+  const facilityTypeOptions = useReferenceDataStore((state) => state.facilityTypes);
+  const toggleType = (name: string) => {
+    setType((prev) => (prev.includes(name) ? prev.filter((t) => t !== name) : [...prev, name]));
+  };
   const [location, setLocation] = useState("");
   const [latitude, setLatitude] = useState<number | undefined>(undefined);
   const [longitude, setLongitude] = useState<number | undefined>(undefined);
@@ -49,6 +52,10 @@ export default function CreateFacilityScreen() {
   const handleSubmit = async () => {
     if (!name.trim() || !location.trim() || !region.trim()) {
       Alert.alert("Missing information", "Name, location, and region are required.");
+      return;
+    }
+    if (type.length === 0) {
+      Alert.alert("Missing information", "Select at least one facility type.");
       return;
     }
     setSubmitting(true);
@@ -183,25 +190,25 @@ export default function CreateFacilityScreen() {
 
           {/* Type chips */}
           <Text className="text-xs font-semibold mt-3.5" style={{ color: colors.text }}>
-            Type
+            Type (select all that apply)
           </Text>
           <View className="flex-row flex-wrap gap-2 mt-1.5">
-            {FACILITY_TYPES.map((t) => (
+            {facilityTypeOptions.map((t) => (
               <Pressable
-                key={t}
-                onPress={() => setType(t)}
+                key={t.id}
+                onPress={() => toggleType(t.name)}
                 className="px-3 py-2 rounded-full border"
                 style={{
                   borderColor: colors.border,
                   backgroundColor:
-                    type === t ? colors.primary : colors.backgroundElement,
+                    type.includes(t.name) ? colors.primary : colors.backgroundElement,
                 }}
               >
                 <Text
                   className="text-xs font-semibold"
-                  style={{ color: type === t ? "#fff" : colors.text }}
+                  style={{ color: type.includes(t.name) ? "#fff" : colors.text }}
                 >
-                  {t}
+                  {t.name}
                 </Text>
               </Pressable>
             ))}

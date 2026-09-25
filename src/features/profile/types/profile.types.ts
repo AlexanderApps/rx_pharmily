@@ -160,29 +160,6 @@ export interface UserProfileFormData {
 
 // ─── Facility ────────────────────────────────────────────────────────────
 
-export type FacilityType =
-  | "Retail Pharmacy"
-  | "Hospital"
-  | "Wholesale Distributor"
-  | "Diagnostic Lab"
-  | "Clinic"
-  | "Other";
-
-// The full set of FacilityType values, exported once here rather than
-// redefined per-consumer — a second, separately-maintained copy of this
-// list (features/rxrfqs/components/rxrfq-add-rule-sheet.tsx used to have
-// its own hardcoded MOCK_FACILITY_TYPES with entirely different values —
-// "Wholesale", "Public Hospital", "Private Lab" — that never matched any
-// real facility) is exactly the kind of drift this avoids.
-export const FACILITY_TYPES: FacilityType[] = [
-  "Retail Pharmacy",
-  "Hospital",
-  "Wholesale Distributor",
-  "Diagnostic Lab",
-  "Clinic",
-  "Other",
-];
-
 // The fixed set delivery_options is DB-constrained to — kept here as a
 // single source of truth for the picker UI, rather than hardcoding the
 // list a second time in the screen itself.
@@ -191,7 +168,12 @@ export type FacilityDeliveryOption = "Pickup" | "Home Delivery" | "Courier Deliv
 export interface FacilityProfile {
   id: string;
   name: string;
-  type: FacilityType;
+  // Facility type names (matching features/reference-data's
+  // facilityTypes, admin-extensible via the Reference Data screen) — a
+  // facility can now have more than one type, e.g. both "Retail
+  // Pharmacy" and "Wholesale Distributor". Was a single, fixed
+  // FacilityType union; that hardcoded 6-value list is gone.
+  type: string[];
   location: string;
   region: string;
   address?: string;
@@ -221,7 +203,7 @@ export interface FacilityProfile {
 
 export interface FacilityProfileFormData {
   name: string;
-  type: FacilityType;
+  type: string[];
   location: string;
   region: string;
   address?: string;
@@ -265,7 +247,7 @@ export interface FacilityCreationRequest {
   id: string;
   requestedBy: string;
   name: string;
-  type: FacilityType;
+  type: string[];
   location: string;
   region: string;
   address?: string;
@@ -284,7 +266,7 @@ export interface FacilityCreationRequest {
 
 export interface FacilityCreationRequestFormData {
   name: string;
-  type: FacilityType;
+  type: string[];
   location: string;
   region: string;
   address?: string;

@@ -17,7 +17,6 @@ import {
 } from "@/features/rxrfqs/types/rxrfqs.types";
 import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
-import { FACILITY_TYPES } from "@/features/profile/types/profile.types";
 
 export interface RxRfqAddRuleSheetHandle {
   open: () => void;
@@ -36,6 +35,7 @@ export const RxRfqAddRuleSheet = forwardRef<
   const modalRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ["80%"], []);
   const regions = useReferenceDataStore((state) => state.regions);
+  const facilityTypes = useReferenceDataStore((state) => state.facilityTypes);
   const facilities = useProfileStore((state) => state.facilities);
 
   const [selectedRuleType, setSelectedRuleType] =
@@ -92,13 +92,13 @@ export const RxRfqAddRuleSheet = forwardRef<
 
   const currentData = useMemo(() => {
     if (selectedRuleType === "Region") return regions.map((r) => r.name);
-    if (selectedRuleType === "Facility Type") return FACILITY_TYPES;
+    if (selectedRuleType === "Facility Type") return facilityTypes.map((t) => t.name);
     // All facilities, not just the current user's own — this rule is
     // restricting an RFQ's visibility to specific *other* facilities,
     // so the full facilities list (already fetched globally, same as
     // regions) is the correct source here, not getMyFacilities().
     return facilities.map((f) => f.name);
-  }, [selectedRuleType, regions, facilities]);
+  }, [selectedRuleType, regions, facilityTypes, facilities]);
 
   return (
     <BottomSheet

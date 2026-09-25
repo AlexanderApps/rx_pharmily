@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "@/shared/hooks/use-theme";
+import { isJobPastDeadline } from "@/shared/utils/deadline";
 import { useAuthStore } from "@/features/auth/hooks/use-auth-data";
 import { ThemedView } from "@/shared/components/themed-view";
 import SearchButton from "@/shared/components/search-button";
@@ -25,7 +26,7 @@ export default function ListJobs() {
       jobs.filter(
         (j) =>
           !j.isRemoved &&
-          (j.status === "open" || j.postedBy === currentUserId) &&
+          ((j.status === "open" && !isJobPastDeadline(j.applicationDeadline)) || j.postedBy === currentUserId) &&
           (!urgentOnly || j.urgency === ("Immediate" as JobUrgency)),
       ),
     [jobs, currentUserId, urgentOnly],
