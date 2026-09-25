@@ -6,7 +6,7 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import ScreenHeader from "@/shared/components/screen-header";
 import EmptyState from "@/shared/components/empty-state";
 import MyFacilityPicker from "@/shared/components/forms/my-facility-picker";
-import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { useProfileStore, useMyFacilities } from "@/features/profile/hooks/use-profile-data";
 import { PriceTemplateItem } from "@/features/profile/types/profile.types";
 import { formatAmount } from "@/shared/utils/format";
 
@@ -24,8 +24,7 @@ export default function PriceCheckerScreen() {
   const { colors } = useTheme();
   const priceTemplates = useProfileStore((state) => state.priceTemplates);
   const fetchPriceTemplates = useProfileStore((state) => state.fetchPriceTemplates);
-  const getMyFacilities = useProfileStore((state) => state.getMyFacilities);
-  const myFacilities = getMyFacilities();
+  const myFacilities = useMyFacilities();
 
   const [isLoading, setIsLoading] = useState(true);
   const [facilityId, setFacilityId] = useState("");
@@ -106,7 +105,7 @@ export default function PriceCheckerScreen() {
           <MyFacilityPicker value={facilityId} onChange={setFacilityId} />
         </View>
 
-        {facilityId && facilityPriceLists.length > 0 && (
+        {!!facilityId && facilityPriceLists.length > 0 && (
           <View>
             <Text className="text-xs font-semibold mb-1.5" style={{ color: colors.textSecondary }}>
               Price list{facilityPriceLists.length > 1 ? "s" : ""} ({selectedCount} selected)

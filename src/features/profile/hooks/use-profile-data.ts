@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { create } from "zustand";
 import { supabase } from "@/lib/supabase";
 import { requireUserId } from "@/lib/supabase-store-helpers";
@@ -1870,3 +1871,26 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     set((state) => ({ priceTemplates: state.priceTemplates.filter((t) => t.id !== id) }));
   },
 }));
+
+// getMyFacilities() above is a plain function stored on the state object
+// — calling it (as MyFacilityPicker and price-checker.tsx used to) reads
+// facilities/facilityMemberships/user via get() imperatively, which does
+// NOT subscribe the calling component to those values. If they're still
+// empty on first render — the common case right after a fresh page
+// load/tab duplicate, before the app-launch fetches have resolved — the
+// component has no reason to re-render once they do arrive, so it's
+// stuck showing an empty facility list until something else forces a
+// re-render (e.g. navigating away and back, which was the workaround).
+// This hook subscribes to the same three pieces of state directly via
+// selectors, so it's correctly reactive to them arriving late.
+export function useMyFacilities(): FacilityProfile[] {
+  const facilities = useProfileStore((state) => state.facilities);
+  const facilityMemberships = useProfileStore((state) => state.facilityMemberships);
+  const userId = useProfileStore((state) => state.user.id);
+  return useMemo(() => {
+    const myFacilityIds = new Set(
+      facilityMemberships.filter((m) => m.userId === userId).map((m) => m.facilityId),
+    );
+    return facilities.filter((f) => myFacilityIds.has(f.id));
+  }, [facilities, facilityMemberships, userId]);
+}

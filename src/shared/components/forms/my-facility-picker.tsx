@@ -4,7 +4,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/shared/hooks/use-theme";
 import BottomSheet from "@/shared/components/bottom-sheet";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
-import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { useMyFacilities } from "@/features/profile/hooks/use-profile-data";
 
 interface MyFacilityPickerProps {
   value: string;
@@ -38,13 +38,12 @@ const MyFacilityPicker: React.FC<MyFacilityPickerProps> = ({
   const { colors } = useTheme();
   const sheetRef = useRef<BottomSheetModal>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const getMyFacilities = useProfileStore((state) => state.getMyFacilities);
   // Every one of this component's callers is a create/respond action
   // (RxRFQ, MediScope, Donations, Jobs) that an unverified facility
   // can't actually be used for — showing it here as a selectable option
   // would just lead to an error surfacing somewhere downstream instead
   // of not being offered in the first place.
-  const allMyFacilities = getMyFacilities();
+  const allMyFacilities = useMyFacilities();
   const facilities = useMemo(
     () => allMyFacilities.filter((f) => f.kyc.status === "verified"),
     [allMyFacilities],
