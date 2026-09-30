@@ -3,6 +3,8 @@ import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { format } from "timeago.js";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { useAppSettingsStore } from "@/features/app-settings/hooks/use-app-settings";
+import { getMediscopeEffectiveDeadline } from "@/shared/utils/deadline";
 import LoadingImage from "@/shared/components/loading-image";
 import { MediscopeCardData } from "@/features/mediscope/types/mediscope.types";
 import FeedFeatureBadge from "@/shared/components/feed-feature-badge";
@@ -50,6 +52,17 @@ const MediscopeListCard: React.FC<MediscopeListCardProps> = ({
   const { colors } = useTheme();
   const statusMeta = STATUS_META[item.status];
   const statusColor = colors[statusMeta.tone];
+  const mediscopeDefaultDeadlineDays = useAppSettingsStore((state) => state.mediscopeDefaultDeadlineDays);
+  const effectiveDeadline = getMediscopeEffectiveDeadline(item.submissionDeadline, item.createdAt, mediscopeDefaultDeadlineDays);
+
+  const formatDate = (dateString: Date | string): string => {
+    try {
+      const date = typeof dateString === "string" ? new Date(dateString) : dateString;
+      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    } catch {
+      return String(dateString);
+    }
+  };
 
   return (
     <TouchableOpacity
@@ -97,16 +110,23 @@ const MediscopeListCard: React.FC<MediscopeListCardProps> = ({
       </View>
 
       <View className="flex-row justify-between items-center mt-3 ml-14">
-        {showResponseCount ? (
-          <View className="flex-row items-center px-2 py-1 rounded-lg gap-1" style={{ backgroundColor: colors.info + "14" }}>
-            <MaterialCommunityIcons name="reply-all-outline" size={12} color={colors.info} />
-            <Text className="text-[11px] font-bold" style={{ color: colors.info }}>
-              {item.responseCount} {item.responseCount === 1 ? "response" : "responses"}
+        <View className="flex-row items-center gap-1.5 flex-wrap flex-1">
+          <View className="flex-row items-center px-2 py-1 rounded-lg gap-1" style={{ backgroundColor: colors.warning + "14" }}>
+            <MaterialCommunityIcons name="clock-outline" size={12} color={colors.warning} />
+            <Text className="text-[11px] font-bold" style={{ color: colors.warning }}>
+              {formatDate(effectiveDeadline)}
             </Text>
           </View>
-        ) : (
-          <View />
-        )}
+
+          {showResponseCount && (
+            <View className="flex-row items-center px-2 py-1 rounded-lg gap-1" style={{ backgroundColor: colors.info + "14" }}>
+              <MaterialCommunityIcons name="reply-all-outline" size={12} color={colors.info} />
+              <Text className="text-[11px] font-bold" style={{ color: colors.info }}>
+                {item.responseCount} {item.responseCount === 1 ? "response" : "responses"}
+              </Text>
+            </View>
+          )}
+        </View>
 
         <Text className="text-[11px]" style={{ color: colors.textSecondary }}>
           {format(item.createdAt)}

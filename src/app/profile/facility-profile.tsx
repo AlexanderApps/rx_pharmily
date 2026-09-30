@@ -34,6 +34,9 @@ import OwnershipTransferRequestModal from "@/features/ownership-transfer/compone
 import PhoneVerificationSheet from "@/features/profile/components/phone-verification-sheet";
 import { useFacilityFieldAccess } from "@/features/profile/hooks/use-facility-field-access";
 import ReferencePicker from "@/shared/components/forms/reference-picker";
+import RatingSummary from "@/shared/components/rating-summary";
+import RatingSubmitSheet from "@/features/ratings/components/rating-submit-sheet";
+import { useRatingsStore } from "@/features/ratings/hooks/use-ratings-data";
 import MultiSelectPicker from "@/shared/components/forms/multi-select-picker";
 import { useReferenceDataStore } from "@/features/reference-data/hooks/use-reference-data";
 
@@ -84,6 +87,7 @@ export default function FacilityProfileScreen() {
       fetchFacilityMembers(params.id);
       fetchFacilityMembershipRequests(params.id);
       fetchKycDocuments("facility", params.id);
+      fetchRatingsForEntity("facility", params.id);
     }
   }, [params.id]);
 
@@ -193,6 +197,9 @@ export default function FacilityProfileScreen() {
   const isVerified = facility.kyc.status === "verified";
   const requestModalRef = useRef<BottomSheetModal>(null);
   const ownershipTransferModalRef = useRef<BottomSheetModal>(null);
+  const ratingSheetRef = useRef<BottomSheetModal>(null);
+  const fetchRatingsForEntity = useRatingsStore((state) => state.fetchRatingsForEntity);
+  const getMyRatingFor = useRatingsStore((state) => state.getMyRatingFor);
   const phoneVerificationRef = useRef<BottomSheetModal>(null);
   const isUserVerified = user.kyc.status === "verified";
   const hasPermission = usePermissionsStore((state) => state.hasPermission);
@@ -341,6 +348,27 @@ export default function FacilityProfileScreen() {
               </View>
             )}
           </View>
+
+          <View className="items-center mb-3">
+            <RatingSummary
+              avgRating={facility.avgRating}
+              ratingCount={facility.ratingCount}
+              emptyLabel="No ratings yet"
+            />
+          </View>
+
+          {!isMember && (
+            <Pressable
+              onPress={() => ratingSheetRef.current?.present()}
+              className="flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl mb-1"
+              style={{ backgroundColor: colors.backgroundElement }}
+            >
+              <MaterialCommunityIcons name="star-outline" size={16} color={colors.primary} />
+              <Text className="text-sm font-semibold" style={{ color: colors.primary }}>
+                {getMyRatingFor("facility", facility.id) ? "Edit Your Rating" : "Rate This Facility"}
+              </Text>
+            </Pressable>
+          )}
 
           {isMember && isVerified && hasPermission("profile.request_update") && (
             <Pressable
@@ -1023,6 +1051,15 @@ export default function FacilityProfileScreen() {
         entityId={facility.id}
         entityName={facility.name}
         onSubmitted={() => ownershipTransferModalRef.current?.dismiss()}
+      />
+
+      <RatingSubmitSheet
+        ref={ratingSheetRef}
+        entityType="facility"
+        entityId={facility.id}
+        entityLabel={facility.name}
+        existingRating={getMyRatingFor("facility", facility.id)}
+        onSubmitted={() => ratingSheetRef.current?.dismiss()}
       />
 
       <PhoneVerificationSheet

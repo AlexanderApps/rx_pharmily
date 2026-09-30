@@ -137,6 +137,10 @@ export interface UserProfile {
   isSuspended: boolean;
   suspendedUntil?: Date;
   moderationReason?: string;
+  // Denormalized from the ratings table by a DB trigger — see the
+  // ratings system migration.
+  avgRating: number;
+  ratingCount: number;
 }
 
 export interface UserProfileFormData {
@@ -199,6 +203,10 @@ export interface FacilityProfile {
   isSuspended: boolean;
   suspendedUntil?: Date;
   moderationReason?: string;
+  // Denormalized from the ratings table by a DB trigger — see the
+  // ratings system migration.
+  avgRating: number;
+  ratingCount: number;
 }
 
 export interface FacilityProfileFormData {
@@ -370,6 +378,10 @@ export interface OrganizationProfile {
   isSuspended: boolean;
   suspendedUntil?: Date;
   moderationReason?: string;
+  // Denormalized from the ratings table by a DB trigger — see the
+  // ratings system migration.
+  avgRating: number;
+  ratingCount: number;
 }
 
 export interface OrganizationProfileFormData {

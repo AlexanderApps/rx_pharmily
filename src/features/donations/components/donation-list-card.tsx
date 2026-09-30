@@ -75,9 +75,7 @@ const DonationListCard: React.FC<DonationListCardProps> = ({
           <Text numberOfLines={1} className="text-[15px] font-bold" style={{ color: colors.text }}>
             {donation.facilityName}
           </Text>
-          <Text className="text-xs mt-px" style={{ color: colors.textSecondary }}>
-            {donation.itemCount} {donation.itemCount === 1 ? "item" : "items"} available
-          </Text>
+          <Text className="text-[11px] mt-px" style={{ color: colors.textSecondary }}>{donation.code}</Text>
         </View>
 
         {showStatus && (
@@ -99,7 +97,9 @@ const DonationListCard: React.FC<DonationListCardProps> = ({
         <View className="flex-row items-center gap-1.5">
           <View className="flex-row items-center px-2 py-1 rounded-lg gap-1" style={{ backgroundColor: colors.info + "14" }}>
             <MaterialCommunityIcons name="package-variant-closed" size={12} color={colors.info} />
-            <Text className="text-[11px] font-bold" style={{ color: colors.info }}>{donation.itemCount}</Text>
+            <Text className="text-[11px] font-bold" style={{ color: colors.info }}>
+              {donation.itemCount} {donation.itemCount === 1 ? "item" : "items"}
+            </Text>
           </View>
 
           {donation.responseCount > 0 && (

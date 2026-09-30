@@ -101,6 +101,7 @@ const RESPONSE_SELECT = "*, donation_response_items(*)";
 export function convertToCardData(donation: Donation): DonationCardData {
   return {
     id: donation.id,
+    code: donation.code,
     facilityName: donation.facilityName,
     location: donation.facilityLocation,
     createdAt: donation.createdAt,

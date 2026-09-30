@@ -74,6 +74,8 @@ export interface PublicUserProfile {
   phone?: string;
   showEmail: boolean;
   showPhone: boolean;
+  avgRating: number;
+  ratingCount: number;
 }
 
 
@@ -158,6 +160,8 @@ function mapUserRow(row: any): UserProfile {
     isSuspended: row.is_suspended ?? false,
     suspendedUntil: row.suspended_until ? new Date(row.suspended_until) : undefined,
     moderationReason: row.moderation_reason ?? undefined,
+    avgRating: row.avg_rating ?? 0,
+    ratingCount: row.rating_count ?? 0,
   };
 }
 
@@ -188,6 +192,8 @@ function mapFacilityRow(row: any): FacilityProfile {
     isSuspended: row.is_suspended ?? false,
     suspendedUntil: row.suspended_until ? new Date(row.suspended_until) : undefined,
     moderationReason: row.moderation_reason ?? undefined,
+    avgRating: row.avg_rating ?? 0,
+    ratingCount: row.rating_count ?? 0,
   };
 }
 
@@ -216,6 +222,8 @@ function mapOrganizationRow(row: any, facilityIds: string[]): OrganizationProfil
     isSuspended: row.is_suspended ?? false,
     suspendedUntil: row.suspended_until ? new Date(row.suspended_until) : undefined,
     moderationReason: row.moderation_reason ?? undefined,
+    avgRating: row.avg_rating ?? 0,
+    ratingCount: row.rating_count ?? 0,
   };
 }
 
@@ -907,7 +915,9 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   fetchPublicUserProfile: async (userId) => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, avatar_color, profession, title, kyc_status, email, phone, public_show_email, public_show_phone")
+      .select(
+        "id, full_name, avatar_color, profession, title, kyc_status, email, phone, public_show_email, public_show_phone, avg_rating, rating_count",
+      )
       .eq("id", userId)
       .single();
     if (error || !data) {
@@ -931,6 +941,8 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
       phone: data.phone ?? undefined,
       showEmail: data.public_show_email,
       showPhone: data.public_show_phone,
+      avgRating: data.avg_rating ?? 0,
+      ratingCount: data.rating_count ?? 0,
     };
     set((state) => ({ publicUserProfiles: { ...state.publicUserProfiles, [userId]: profile } }));
   },

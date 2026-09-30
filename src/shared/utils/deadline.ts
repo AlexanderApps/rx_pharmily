@@ -20,14 +20,25 @@ export function isJobPastDeadline(applicationDeadline?: Date | string): boolean 
 // createdAt + the app_settings-configured window (default 30 days, see
 // the mediscope_default_deadline_days migration and its admin toggle),
 // so an old, never-updated request eventually drops out of the feed and
-// marketplace even if its creator never set an explicit deadline.
+// marketplace even if its creator never set an explicit deadline. This
+// returns that actual computed date — isMediscopePastDeadline below is
+// just this compared against now, and the mediscope card uses this
+// directly to display a real date rather than only a yes/no.
+export function getMediscopeEffectiveDeadline(
+  submissionDeadline: Date | string | undefined,
+  createdAt: Date | string,
+  defaultDeadlineDays: number,
+): Date {
+  return submissionDeadline
+    ? new Date(submissionDeadline)
+    : new Date(new Date(createdAt).getTime() + defaultDeadlineDays * 24 * 60 * 60 * 1000);
+}
+
 export function isMediscopePastDeadline(
   submissionDeadline: Date | string | undefined,
   createdAt: Date | string,
   defaultDeadlineDays: number,
 ): boolean {
-  const effectiveDeadline = submissionDeadline
-    ? new Date(submissionDeadline)
-    : new Date(new Date(createdAt).getTime() + defaultDeadlineDays * 24 * 60 * 60 * 1000);
+  const effectiveDeadline = getMediscopeEffectiveDeadline(submissionDeadline, createdAt, defaultDeadlineDays);
   return effectiveDeadline.getTime() < Date.now();
 }

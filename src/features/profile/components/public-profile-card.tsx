@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, Pressable, Modal, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -9,6 +9,10 @@ import { useChatStore } from "@/features/chat/hooks/use-chat-data";
 import { useAppSettingsStore } from "@/features/app-settings/hooks/use-app-settings";
 import { KycEntityType } from "@/features/profile/types/profile.types";
 import KycStatusBadge from "@/features/profile/components/kyc-status-badge";
+import RatingSummary from "@/shared/components/rating-summary";
+import RatingSubmitSheet from "@/features/ratings/components/rating-submit-sheet";
+import { useRatingsStore } from "@/features/ratings/hooks/use-ratings-data";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 export interface PublicProfileTarget {
   entityType: KycEntityType;
@@ -48,6 +52,9 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
   const startConversation = useChatStore((state) => state.startConversation);
   const [isMessaging, setIsMessaging] = useState(false);
   const startFacilityConversation = useChatStore((state) => state.startFacilityConversation);
+  const ratingSheetRef = useRef<BottomSheetModal>(null);
+  const fetchRatingsForEntity = useRatingsStore((state) => state.fetchRatingsForEntity);
+  const getMyRatingFor = useRatingsStore((state) => state.getMyRatingFor);
 
   const facility = useMemo(
     () => (entityType === "facility" ? facilities.find((f) => f.id === entityId) : undefined),
@@ -86,6 +93,12 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
     }
   }, [visible, needsPublicFetch, entityId, publicUserProfiles, fetchPublicUserProfile]);
 
+  useEffect(() => {
+    if (visible && entityType === "user") {
+      fetchRatingsForEntity("user", entityId);
+    }
+  }, [visible, entityType, entityId, fetchRatingsForEntity]);
+
   if (!visible) return null;
 
   let name = "Unknown";
@@ -107,6 +120,8 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
   // a plain string.
   let profession: string | undefined;
   let title: string | undefined;
+  let avgRating = 0;
+  let ratingCount = 0;
 
   if (entityType === "user") {
     if (isCurrentUser) {
@@ -120,6 +135,8 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
       bio = user.bio;
       profession = user.profession;
       title = user.title;
+      avgRating = user.avgRating;
+      ratingCount = user.ratingCount;
     } else {
       // Start from whatever's immediately available — a local lookup
       // (same-facility member already loaded) or the caller's
@@ -155,6 +172,8 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
         phone = publicProfile.phone;
         showEmail = publicProfile.showEmail;
         showPhone = publicProfile.showPhone;
+        avgRating = publicProfile.avgRating;
+        ratingCount = publicProfile.ratingCount;
       }
     }
     icon = "account-outline";
@@ -248,7 +267,8 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <>
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable className="flex-1 items-center justify-center p-6" style={{ backgroundColor: "rgba(0,0,0,0.5)" }} onPress={onClose}>
         <Pressable className="w-full max-w-[340px] rounded-[20px] p-6 items-center gap-1.5" style={{ backgroundColor: colors.backgroundSecondary }} onPress={() => {}}>
           <Pressable
@@ -297,6 +317,12 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
             <KycStatusBadge status={kycStatus} compact />
           </View>
 
+          {entityType === "user" && (
+            <View className="mt-1.5">
+              <RatingSummary avgRating={avgRating} ratingCount={ratingCount} size="small" />
+            </View>
+          )}
+
           {bio ? <Text className="text-[13px] text-center mt-2.5 leading-[18px]" style={{ color: colors.textSecondary }}>{bio}</Text> : null}
 
           {(showEmail && email) || (showPhone && phone) ? (
@@ -318,26 +344,53 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
             </View>
           ) : null}
 
-          {!isCurrentUser && (messageTargetUserId || facilityMessageTarget) && (
-            <Pressable
-              onPress={handleMessage}
-              disabled={isMessaging}
-              className="flex-row items-center justify-center gap-2 py-3 rounded-[10px] w-full mt-4"
-              style={{ backgroundColor: colors.primary, opacity: isMessaging ? 0.6 : 1 }}
-            >
-              {isMessaging ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <MaterialCommunityIcons name="chat-outline" size={16} color="#fff" />
-                  <Text className="text-white text-sm font-semibold">Message</Text>
-                </>
-              )}
-            </Pressable>
-          )}
+          <View className="flex-row gap-2 w-full mt-4">
+            {!isCurrentUser && (messageTargetUserId || facilityMessageTarget) && (
+              <Pressable
+                onPress={handleMessage}
+                disabled={isMessaging}
+                className="flex-1 flex-row items-center justify-center gap-2 py-3 rounded-[10px]"
+                style={{ backgroundColor: colors.primary, opacity: isMessaging ? 0.6 : 1 }}
+              >
+                {isMessaging ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <MaterialCommunityIcons name="chat-outline" size={16} color="#fff" />
+                    <Text className="text-white text-sm font-semibold">Message</Text>
+                  </>
+                )}
+              </Pressable>
+            )}
+
+            {entityType === "user" && !isCurrentUser && (
+              <Pressable
+                onPress={() => ratingSheetRef.current?.present()}
+                className="flex-1 flex-row items-center justify-center gap-2 py-3 rounded-[10px]"
+                style={{ backgroundColor: colors.backgroundElement }}
+              >
+                <MaterialCommunityIcons name="star-outline" size={16} color={colors.primary} />
+                <Text className="text-sm font-semibold" style={{ color: colors.primary }} numberOfLines={1}>
+                  {getMyRatingFor("user", entityId) ? "Edit Rating" : "Rate"}
+                </Text>
+              </Pressable>
+            )}
+          </View>
         </Pressable>
       </Pressable>
     </Modal>
+
+      {entityType === "user" && (
+        <RatingSubmitSheet
+          ref={ratingSheetRef}
+          entityType="user"
+          entityId={entityId}
+          entityLabel={displayName}
+          existingRating={getMyRatingFor("user", entityId)}
+          onSubmitted={() => ratingSheetRef.current?.dismiss()}
+        />
+      )}
+    </>
   );
 };
 

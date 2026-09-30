@@ -116,6 +116,7 @@ export interface DonationFormData {
 // Lightweight summary used by list/card views.
 export interface DonationCardData {
   id: string;
+  code: string;
   facilityName: string;
   location: string;
   createdAt: Date;

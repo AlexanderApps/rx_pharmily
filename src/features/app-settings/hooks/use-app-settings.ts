@@ -7,6 +7,12 @@ interface AppSettingsStore {
   // no submissionDeadline of its own — see the migration that seeds
   // this for the full rationale.
   mediscopeDefaultDeadlineDays: number;
+  // Master on/off for the whole rating feature — both display and the
+  // ability to submit a new rating follow this. Defaults to true
+  // (matching the migration's own seed) since a rating system's whole
+  // point is being visible; starting hidden would need deliberately
+  // turning it off, not on.
+  showRatings: boolean;
   hasFetched: boolean;
   fetchAppSettings: () => Promise<void>;
   // Superadmin-only in practice — RLS enforces this regardless of what
@@ -17,6 +23,7 @@ interface AppSettingsStore {
 export const useAppSettingsStore = create<AppSettingsStore>((set, get) => ({
   showUserTitleInBrackets: false,
   mediscopeDefaultDeadlineDays: 30,
+  showRatings: true,
   hasFetched: false,
 
   fetchAppSettings: async () => {
@@ -28,6 +35,7 @@ export const useAppSettingsStore = create<AppSettingsStore>((set, get) => ({
     }
     const titleRow = (data ?? []).find((r) => r.key === "show_user_title_in_brackets");
     const deadlineRow = (data ?? []).find((r) => r.key === "mediscope_default_deadline_days");
+    const ratingsRow = (data ?? []).find((r) => r.key === "show_ratings");
     set({
       showUserTitleInBrackets: titleRow?.value === true,
       // Falls back to the same 30 the migration seeds if the row is
@@ -37,6 +45,10 @@ export const useAppSettingsStore = create<AppSettingsStore>((set, get) => ({
       // failing to 0 (which would hide every undated request).
       mediscopeDefaultDeadlineDays:
         typeof deadlineRow?.value === "number" ? deadlineRow.value : 30,
+      // Same "fail open" reasoning as above — if the row is somehow
+      // missing, default to showing ratings rather than silently
+      // hiding a feature nobody asked to turn off.
+      showRatings: ratingsRow?.value !== false,
       hasFetched: true,
     });
   },
@@ -51,6 +63,8 @@ export const useAppSettingsStore = create<AppSettingsStore>((set, get) => ({
       set({ showUserTitleInBrackets: value });
     } else if (key === "mediscope_default_deadline_days" && typeof value === "number") {
       set({ mediscopeDefaultDeadlineDays: value });
+    } else if (key === "show_ratings" && typeof value === "boolean") {
+      set({ showRatings: value });
     }
     return true;
   },

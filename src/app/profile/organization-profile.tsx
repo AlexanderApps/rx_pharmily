@@ -34,6 +34,9 @@ import KycSection from "@/features/profile/components/kyc-section";
 import KycStatusBadge from "@/features/profile/components/kyc-status-badge";
 import ProfileUpdateRequestModal from "@/features/profile-updates/components/profile-update-request-modal";
 import OwnershipTransferRequestModal from "@/features/ownership-transfer/components/ownership-transfer-request-modal";
+import RatingSummary from "@/shared/components/rating-summary";
+import RatingSubmitSheet from "@/features/ratings/components/rating-submit-sheet";
+import { useRatingsStore } from "@/features/ratings/hooks/use-ratings-data";
 import PhoneVerificationSheet from "@/features/profile/components/phone-verification-sheet";
 
 const ORG_TYPES: OrganizationType[] = [
@@ -67,7 +70,10 @@ export default function OrganizationProfileScreen() {
   }, []);
 
   useEffect(() => {
-    if (params.id) fetchKycDocuments("organization", params.id);
+    if (params.id) {
+      fetchKycDocuments("organization", params.id);
+      fetchRatingsForEntity("organization", params.id);
+    }
     fetchFacilityOrganizationRequests();
   }, [params.id]);
 
@@ -142,6 +148,9 @@ export default function OrganizationProfileScreen() {
   const isVerified = organization.kyc.status === "verified";
   const requestModalRef = useRef<BottomSheetModal>(null);
   const ownershipTransferModalRef = useRef<BottomSheetModal>(null);
+  const ratingSheetRef = useRef<BottomSheetModal>(null);
+  const fetchRatingsForEntity = useRatingsStore((state) => state.fetchRatingsForEntity);
+  const getMyRatingFor = useRatingsStore((state) => state.getMyRatingFor);
   const phoneVerificationRef = useRef<BottomSheetModal>(null);
   const isOrgAdmin = viewerRole === "owner";
   const currentUser = useProfileStore((state) => state.user);
@@ -220,6 +229,27 @@ export default function OrganizationProfileScreen() {
               </View>
             )}
           </View>
+
+          <View className="items-center mb-3">
+            <RatingSummary
+              avgRating={organization.avgRating}
+              ratingCount={organization.ratingCount}
+              emptyLabel="No ratings yet"
+            />
+          </View>
+
+          {!isOrgAdmin && (
+            <Pressable
+              onPress={() => ratingSheetRef.current?.present()}
+              className="flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl mb-1"
+              style={{ backgroundColor: colors.backgroundElement }}
+            >
+              <MaterialCommunityIcons name="star-outline" size={16} color={colors.primary} />
+              <Text className="text-sm font-semibold" style={{ color: colors.primary }}>
+                {getMyRatingFor("organization", organization.id) ? "Edit Your Rating" : "Rate This Organization"}
+              </Text>
+            </Pressable>
+          )}
 
           {isVerified && hasPermission("profile.request_update") && (
             <Pressable
@@ -558,6 +588,15 @@ export default function OrganizationProfileScreen() {
         entityId={organization.id}
         entityName={organization.name}
         onSubmitted={() => ownershipTransferModalRef.current?.dismiss()}
+      />
+
+      <RatingSubmitSheet
+        ref={ratingSheetRef}
+        entityType="organization"
+        entityId={organization.id}
+        entityLabel={organization.name}
+        existingRating={getMyRatingFor("organization", organization.id)}
+        onSubmitted={() => ratingSheetRef.current?.dismiss()}
       />
 
       <PhoneVerificationSheet

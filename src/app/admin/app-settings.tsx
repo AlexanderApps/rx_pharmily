@@ -15,9 +15,11 @@ export default function AppSettingsScreen() {
   const isSuperadmin = useAuthStore((state) => isSuperadminRole(state.profile?.accountRole));
   const showUserTitleInBrackets = useAppSettingsStore((state) => state.showUserTitleInBrackets);
   const mediscopeDefaultDeadlineDays = useAppSettingsStore((state) => state.mediscopeDefaultDeadlineDays);
+  const showRatings = useAppSettingsStore((state) => state.showRatings);
   const fetchAppSettings = useAppSettingsStore((state) => state.fetchAppSettings);
   const updateSetting = useAppSettingsStore((state) => state.updateSetting);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingRatings, setIsSavingRatings] = useState(false);
   const [isSavingDeadline, setIsSavingDeadline] = useState(false);
   const [deadlineInput, setDeadlineInput] = useState(String(mediscopeDefaultDeadlineDays));
 
@@ -42,6 +44,13 @@ export default function AppSettingsScreen() {
     setIsSaving(true);
     const ok = await updateSetting("show_user_title_in_brackets", value);
     setIsSaving(false);
+    if (!ok) toast.error("Couldn't save the setting. Please try again.");
+  };
+
+  const handleToggleRatings = async (value: boolean) => {
+    setIsSavingRatings(true);
+    const ok = await updateSetting("show_ratings", value);
+    setIsSavingRatings(false);
     if (!ok) toast.error("Couldn't save the setting. Please try again.");
   };
 
@@ -80,6 +89,27 @@ export default function AppSettingsScreen() {
               value={showUserTitleInBrackets}
               onValueChange={handleToggle}
               disabled={isSaving}
+              activeColor={colors.primary}
+              size="small"
+            />
+          </View>
+        </View>
+
+        <View className="rounded-xl overflow-hidden" style={{ backgroundColor: colors.backgroundSecondary }}>
+          <View className="flex-row items-center justify-between px-4 py-3.5">
+            <View className="flex-1 pr-3">
+              <Text className="text-sm font-semibold" style={{ color: colors.text }}>
+                Show ratings
+              </Text>
+              <Text className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>
+                When off, star ratings are hidden everywhere (users, facilities, organizations) and
+                nobody can submit a new one, until turned back on.
+              </Text>
+            </View>
+            <ModernSwitch
+              value={showRatings}
+              onValueChange={handleToggleRatings}
+              disabled={isSavingRatings}
               activeColor={colors.primary}
               size="small"
             />
