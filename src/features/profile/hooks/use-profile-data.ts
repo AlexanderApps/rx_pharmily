@@ -244,6 +244,20 @@ function mapMembershipRow(row: any): FacilityMembership {
   };
 }
 
+function mapOrganizationMembershipRow(row: any): OrganizationMembership {
+  const profile = row.profiles ?? {};
+  return {
+    id: row.id,
+    organizationId: row.organization_id,
+    userId: row.user_id,
+    userName: profile.full_name ?? "Unknown",
+    userEmail: profile.email ?? "",
+    avatarColor: profile.avatar_color ?? "#64748b",
+    role: row.role,
+    joinedAt: new Date(row.joined_at),
+  };
+}
+
 function mapFacilityCreationRequestRow(row: any): FacilityCreationRequest {
   return {
     id: row.id,
@@ -292,6 +306,24 @@ function mapOrganizationCreationRequestRow(row: any): OrganizationCreationReques
 // Expects requester profile info embedded via a join (see the fetch
 // action below) — same reasoning as mapMembershipRow, since the request
 // table itself only stores the id.
+function mapOrganizationMembershipRequestRow(row: any): OrganizationMembershipRequest {
+  const profile = row.profiles ?? {};
+  return {
+    id: row.id,
+    organizationId: row.organization_id,
+    requestedBy: row.requested_by,
+    requesterName: profile.full_name ?? "Unknown",
+    requesterEmail: profile.email ?? "",
+    requesterAvatarColor: profile.avatar_color ?? "#64748b",
+    requesterKycStatus: profile.kyc_status ?? "unverified",
+    status: row.status,
+    reviewComment: row.review_comment ?? undefined,
+    reviewedBy: row.reviewed_by ?? undefined,
+    reviewedAt: row.reviewed_at ? new Date(row.reviewed_at) : undefined,
+    createdAt: new Date(row.created_at),
+  };
+}
+
 function mapFacilityMembershipRequestRow(row: any): FacilityMembershipRequest {
   const profile = row.profiles ?? {};
   return {
@@ -430,11 +462,13 @@ type ProfileStore = {
   hasFetchedFacilities: boolean;
   organizations: OrganizationProfile[];
   facilityMemberships: FacilityMembership[];
+  organizationMemberships: OrganizationMembership[];
   coverLetterTemplates: CoverLetterTemplate[];
   priceTemplates: PriceTemplate[];
   facilityCreationRequests: FacilityCreationRequest[];
   organizationCreationRequests: OrganizationCreationRequest[];
   facilityMembershipRequests: FacilityMembershipRequest[];
+  organizationMembershipRequests: OrganizationMembershipRequest[];
   facilityOrganizationRequests: FacilityOrganizationRequest[];
   allUsers: AdminUserSummary[];
   // Other users' KYC (not the signed-in person's own — that's always
@@ -456,11 +490,15 @@ type ProfileStore = {
   fetchFacilities: () => Promise<void>;
   fetchOrganizations: () => Promise<void>;
   fetchFacilityMembers: (facilityId: string) => Promise<void>;
+  fetchOrganizationMembers: (organizationId: string) => Promise<void>;
   // Admin-only lookup — which facilities is a given user already a member
   // of? Not stored globally like the other membership fetches (this is
   // about someone else's memberships, not the signed-in person's own),
   // just returned directly for the detail view that needs it.
   fetchUserFacilityMemberships: (userId: string) => Promise<{ facilityId: string; facilityName: string; role: string }[]>;
+  fetchUserOrganizationMemberships: (
+    userId: string,
+  ) => Promise<{ organizationId: string; organizationName: string; role: string }[]>;
   // Fetches every facility_memberships row for the CURRENT user, across
   // every facility they belong to — not one facility at a time. Without
   // this, getMyFacilities() has nothing to filter against until the user
@@ -474,6 +512,7 @@ type ProfileStore = {
   fetchFacilityCreationRequests: () => Promise<void>;
   fetchOrganizationCreationRequests: () => Promise<void>;
   fetchFacilityMembershipRequests: (facilityId?: string) => Promise<void>;
+  fetchOrganizationMembershipRequests: (organizationId?: string) => Promise<void>;
   fetchFacilityOrganizationRequests: () => Promise<void>;
 
   getFacility: (id: string) => FacilityProfile | undefined;
@@ -495,6 +534,7 @@ type ProfileStore = {
   fetchPublicUserProfile: (userId: string) => Promise<void>;
   getMyFacilities: () => FacilityProfile[];
   getFacilityMembers: (facilityId: string) => FacilityMembership[];
+  getOrganizationMembers: (organizationId: string) => OrganizationMembership[];
 
   updateUserProfile: (data: UserProfileFormData) => Promise<boolean>;
   updateFacilityProfile: (id: string, data: FacilityProfileFormData) => Promise<void>;
@@ -546,6 +586,12 @@ type ProfileStore = {
   rejectFacilityMembershipRequest: (id: string, comment: string) => Promise<void>;
   removeFacilityMember: (membershipId: string) => Promise<void>;
 
+  // Same request/approve shape as facility membership above.
+  requestOrganizationMembership: (organizationId: string) => Promise<{ ok: boolean; error?: string }>;
+  approveOrganizationMembershipRequest: (id: string) => Promise<void>;
+  rejectOrganizationMembershipRequest: (id: string, comment: string) => Promise<void>;
+  removeOrganizationMember: (membershipId: string) => Promise<void>;
+
   requestFacilityOrganizationLink: (
     facilityId: string,
     organizationId: string,
@@ -568,11 +614,13 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   hasFetchedFacilities: false,
   organizations: [],
   facilityMemberships: [],
+  organizationMemberships: [],
   coverLetterTemplates: [],
   priceTemplates: [],
   facilityCreationRequests: [],
   organizationCreationRequests: [],
   facilityMembershipRequests: [],
+  organizationMembershipRequests: [],
   facilityOrganizationRequests: [],
   allUsers: [],
   publicUserProfiles: {},
@@ -754,6 +802,24 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     }));
   },
 
+  fetchOrganizationMembers: async (organizationId) => {
+    const { data, error } = await supabase
+      .from("organization_memberships")
+      .select("*, profiles(full_name, email, avatar_color)")
+      .eq("organization_id", organizationId);
+    if (error) {
+      console.warn("[profile] fetchOrganizationMembers failed:", error.message);
+      return;
+    }
+    const fetched = (data ?? []).map(mapOrganizationMembershipRow);
+    set((state) => ({
+      organizationMemberships: [
+        ...state.organizationMemberships.filter((m) => m.organizationId !== organizationId),
+        ...fetched,
+      ],
+    }));
+  },
+
   fetchUserFacilityMemberships: async (userId) => {
     const { data, error } = await supabase
       .from("facility_memberships")
@@ -766,6 +832,22 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     return (data ?? []).map((row: any) => ({
       facilityId: row.facility_id,
       facilityName: row.facilities?.name ?? "Unknown facility",
+      role: row.role,
+    }));
+  },
+
+  fetchUserOrganizationMemberships: async (userId) => {
+    const { data, error } = await supabase
+      .from("organization_memberships")
+      .select("organization_id, role, organizations(name)")
+      .eq("user_id", userId);
+    if (error) {
+      console.warn("[profile] fetchUserOrganizationMemberships failed:", error.message);
+      return [];
+    }
+    return (data ?? []).map((row: any) => ({
+      organizationId: row.organization_id,
+      organizationName: row.organizations?.name ?? "Unknown organization",
       role: row.role,
     }));
   },
@@ -886,6 +968,25 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     }));
   },
 
+  fetchOrganizationMembershipRequests: async (organizationId) => {
+    let query = supabase
+      .from("organization_membership_requests")
+      .select("*, profiles:requested_by(full_name, email, avatar_color, kyc_status)")
+      .order("created_at", { ascending: false });
+    if (organizationId) query = query.eq("organization_id", organizationId);
+    const { data, error } = await query;
+    if (error) {
+      console.warn("[profile] fetchOrganizationMembershipRequests failed:", error.message);
+      return;
+    }
+    const fetched = (data ?? []).map(mapOrganizationMembershipRequestRow);
+    set((state) => ({
+      organizationMembershipRequests: organizationId
+        ? [...state.organizationMembershipRequests.filter((r) => r.organizationId !== organizationId), ...fetched]
+        : fetched,
+    }));
+  },
+
   fetchFacilityOrganizationRequests: async () => {
     const { data, error } = await supabase
       .from("facility_organization_requests")
@@ -959,6 +1060,9 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
 
   getFacilityMembers: (facilityId) =>
     get().facilityMemberships.filter((m) => m.facilityId === facilityId),
+
+  getOrganizationMembers: (organizationId) =>
+    get().organizationMemberships.filter((m) => m.organizationId === organizationId),
 
   updateUserProfile: async (data) => {
     const userId = await requireUserId();
@@ -1622,6 +1726,40 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     return { ok: true };
   },
 
+  requestOrganizationMembership: async (organizationId) => {
+    const userId = await requireUserId();
+    const organization = get().organizations.find((o) => o.id === organizationId);
+    if (!organization) return { ok: false, error: "Organization not found." };
+    if (organization.kyc.status !== "verified") {
+      return { ok: false, error: "This organization must be verified before you can request to join." };
+    }
+    const alreadyMember = get().organizationMemberships.some(
+      (m) => m.organizationId === organizationId && m.userId === userId,
+    );
+    if (alreadyMember) return { ok: false, error: "You're already a member of this organization." };
+
+    const { data: row, error } = await supabase
+      .from("organization_membership_requests")
+      .insert({ organization_id: organizationId, requested_by: userId })
+      .select("*, profiles:requested_by(full_name, email, avatar_color, kyc_status)")
+      .single();
+    if (error || !row) {
+      const message = error?.message?.includes("duplicate")
+        ? "You already have a pending request for this organization."
+        : (error?.message ?? "Couldn't submit request.");
+      return { ok: false, error: message };
+    }
+
+    set((state) => ({
+      organizationMembershipRequests: [
+        mapOrganizationMembershipRequestRow(row),
+        ...state.organizationMembershipRequests,
+      ],
+    }));
+
+    return { ok: true };
+  },
+
   approveFacilityMembershipRequest: async (id) => {
     const request = get().facilityMembershipRequests.find((r) => r.id === id);
     if (!request) return;
@@ -1693,6 +1831,81 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     }
     set((state) => ({
       facilityMemberships: state.facilityMemberships.filter((m) => m.id !== membershipId),
+    }));
+  },
+
+  approveOrganizationMembershipRequest: async (id) => {
+    const request = get().organizationMembershipRequests.find((r) => r.id === id);
+    if (!request) return;
+    const reviewerId = await requireUserId();
+
+    const { data: membershipRow, error: membershipError } = await supabase
+      .from("organization_memberships")
+      .insert({ organization_id: request.organizationId, user_id: request.requestedBy, role: "Member" })
+      .select("*, profiles(full_name, email, avatar_color)")
+      .single();
+    if (membershipError || !membershipRow) {
+      console.warn(
+        "[profile] approveOrganizationMembershipRequest (membership insert) failed:",
+        membershipError?.message,
+      );
+      return;
+    }
+
+    const { error: updateError } = await supabase
+      .from("organization_membership_requests")
+      .update({ status: "approved", reviewed_by: reviewerId, reviewed_at: new Date().toISOString() })
+      .eq("id", id);
+    if (updateError) {
+      console.warn("[profile] approveOrganizationMembershipRequest (request update) failed:", updateError.message);
+      return;
+    }
+
+    const membership = mapOrganizationMembershipRow(membershipRow);
+    set((state) => ({
+      organizationMemberships: [...state.organizationMemberships, membership],
+      organizationMembershipRequests: state.organizationMembershipRequests.map((r) =>
+        r.id === id ? { ...r, status: "approved" as const, reviewedBy: reviewerId, reviewedAt: new Date() } : r,
+      ),
+    }));
+  },
+
+  rejectOrganizationMembershipRequest: async (id, comment) => {
+    const request = get().organizationMembershipRequests.find((r) => r.id === id);
+    if (!request) return;
+    const reviewerId = await requireUserId();
+
+    const { error } = await supabase
+      .from("organization_membership_requests")
+      .update({
+        status: "rejected",
+        review_comment: comment.trim(),
+        reviewed_by: reviewerId,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+    if (error) {
+      console.warn("[profile] rejectOrganizationMembershipRequest failed:", error.message);
+      return;
+    }
+
+    set((state) => ({
+      organizationMembershipRequests: state.organizationMembershipRequests.map((r) =>
+        r.id === id
+          ? { ...r, status: "rejected" as const, reviewComment: comment.trim(), reviewedBy: reviewerId, reviewedAt: new Date() }
+          : r,
+      ),
+    }));
+  },
+
+  removeOrganizationMember: async (membershipId) => {
+    const { error } = await supabase.from("organization_memberships").delete().eq("id", membershipId);
+    if (error) {
+      console.warn("[profile] removeOrganizationMember failed:", error.message);
+      return;
+    }
+    set((state) => ({
+      organizationMemberships: state.organizationMemberships.filter((m) => m.id !== membershipId),
     }));
   },
 

@@ -242,6 +242,23 @@ export interface FacilityMembership {
   joinedAt: Date;
 }
 
+// "Admin", not "Owner" — matches organizations.admin_user_id's own
+// terminology (and is_organization_admin(), which predates this
+// table), kept distinct from facilities' "Owner" rather than forced
+// to match it.
+export type OrganizationMemberRole = "Admin" | "Member";
+
+export interface OrganizationMembership {
+  id: string;
+  organizationId: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  avatarColor: string;
+  role: OrganizationMemberRole;
+  joinedAt: Date;
+}
+
 // ─── Creation & membership requests ────────────────────────────────────
 // Facilities and organizations are no longer self-service — a verified
 // user submits a creation request, an admin approves it (which creates
@@ -320,6 +337,21 @@ export interface OrganizationCreationRequestFormData {
 export interface FacilityMembershipRequest {
   id: string;
   facilityId: string;
+  requestedBy: string;
+  requesterName: string;
+  requesterEmail: string;
+  requesterAvatarColor: string;
+  requesterKycStatus: KycStatus;
+  status: RequestStatus;
+  reviewComment?: string;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  createdAt: Date;
+}
+
+export interface OrganizationMembershipRequest {
+  id: string;
+  organizationId: string;
   requestedBy: string;
   requesterName: string;
   requesterEmail: string;

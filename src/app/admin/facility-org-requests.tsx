@@ -17,7 +17,7 @@ import KycStatusBadge from "@/features/profile/components/kyc-status-badge";
 import { toast } from "@/shared/hooks/use-toast";
 import StatusFilterTabs from "@/shared/components/status-filter-tabs";
 
-type Tab = "facilities" | "organizations" | "members" | "links";
+type Tab = "facilities" | "organizations" | "members" | "orgMembers" | "links";
 type SelectedRequest = { tab: Tab; id: string } | null;
 
 export default function FacilityOrgRequestsScreen() {
@@ -29,13 +29,18 @@ export default function FacilityOrgRequestsScreen() {
   const facilityCreationRequests = useProfileStore((state) => state.facilityCreationRequests);
   const organizationCreationRequests = useProfileStore((state) => state.organizationCreationRequests);
   const facilityMembershipRequests = useProfileStore((state) => state.facilityMembershipRequests);
+  const organizationMembershipRequests = useProfileStore((state) => state.organizationMembershipRequests);
   const facilityOrganizationRequests = useProfileStore((state) => state.facilityOrganizationRequests);
 
   const fetchFacilityCreationRequests = useProfileStore((state) => state.fetchFacilityCreationRequests);
   const fetchOrganizationCreationRequests = useProfileStore((state) => state.fetchOrganizationCreationRequests);
   const fetchFacilityMembershipRequests = useProfileStore((state) => state.fetchFacilityMembershipRequests);
+  const fetchOrganizationMembershipRequests = useProfileStore(
+    (state) => state.fetchOrganizationMembershipRequests,
+  );
   const fetchFacilityOrganizationRequests = useProfileStore((state) => state.fetchFacilityOrganizationRequests);
   const fetchUserFacilityMemberships = useProfileStore((state) => state.fetchUserFacilityMemberships);
+  const fetchUserOrganizationMemberships = useProfileStore((state) => state.fetchUserOrganizationMemberships);
 
   const approveFacilityCreationRequest = useProfileStore((state) => state.approveFacilityCreationRequest);
   const rejectFacilityCreationRequest = useProfileStore((state) => state.rejectFacilityCreationRequest);
@@ -43,6 +48,12 @@ export default function FacilityOrgRequestsScreen() {
   const rejectOrganizationCreationRequest = useProfileStore((state) => state.rejectOrganizationCreationRequest);
   const approveFacilityMembershipRequest = useProfileStore((state) => state.approveFacilityMembershipRequest);
   const rejectFacilityMembershipRequest = useProfileStore((state) => state.rejectFacilityMembershipRequest);
+  const approveOrganizationMembershipRequest = useProfileStore(
+    (state) => state.approveOrganizationMembershipRequest,
+  );
+  const rejectOrganizationMembershipRequest = useProfileStore(
+    (state) => state.rejectOrganizationMembershipRequest,
+  );
   const approveFacilityOrganizationRequest = useProfileStore((state) => state.approveFacilityOrganizationRequest);
   const rejectFacilityOrganizationRequest = useProfileStore((state) => state.rejectFacilityOrganizationRequest);
 
@@ -50,6 +61,7 @@ export default function FacilityOrgRequestsScreen() {
     fetchFacilityCreationRequests();
     fetchOrganizationCreationRequests();
     fetchFacilityMembershipRequests();
+    fetchOrganizationMembershipRequests();
     fetchFacilityOrganizationRequests();
   }, []);
 
@@ -61,6 +73,10 @@ export default function FacilityOrgRequestsScreen() {
     { facilityId: string; facilityName: string; role: string }[] | null
   >(null);
   const [loadingMemberships, setLoadingMemberships] = useState(false);
+  const [requesterOrgMemberships, setRequesterOrgMemberships] = useState<
+    { organizationId: string; organizationName: string; role: string }[] | null
+  >(null);
+  const [loadingOrgMemberships, setLoadingOrgMemberships] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
 
   const matchesFilter = (status: string) => statusFilter === "all" || status === statusFilter;
@@ -76,6 +92,10 @@ export default function FacilityOrgRequestsScreen() {
   const pendingMembers = useMemo(
     () => facilityMembershipRequests.filter((r) => r.status === "pending"),
     [facilityMembershipRequests],
+  );
+  const pendingOrgMembers = useMemo(
+    () => organizationMembershipRequests.filter((r) => r.status === "pending"),
+    [organizationMembershipRequests],
   );
   const pendingLinks = useMemo(
     () => facilityOrganizationRequests.filter((r) => r.status === "pending"),
@@ -94,6 +114,10 @@ export default function FacilityOrgRequestsScreen() {
     () => facilityMembershipRequests.filter((r) => matchesFilter(r.status)),
     [facilityMembershipRequests, statusFilter],
   );
+  const filteredOrgMembers = useMemo(
+    () => organizationMembershipRequests.filter((r) => matchesFilter(r.status)),
+    [organizationMembershipRequests, statusFilter],
+  );
   const filteredLinks = useMemo(
     () => facilityOrganizationRequests.filter((r) => matchesFilter(r.status)),
     [facilityOrganizationRequests, statusFilter],
@@ -102,6 +126,10 @@ export default function FacilityOrgRequestsScreen() {
   const memberRequest =
     selected?.tab === "members"
       ? facilityMembershipRequests.find((r) => r.id === selected.id)
+      : undefined;
+  const orgMemberRequest =
+    selected?.tab === "orgMembers"
+      ? organizationMembershipRequests.find((r) => r.id === selected.id)
       : undefined;
   const linkRequest =
     selected?.tab === "links"
@@ -118,6 +146,7 @@ export default function FacilityOrgRequestsScreen() {
 
   const selectedStatus =
     memberRequest?.status ??
+    orgMemberRequest?.status ??
     linkRequest?.status ??
     facilityRequest?.status ??
     orgRequest?.status;
@@ -131,6 +160,9 @@ export default function FacilityOrgRequestsScreen() {
   const targetFacility = memberRequest
     ? facilities.find((f) => f.id === memberRequest.facilityId)
     : undefined;
+  const targetOrganization = orgMemberRequest
+    ? organizations.find((o) => o.id === orgMemberRequest.organizationId)
+    : undefined;
 
   useEffect(() => {
     if (!memberRequest) {
@@ -142,6 +174,17 @@ export default function FacilityOrgRequestsScreen() {
       .then(setRequesterMemberships)
       .finally(() => setLoadingMemberships(false));
   }, [memberRequest?.id]);
+
+  useEffect(() => {
+    if (!orgMemberRequest) {
+      setRequesterOrgMemberships(null);
+      return;
+    }
+    setLoadingOrgMemberships(true);
+    fetchUserOrganizationMemberships(orgMemberRequest.requestedBy)
+      .then(setRequesterOrgMemberships)
+      .finally(() => setLoadingOrgMemberships(false));
+  }, [orgMemberRequest?.id]);
 
   if (!isAdmin) {
     return <Redirect href="/(tabs)/account" />;
@@ -158,6 +201,7 @@ export default function FacilityOrgRequestsScreen() {
     if (selected.tab === "facilities") await approveFacilityCreationRequest(selected.id);
     if (selected.tab === "organizations") await approveOrganizationCreationRequest(selected.id);
     if (selected.tab === "members") await approveFacilityMembershipRequest(selected.id);
+    if (selected.tab === "orgMembers") await approveOrganizationMembershipRequest(selected.id);
     if (selected.tab === "links") await approveFacilityOrganizationRequest(selected.id);
     toast.success("Request approved.");
     closeDetail();
@@ -169,6 +213,7 @@ export default function FacilityOrgRequestsScreen() {
     if (selected.tab === "facilities") await rejectFacilityCreationRequest(selected.id, reason);
     if (selected.tab === "organizations") await rejectOrganizationCreationRequest(selected.id, reason);
     if (selected.tab === "members") await rejectFacilityMembershipRequest(selected.id, reason);
+    if (selected.tab === "orgMembers") await rejectOrganizationMembershipRequest(selected.id, reason);
     if (selected.tab === "links") await rejectFacilityOrganizationRequest(selected.id, reason);
     toast.success("Request declined.");
     closeDetail();
@@ -178,6 +223,7 @@ export default function FacilityOrgRequestsScreen() {
     { key: "facilities", label: "Facilities", count: pendingFacilities.length },
     { key: "organizations", label: "Orgs", count: pendingOrgs.length },
     { key: "members", label: "Members", count: pendingMembers.length },
+    { key: "orgMembers", label: "Org Members", count: pendingOrgMembers.length },
     { key: "links", label: "Facility→Org", count: pendingLinks.length },
   ];
 
@@ -312,6 +358,29 @@ export default function FacilityOrgRequestsScreen() {
             ))
           ))}
 
+        {tab === "orgMembers" &&
+          (filteredOrgMembers.length === 0 ? (
+            <EmptyState colors={colors} text="No organization membership requests here." />
+          ) : (
+            filteredOrgMembers.map((r) => (
+              <RequestCard
+                key={r.id}
+                colors={colors}
+                title={r.requesterName}
+                subtitle={r.requesterEmail}
+                trailing={
+                  <View className="flex-row items-center gap-1.5">
+                    {r.status !== "pending" && (
+                      <RequestStatusBadge colors={colors} status={r.status} />
+                    )}
+                    <KycStatusBadge status={r.requesterKycStatus} compact />
+                  </View>
+                }
+                onPress={() => setSelected({ tab: "orgMembers", id: r.id })}
+              />
+            ))
+          ))}
+
         {tab === "links" &&
           (filteredLinks.length === 0 ? (
             <EmptyState colors={colors} text="No facility-to-organization requests here." />
@@ -407,6 +476,67 @@ export default function FacilityOrgRequestsScreen() {
                   <DetailSection colors={colors} label="Requested">
                     <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
                       {memberRequest.createdAt.toLocaleDateString(undefined, {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </Text>
+                  </DetailSection>
+                </>
+              )}
+
+              {orgMemberRequest && (
+                <>
+                  <DetailSection colors={colors} label="Requester">
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-1">
+                        <Text className="text-[15px] font-bold" style={{ color: colors.text }}>
+                          {orgMemberRequest.requesterName}
+                        </Text>
+                        <Text className="text-[13px] mt-0.5" style={{ color: colors.textSecondary }}>
+                          {orgMemberRequest.requesterEmail}
+                        </Text>
+                      </View>
+                      <KycStatusBadge status={orgMemberRequest.requesterKycStatus} compact />
+                    </View>
+                  </DetailSection>
+
+                  <DetailSection colors={colors} label="Wants to join">
+                    <Text className="text-[15px] font-bold" style={{ color: colors.text }}>
+                      {targetOrganization?.name ?? "Unknown organization"}
+                    </Text>
+                    {targetOrganization && (
+                      <Text className="text-[13px] mt-0.5" style={{ color: colors.textSecondary }}>
+                        {targetOrganization.type}
+                        {targetOrganization.headquartersLocation ? ` · ${targetOrganization.headquartersLocation}` : ""}
+                      </Text>
+                    )}
+                  </DetailSection>
+
+                  <DetailSection colors={colors} label="Already a member of">
+                    {loadingOrgMemberships ? (
+                      <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+                        Loading...
+                      </Text>
+                    ) : requesterOrgMemberships && requesterOrgMemberships.length > 0 ? (
+                      requesterOrgMemberships.map((m) => (
+                        <View key={m.organizationId} className="flex-row items-center gap-1.5 mt-1">
+                          <MaterialCommunityIcons name="domain" size={14} color={colors.textSecondary} />
+                          <Text className="text-[13px]" style={{ color: colors.text }}>
+                            {m.organizationName} · {m.role}
+                          </Text>
+                        </View>
+                      ))
+                    ) : (
+                      <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+                        Not a member anywhere yet.
+                      </Text>
+                    )}
+                  </DetailSection>
+
+                  <DetailSection colors={colors} label="Requested">
+                    <Text className="text-[13px]" style={{ color: colors.textSecondary }}>
+                      {orgMemberRequest.createdAt.toLocaleDateString(undefined, {
                         day: "2-digit",
                         month: "short",
                         year: "numeric",

@@ -276,14 +276,18 @@ export default function ChatThreadScreen() {
           style={
             conversation.participant.kind === "facility"
               ? { backgroundColor: colors.primary, borderRadius: 10 }
-              : {
-                  backgroundColor: conversation.participant.avatarColor,
-                  borderRadius: 19,
-                }
+              : conversation.participant.kind === "organization"
+                ? { backgroundColor: colors.secondary, borderRadius: 10 }
+                : {
+                    backgroundColor: conversation.participant.avatarColor,
+                    borderRadius: 19,
+                  }
           }
         >
           {conversation.participant.kind === "facility" ? (
             <MaterialCommunityIcons name="office-building" size={18} color="#fff" />
+          ) : conversation.participant.kind === "organization" ? (
+            <MaterialCommunityIcons name="domain" size={18} color="#fff" />
           ) : (
             <Text className="text-white text-[13px] font-bold">{initials}</Text>
           )}
@@ -305,7 +309,9 @@ export default function ChatThreadScreen() {
               ? conversation.participant.memberCount > 0
                 ? `${conversation.participant.memberCount} member${conversation.participant.memberCount === 1 ? "" : "s"}`
                 : "Facility"
-              : conversation.participant.facility}
+              : conversation.participant.kind === "organization"
+                ? "Organization"
+                : conversation.participant.facility}
           </Text>
         </View>
         <TouchableOpacity

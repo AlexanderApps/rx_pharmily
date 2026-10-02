@@ -19,22 +19,22 @@ import ScreenHeader from "@/shared/components/screen-header";
 import EmptyState from "@/shared/components/empty-state";
 import { confirm } from "@/shared/hooks/use-confirm";
 import { toast } from "@/shared/hooks/use-toast";
-import { useProfileStore } from "@/features/profile/hooks/use-profile-data";
+import { useProfileStore, useMyFacilities } from "@/features/profile/hooks/use-profile-data";
 import { formatAmount } from "@/shared/utils/format";
 import { PriceTemplate } from "@/features/profile/types/profile.types";
 
 export default function PriceTemplatesScreen() {
   const { colors } = useTheme();
   const params = useLocalSearchParams<{ facilityId?: string }>();
-  const user = useProfileStore((state) => state.user);
-  const facilities = useProfileStore((state) => state.facilities);
-  const facilityMemberships = useProfileStore((state) => state.facilityMemberships);
-  const myFacilities = useMemo(() => {
-    const myIds = new Set(
-      facilityMemberships.filter((m) => m.userId === user.id).map((m) => m.facilityId),
-    );
-    return facilities.filter((f) => myIds.has(f.id));
-  }, [facilities, facilityMemberships, user.id]);
+  // A price template can't actually be uploaded for an unverified
+  // facility (see handleSave below) — showing one here as selectable
+  // would just lead to that error surfacing after the fact instead of
+  // not being offered in the first place.
+  const allMyFacilities = useMyFacilities();
+  const myFacilities = useMemo(
+    () => allMyFacilities.filter((f) => f.kyc.status === "verified"),
+    [allMyFacilities],
+  );
   const allPriceTemplates = useProfileStore((state) => state.priceTemplates);
   const addPriceTemplate = useProfileStore((state) => state.addPriceTemplate);
   const deletePriceTemplate = useProfileStore((state) => state.deletePriceTemplate);
@@ -66,7 +66,12 @@ export default function PriceTemplatesScreen() {
 
   const handleSave = () => {
     if (!activeFacilityId) {
-      Alert.alert("No facility", "You need to belong to a facility before uploading a price template.");
+      Alert.alert(
+        "No facility",
+        allMyFacilities.length === 0
+          ? "You need to belong to a facility before uploading a price template."
+          : "None of your facilities are verified yet — verification is required to upload a price template.",
+      );
       return;
     }
     if (!title.trim() || !csvText.trim()) {
@@ -126,13 +131,28 @@ export default function PriceTemplatesScreen() {
         </View>
       )}
 
+      {myFacilities.length === 0 && (
+        <View className="px-4 pt-3">
+          <EmptyState
+            icon="hospital-building"
+            message={
+              allMyFacilities.length === 0
+                ? "You don't belong to any facility yet."
+                : "None of your facilities are verified yet — verification is required to upload a price template."
+            }
+          />
+        </View>
+      )}
+
       <FlatList
-        data={priceTemplates}
+        data={myFacilities.length === 0 ? [] : priceTemplates}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16, flexGrow: 1 }}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         ListEmptyComponent={
-          <EmptyState icon="file-table-outline" message="No price templates yet." />
+          myFacilities.length === 0 ? null : (
+            <EmptyState icon="file-table-outline" message="No price templates yet." />
+          )
         }
         renderItem={({ item }) => {
           const expanded = expandedId === item.id;

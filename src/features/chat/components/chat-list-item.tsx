@@ -48,6 +48,7 @@ const ChatListItem: React.FC<ChatListItemProps> = ({
   const { colors } = useTheme();
   const { participant, unreadCount, context } = conversation;
   const isFacility = participant.kind === "facility";
+  const isOrganization = participant.kind === "organization";
   const deleteConversation = useChatStore((state) => state.deleteConversation);
 
   const handleLongPress = async () => {
@@ -77,6 +78,13 @@ const ChatListItem: React.FC<ChatListItemProps> = ({
           style={{ backgroundColor: colors.primary }}
         >
           <MaterialCommunityIcons name="office-building" size={20} color="#fff" />
+        </View>
+      ) : isOrganization ? (
+        <View
+          className="w-11 h-11 rounded-[10px] items-center justify-center"
+          style={{ backgroundColor: colors.secondary }}
+        >
+          <MaterialCommunityIcons name="domain" size={20} color="#fff" />
         </View>
       ) : (
         <ClickableAvatar
@@ -115,6 +123,14 @@ const ChatListItem: React.FC<ChatListItemProps> = ({
             {participant.memberCount > 0
               ? `${participant.memberCount} member${participant.memberCount === 1 ? "" : "s"}`
               : "Facility"}
+          </Text>
+        ) : isOrganization ? (
+          <Text
+            className="text-xs"
+            style={{ color: colors.textSecondary }}
+            numberOfLines={1}
+          >
+            Organization
           </Text>
         ) : (
           <Text

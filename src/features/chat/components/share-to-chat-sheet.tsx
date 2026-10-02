@@ -131,7 +131,13 @@ const ShareToChatSheet = forwardRef<ShareToChatSheetRef, ShareToChatSheetProps>(
                   style={{ backgroundColor: colors.backgroundElement }}
                 >
                   <MaterialCommunityIcons
-                    name={item.participant.kind === "facility" ? "domain" : "account"}
+                    name={
+                      item.participant.kind === "facility"
+                        ? "domain"
+                        : item.participant.kind === "organization"
+                          ? "office-building"
+                          : "account"
+                    }
                     size={20}
                     color={colors.textSecondary}
                   />

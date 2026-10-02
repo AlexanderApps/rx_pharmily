@@ -52,6 +52,7 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
   const startConversation = useChatStore((state) => state.startConversation);
   const [isMessaging, setIsMessaging] = useState(false);
   const startFacilityConversation = useChatStore((state) => state.startFacilityConversation);
+  const startOrganizationConversation = useChatStore((state) => state.startOrganizationConversation);
   const ratingSheetRef = useRef<BottomSheetModal>(null);
   const fetchRatingsForEntity = useRatingsStore((state) => state.fetchRatingsForEntity);
   const getMyRatingFor = useRatingsStore((state) => state.getMyRatingFor);
@@ -113,6 +114,7 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
   let bio: string | undefined;
   let messageTargetUserId: string | undefined;
   let facilityMessageTarget: { id: string; name: string } | undefined;
+  let organizationMessageTarget: { id: string; name: string } | undefined;
   // "user" only — profession replaces the old role display, with a
   // verified checkmark next to it when this person's kyc is actually
   // verified. Kept separate from the generic subtitle (still used for
@@ -213,7 +215,12 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
       showEmail = organization.publicVisibility.showEmail;
       showPhone = organization.publicVisibility.showPhone;
       kycStatus = organization.kyc.status;
-      messageTargetUserId = organization.adminUserId;
+      // Mirrors facilityMessageTarget above — a conversation addressed
+      // to the organization as a whole rather than a private DM with
+      // just the admin, even though access currently only resolves to
+      // the admin in practice (organizations have no broader membership
+      // concept yet — see the organization group chat migration).
+      organizationMessageTarget = { id: organization.id, name: organization.name };
     } else if (fallbackName) {
       name = fallbackName;
       subtitle = fallbackSubtitle ?? "";
@@ -238,6 +245,8 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
 
     if (facilityMessageTarget) {
       conversationId = await startFacilityConversation(facilityMessageTarget);
+    } else if (organizationMessageTarget) {
+      conversationId = await startOrganizationConversation(organizationMessageTarget);
     } else if (messageTargetUserId) {
       // For a "user" card, name/avatarColor here are already the resolved
       // display (real profile data or the caller's fallback) — reuse them
@@ -345,7 +354,7 @@ const PublicProfileCard: React.FC<PublicProfileCardProps> = ({
           ) : null}
 
           <View className="flex-row gap-2 w-full mt-4">
-            {!isCurrentUser && (messageTargetUserId || facilityMessageTarget) && (
+            {!isCurrentUser && (messageTargetUserId || facilityMessageTarget || organizationMessageTarget) && (
               <Pressable
                 onPress={handleMessage}
                 disabled={isMessaging}

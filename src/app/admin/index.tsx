@@ -59,6 +59,9 @@ export default function AdminHubScreen() {
   const facilityMembershipRequests = useProfileStore(
     (state) => state.facilityMembershipRequests,
   );
+  const organizationMembershipRequests = useProfileStore(
+    (state) => state.organizationMembershipRequests,
+  );
   const facilityOrganizationRequests = useProfileStore(
     (state) => state.facilityOrganizationRequests,
   );
@@ -73,6 +76,9 @@ export default function AdminHubScreen() {
   const fetchFacilityMembershipRequests = useProfileStore(
     (state) => state.fetchFacilityMembershipRequests,
   );
+  const fetchOrganizationMembershipRequests = useProfileStore(
+    (state) => state.fetchOrganizationMembershipRequests,
+  );
   const fetchFacilityOrganizationRequests = useProfileStore(
     (state) => state.fetchFacilityOrganizationRequests,
   );
@@ -81,6 +87,7 @@ export default function AdminHubScreen() {
     fetchFacilityCreationRequests();
     fetchOrganizationCreationRequests();
     fetchFacilityMembershipRequests();
+    fetchOrganizationMembershipRequests();
     fetchFacilityOrganizationRequests();
     fetchReports();
     fetchUsersForKycReview();
@@ -133,12 +140,14 @@ export default function AdminHubScreen() {
         ...facilityCreationRequests,
         ...organizationCreationRequests,
         ...facilityMembershipRequests,
+        ...organizationMembershipRequests,
         ...facilityOrganizationRequests,
       ].filter((r) => r.status === "pending").length,
     [
       facilityCreationRequests,
       organizationCreationRequests,
       facilityMembershipRequests,
+      organizationMembershipRequests,
       facilityOrganizationRequests,
     ],
   );

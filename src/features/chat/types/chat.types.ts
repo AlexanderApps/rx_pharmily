@@ -74,7 +74,17 @@ export interface ChatParticipantFacility {
   memberCount: number;
 }
 
-export type ChatParticipant = ChatParticipantUser | ChatParticipantFacility;
+// No memberCount — organizations have no membership table the way
+// facilities do (facility_memberships has no organization equivalent),
+// so there's no count to show here. See the organization group chat
+// migration for the full rationale.
+export interface ChatParticipantOrganization {
+  kind: "organization";
+  id: string;
+  name: string;
+}
+
+export type ChatParticipant = ChatParticipantUser | ChatParticipantFacility | ChatParticipantOrganization;
 
 export interface Conversation {
   id: string;

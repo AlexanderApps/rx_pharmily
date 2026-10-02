@@ -290,6 +290,13 @@ export const useOwnershipTransferStore = create<OwnershipTransferState>((set, ge
         return false;
       }
     }
+    // No equivalent block for "organization" here — unlike facilities,
+    // organization_memberships is kept in sync with
+    // organizations.admin_user_id by a DB trigger
+    // (sync_organization_admin_membership), not client-side. The
+    // admin_user_id update above already demotes the previous admin to
+    // 'Member' and promotes request.requestedBy to 'Admin' as a side
+    // effect, with no separate write needed here.
 
     const { error: statusError } = await supabase
       .from("ownership_transfer_requests")

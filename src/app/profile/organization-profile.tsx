@@ -7,6 +7,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import ModernSwitch from "@/shared/components/switch";
 import { router, useLocalSearchParams } from "expo-router";
@@ -63,6 +64,14 @@ export default function OrganizationProfileScreen() {
   const fetchKycDocuments = useProfileStore((state) => state.fetchKycDocuments);
   const fetchOrganizations = useProfileStore((state) => state.fetchOrganizations);
   const fetchFacilityOrganizationRequests = useProfileStore((state) => state.fetchFacilityOrganizationRequests);
+  const organizationMemberships = useProfileStore((state) => state.organizationMemberships);
+  const membershipRequests = useProfileStore((state) => state.organizationMembershipRequests);
+  const fetchOrganizationMembers = useProfileStore((state) => state.fetchOrganizationMembers);
+  const fetchOrganizationMembershipRequests = useProfileStore(
+    (state) => state.fetchOrganizationMembershipRequests,
+  );
+  const requestOrganizationMembership = useProfileStore((state) => state.requestOrganizationMembership);
+  const removeOrganizationMember = useProfileStore((state) => state.removeOrganizationMember);
 
   const [isLoadingOrganization, setIsLoadingOrganization] = useState(true);
   useEffect(() => {
@@ -73,6 +82,8 @@ export default function OrganizationProfileScreen() {
     if (params.id) {
       fetchKycDocuments("organization", params.id);
       fetchRatingsForEntity("organization", params.id);
+      fetchOrganizationMembers(params.id);
+      fetchOrganizationMembershipRequests(params.id);
     }
     fetchFacilityOrganizationRequests();
   }, [params.id]);
@@ -90,6 +101,7 @@ export default function OrganizationProfileScreen() {
   }, [organizations, params.id, currentUserId]);
 
   const [editing, setEditing] = useState(false);
+  const [requesting, setRequesting] = useState(false);
   const [name, setName] = useState(organization?.name ?? "");
   const [type, setType] = useState<OrganizationType>(organization?.type ?? "Pharmacy Chain");
   const [registrationNumber, setRegistrationNumber] = useState(organization?.registrationNumber ?? "");
@@ -157,6 +169,25 @@ export default function OrganizationProfileScreen() {
   const isUserVerified = currentUser.kyc.status === "verified";
   const hasPermission = usePermissionsStore((state) => state.hasPermission);
   const canManageRequests = viewerRole === "owner" || viewerRole === "admin";
+  const isMember = viewerRole === "owner" || viewerRole === "member" || viewerRole === "admin";
+  const canManageMembers = viewerRole === "owner" || viewerRole === "admin";
+  const members = useMemo(
+    () => (params.id ? organizationMemberships.filter((m) => m.organizationId === params.id) : []),
+    [organizationMemberships, params.id],
+  );
+  const pendingRequests = useMemo(
+    () =>
+      params.id
+        ? membershipRequests.filter((r) => r.organizationId === params.id && r.status === "pending")
+        : [],
+    [membershipRequests, params.id],
+  );
+  const myPendingRequest = membershipRequests.find(
+    (r) =>
+      r.organizationId === organization.id &&
+      r.requestedBy === currentUserId &&
+      r.status === "pending",
+  );
   const orgFacilities = facilities.filter((f) => organization.facilityIds.includes(f.id));
   const pendingLinkRequests = facilityOrgRequests.filter(
     (r) => r.organizationId === organization.id && r.status === "pending",
@@ -189,6 +220,34 @@ export default function OrganizationProfileScreen() {
     if (!ok) return;
     await removeFacilityFromOrganization(organization.id, facilityId);
     toast.success("Facility removed.");
+  };
+
+  const handleRequestJoin = async () => {
+    const confirmed = await confirm({
+      title: "Request to join this organization?",
+      message: `An admin at ${organization.name} will need to approve your request before you become a member.`,
+      confirmLabel: "Request to Join",
+    });
+    if (!confirmed) return;
+
+    setRequesting(true);
+    const result = await requestOrganizationMembership(organization.id);
+    setRequesting(false);
+    if (!result.ok) {
+      Alert.alert("Couldn't request to join", result.error ?? "Something went wrong.");
+    }
+  };
+
+  const handleRemoveMember = async (membershipId: string, memberLabel: string) => {
+    const ok = await confirm({
+      title: "Remove member?",
+      message: `${memberLabel} will lose access to this organization's shared resources.`,
+      confirmLabel: "Remove",
+      destructive: true,
+    });
+    if (!ok) return;
+    await removeOrganizationMember(membershipId);
+    toast.success("Member removed.");
   };
 
   return (
@@ -521,6 +580,139 @@ export default function OrganizationProfileScreen() {
               <Text style={{ color: colors.textSecondary, fontSize: 12 }}>No facilities yet.</Text>
             )}
           </View>
+
+          <View className="h-px my-[18px]" style={{ backgroundColor: colors.border }} />
+
+          {/* Members */}
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-xs font-semibold" style={{ color: colors.text }}>
+              Members ({members.length})
+            </Text>
+          </View>
+
+          {!isVerified && (
+            <View
+              className="flex-row items-start gap-1.5 rounded-[10px] p-2.5 mb-2.5"
+              style={{ backgroundColor: colors.warning + "12" }}
+            >
+              <MaterialCommunityIcons name="information-outline" size={14} color={colors.warning} />
+              <Text className="text-xs flex-1 leading-[17px]" style={{ color: colors.warning }}>
+                Verify this organization to let verified users request to join.
+              </Text>
+            </View>
+          )}
+
+          {isVerified && !isUserVerified && !isMember && !myPendingRequest && (
+            <View
+              className="flex-row items-start gap-1.5 rounded-[10px] p-2.5 mb-2.5"
+              style={{ backgroundColor: colors.warning + "12" }}
+            >
+              <MaterialCommunityIcons name="information-outline" size={14} color={colors.warning} />
+              <Text className="text-xs flex-1 leading-[17px]" style={{ color: colors.warning }}>
+                Verify your own account before requesting to join an organization.
+              </Text>
+            </View>
+          )}
+
+          {isVerified && isUserVerified && !isMember && !myPendingRequest && (
+            <Pressable
+              onPress={handleRequestJoin}
+              disabled={requesting}
+              className="py-2.5 rounded-lg items-center mb-3"
+              style={{ backgroundColor: colors.primary, opacity: requesting ? 0.6 : 1 }}
+            >
+              <Text className="text-white text-[13px] font-semibold">
+                {requesting ? "Requesting..." : "Request to Join"}
+              </Text>
+            </Pressable>
+          )}
+
+          {myPendingRequest && (
+            <View
+              className="flex-row items-start gap-1.5 rounded-[10px] p-2.5 mb-2.5"
+              style={{ backgroundColor: colors.backgroundElement }}
+            >
+              <MaterialCommunityIcons name="clock-outline" size={14} color={colors.textSecondary} />
+              <Text className="text-xs flex-1 leading-[17px]" style={{ color: colors.textSecondary }}>
+                Your request to join is pending review.
+              </Text>
+            </View>
+          )}
+
+          {canManageMembers && pendingRequests.length > 0 && (
+            <View className="gap-2 mb-3">
+              <Text className="text-xs font-bold uppercase tracking-wide" style={{ color: colors.textSecondary }}>
+                Pending Requests ({pendingRequests.length})
+              </Text>
+              {pendingRequests.map((request) => (
+                <View
+                  key={request.id}
+                  className="flex-row items-center gap-2.5 rounded-[10px] p-2.5"
+                  style={{ backgroundColor: colors.backgroundElement }}
+                >
+                  <View
+                    className="w-8 h-8 rounded-full items-center justify-center"
+                    style={{ backgroundColor: request.requesterAvatarColor }}
+                  >
+                    <Text className="text-white text-[11px] font-bold">
+                      {request.requesterName.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
+                    </Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-[13px] font-semibold" style={{ color: colors.text }} numberOfLines={1}>
+                      {request.requesterName}
+                    </Text>
+                    <Text className="text-[11px]" style={{ color: colors.textSecondary }} numberOfLines={1}>
+                      {request.requesterEmail}
+                    </Text>
+                  </View>
+                  <View
+                    className="flex-row items-center gap-1 px-2 py-1 rounded-lg"
+                    style={{ backgroundColor: colors.backgroundSecondary }}
+                  >
+                    <MaterialCommunityIcons name="clock-outline" size={12} color={colors.textSecondary} />
+                    <Text className="text-[11px] font-semibold" style={{ color: colors.textSecondary }}>
+                      Pending admin review
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {isMember && (
+            <View className="gap-2">
+              {members.map((member) => (
+                <View
+                  key={member.id}
+                  className="flex-row items-center gap-2.5 rounded-[10px] p-2.5"
+                  style={{ backgroundColor: colors.backgroundElement }}
+                >
+                  <View
+                    className="w-8 h-8 rounded-full items-center justify-center"
+                    style={{ backgroundColor: member.avatarColor }}
+                  >
+                    <Text className="text-white text-[11px] font-bold">
+                      {member.userName.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
+                    </Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-[13px] font-semibold" style={{ color: colors.text }} numberOfLines={1}>
+                      {member.userName}
+                    </Text>
+                    <Text className="text-[11px] mt-0.5" style={{ color: colors.textSecondary }}>
+                      {member.role}
+                    </Text>
+                  </View>
+                  {member.role !== "Admin" && canManageMembers && (
+                    <Pressable onPress={() => handleRemoveMember(member.id, member.userName)} hitSlop={8}>
+                      <MaterialCommunityIcons name="close" size={16} color={colors.textSecondary} />
+                    </Pressable>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
 
           <View className="h-px my-[18px]" style={{ backgroundColor: colors.border }} />
 

@@ -96,6 +96,24 @@ function mapConversationRow(row: any, myId: string): Conversation | null {
     };
   }
 
+  if (row.organization_id) {
+    // Same "has something new since I last opened it" flag as the
+    // facility case above, and the same reasoning applies — see that
+    // branch's comment for why.
+    const hasUnread = mine ? new Date(row.last_message_at) > new Date(mine.last_read_at ?? 0) : false;
+    return {
+      id: row.id,
+      participant: {
+        kind: "organization",
+        id: row.organization_id,
+        name: row.organizations?.name ?? "Unknown organization",
+      },
+      context: mapLinkedEntityFromRow(row, "context"),
+      lastMessageAt: new Date(row.last_message_at),
+      unreadCount: hasUnread ? 1 : 0,
+    };
+  }
+
   const other = participantRows.find((p: any) => p.user_id !== myId);
   if (!other) return null; // shouldn't happen — a 1:1 conversation always has two participants
 
@@ -124,7 +142,7 @@ function mapMessageRow(row: any): ChatMessage {
 }
 
 const CONVERSATION_SELECT =
-  "*, facilities:facility_id(name, facility_memberships(count)), conversation_participants(user_id, unread_count, last_read_at, profiles:user_id(id, full_name, avatar_color, facility_memberships(facilities(name)))), messages(*, profiles:sender_id(full_name))";
+  "*, facilities:facility_id(name, facility_memberships(count)), organizations:organization_id(name), conversation_participants(user_id, unread_count, last_read_at, profiles:user_id(id, full_name, avatar_color, facility_memberships(facilities(name)))), messages(*, profiles:sender_id(full_name))";
 const MESSAGE_SELECT = "*, profiles:sender_id(full_name)";
 const CONVERSATION_LIST_PREVIEW_LIMIT = 3;
 
@@ -150,6 +168,11 @@ function linkedEntityInsertFields(prefix: "context" | "linked_entity", entity?: 
 }
 
 export interface FacilityTarget {
+  id: string;
+  name: string;
+}
+
+export interface OrganizationTarget {
   id: string;
   name: string;
 }
@@ -208,6 +231,11 @@ type ChatStore = {
   // — every current member gets access dynamically, not by being added
   // as an explicit participant.
   startFacilityConversation: (facility: FacilityTarget, context?: ChatLinkedEntity) => Promise<string>;
+
+  // Same shape as startFacilityConversation — see OrganizationTarget
+  // and is_organization_member for what "every current member" means
+  // for an organization today (just its admin).
+  startOrganizationConversation: (organization: OrganizationTarget, context?: ChatLinkedEntity) => Promise<string>;
 };
 
 export const useChatStore = create<ChatStore>((set, get) => ({
@@ -426,11 +454,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         .eq("conversation_id", conversationId)
         .eq("user_id", conversation.participant.id);
     }
-    // Facility conversations need no per-recipient write here — every
-    // current member's "unread" status is derived by comparing
-    // conversations.last_message_at (just updated above) against their
-    // own last_read_at when they load their conversation list, not
-    // pushed out to each member's row on every send.
+    // Facility/organization conversations need no per-recipient write
+    // here — every current member's "unread" status is derived by
+    // comparing conversations.last_message_at (just updated above)
+    // against their own last_read_at when they load their conversation
+    // list, not pushed out to each member's row on every send.
 
     const message = mapMessageRow(row);
     set((state) => ({
@@ -573,6 +601,39 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     });
     if (error || !conversationId) {
       console.warn("[chat] startFacilityConversation failed:", error?.message);
+      return "";
+    }
+
+    if (context) {
+      await get().sendMessage(conversationId, { linkedEntity: context });
+    }
+
+    await get().fetchConversations();
+    return conversationId;
+  },
+
+  startOrganizationConversation: async (organization, context) => {
+    const existing = get().conversations.find(
+      (c) => c.participant.kind === "organization" && c.participant.id === organization.id,
+    );
+    if (existing) {
+      if (context) {
+        await get().sendMessage(existing.id, { linkedEntity: context });
+      }
+      return existing.id;
+    }
+
+    const { data: conversationId, error } = await supabase.rpc("start_conversation", {
+      target_organization_id: organization.id,
+      ctx_type: context?.type ?? null,
+      ctx_id: context?.id ?? null,
+      ctx_code: context?.code ?? null,
+      ctx_title: context?.title ?? null,
+      ctx_subtitle: context?.subtitle ?? null,
+      ctx_status: context?.status ?? null,
+    });
+    if (error || !conversationId) {
+      console.warn("[chat] startOrganizationConversation failed:", error?.message);
       return "";
     }
 
